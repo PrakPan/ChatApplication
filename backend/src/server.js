@@ -459,4 +459,4 @@ process.on('uncaughtException', (err) => {
 // // Run the seed function
 // seedDatabase();
 
-module.exports = { app, server, io };
+module.exports = server;

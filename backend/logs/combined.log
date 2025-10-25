@@ -387,3 +387,7 @@
 {"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-10-25 19:34:28"}
 {"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-10-25 19:41:19"}
 {"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-10-25 19:41:22"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-10-25 19:43:06"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-10-25 19:43:08"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-10-25 19:43:11"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-10-25 19:43:12"}
