@@ -3,7 +3,7 @@ import { Mic, MicOff, Video as VideoIcon, VideoOff, Phone, RefreshCw } from 'luc
 import { useWebRTC } from '../hooks/useWebRTC';
 import toast from 'react-hot-toast';
 
-export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false }) => {
+export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false, incomingOffer = null }) => {
   const {
     localStream,
     remoteStream,
@@ -20,19 +20,41 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
 
-  // Initialize call - only caller initiates
-  useEffect(() => {
-    if (!isHost && callId && remoteUserId) {
-      console.log('🎬 VideoCallComponent: Initiating call as caller');
-      startCall(remoteUserId, callId).catch((error) => {
-        console.error('Failed to start call:', error);
-        toast.error('Failed to start call');
-        onEnd();
-      });
-    } else if (isHost) {
-      console.log('🎬 VideoCallComponent: Waiting for incoming call as host');
+  // Initialize call
+useEffect(() => {
+  const initCall = async () => {
+    console.log('🎬 Initializing call:', { isHost, callId, remoteUserId });
+    
+    try {
+      if (!isHost && callId && remoteUserId) {
+        console.log('📞 Starting outgoing call to:', remoteUserId);
+        await startCall(remoteUserId, callId);
+      } else if (isHost) {
+        console.log('🎬 Waiting for incoming call as host');
+      }
+    } catch (error) {
+      console.error('Failed to start call:', error);
+      toast.error('Failed to start call');
+      onEnd();
     }
-  }, []); // Empty dependency array - run once on mount
+  };
+
+  initCall();
+}, []);
+
+  // Initialize call - only caller initiates
+  // useEffect(() => {
+  //   if (!isHost && callId && remoteUserId) {
+  //     console.log('🎬 VideoCallComponent: Initiating call as caller');
+  //     startCall(remoteUserId, callId).catch((error) => {
+  //       console.error('Failed to start call:', error);
+  //       toast.error('Failed to start call');
+  //       onEnd();
+  //     });
+  //   } else if (isHost) {
+  //     console.log('🎬 VideoCallComponent: Waiting for incoming call as host');
+  //   }
+  // }, []); // Empty dependency array - run once on mount
 
   // Update local video
   useEffect(() => {

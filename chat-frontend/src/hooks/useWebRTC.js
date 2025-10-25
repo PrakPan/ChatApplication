@@ -19,36 +19,36 @@ export const useWebRTC = () => {
   const pendingIceCandidates = useRef([]);
   const currentCallId = useRef(null);
 
-  useEffect(() => {
-    const initCall = async () => {
-      console.log('🎬 Initializing call:', { 
-        // isHost, 
-        hasIncomingOffer: !!incomingOffer, 
-        remoteUserId, 
-        callId 
-      });
+  // useEffect(() => {
+  //   const initCall = async () => {
+  //     console.log('🎬 Initializing call:', { 
+  //       // isHost, 
+  //       hasIncomingOffer: !!incomingOffer, 
+  //       remoteUserId, 
+  //       callId 
+  //     });
       
-      try {
-        if (incomingOffer && remoteUserId) {
-          // This is the receiver - accept the incoming call
-          console.log('📲 Accepting incoming call from:', remoteUserId);
-          await acceptCall(remoteUserId, incomingOffer, callId);
-        } else if (callId && remoteUserId) {
-          // This is the caller - start a new call
-          console.log('📞 Starting outgoing call to:', remoteUserId);
-          await startCall(remoteUserId, callId);
-        } else {
-          console.error('❌ Missing required call parameters');
-        }
-      } catch (error) {
-        console.error('Failed to initialize call:', error);
-        toast.error('Failed to initialize call');
-        onEnd();
-      }
-    };
+  //     try {
+  //       if (incomingOffer && remoteUserId) {
+  //         // This is the receiver - accept the incoming call
+  //         console.log('📲 Accepting incoming call from:', remoteUserId);
+  //         await acceptCall(remoteUserId, incomingOffer, callId);
+  //       } else if (callId && remoteUserId) {
+  //         // This is the caller - start a new call
+  //         console.log('📞 Starting outgoing call to:', remoteUserId);
+  //         await startCall(remoteUserId, callId);
+  //       } else {
+  //         console.error('❌ Missing required call parameters');
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to initialize call:', error);
+  //       toast.error('Failed to initialize call');
+  //       onEnd();
+  //     }
+  //   };
 
-    initCall();
-  }, []);
+  //   initCall();
+  // }, []);
 
   const initializePeerConnection = useCallback(() => {
     console.log('🔧 Initializing peer connection');

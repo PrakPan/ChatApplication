@@ -176,8 +176,8 @@ export const Home = () => {
         callId={currentCall.callId}
         remoteUserId={remoteUserId}
         onEnd={handleEndCall}
-        isHost={currentCall.isIncoming} // Host is the one receiving the call
-        incomingOffer={currentCall.offer} // Pass the offer if it's an incoming call
+        isHost={currentCall.isIncoming}
+        incomingOffer={currentCall.offer}
       />
     );
   }
