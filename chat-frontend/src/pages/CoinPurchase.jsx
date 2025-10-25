@@ -118,7 +118,7 @@ export const CoinPurchase = () => {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
+              <ChevronLeft className="w-6 h-6 text-gray-700" onClick={() => window.history.back()} />
             </button>
             <h1 className="text-xl font-semibold text-gray-900">Get More Coins</h1>
             <div className="w-10" />
