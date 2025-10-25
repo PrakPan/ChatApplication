@@ -37,7 +37,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || 'https://chat-application-khaki-two.vercel.app',
     credentials: true
   },
   pingTimeout: 60000,
@@ -61,7 +61,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'https://chat-application-khaki-two.vercel.app',
   credentials: true
 }));
 
