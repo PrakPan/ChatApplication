@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Video as VideoIcon, VideoOff, Phone, RefreshCw } from 'lucide-react';
-import { useWebRTC } from '../hooks/useWebrtc';
+import { useWebRTC } from '../hooks/useWebRTC';
 import toast from 'react-hot-toast';
 
 export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false }) => {
