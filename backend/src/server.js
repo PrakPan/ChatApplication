@@ -118,13 +118,25 @@ app.use(notFound);
 app.use(errorHandler);
 
 // Start server
+// const PORT = process.env.PORT || 5500;
+
+// server.listen(PORT, () => {
+//   logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+//   console.log(`🚀 Server is running on http://localhost:${PORT}`);
+//   console.log(`🔌 Socket.io server is ready`);
+// });
+
 const PORT = process.env.PORT || 5500;
 
-server.listen(PORT, () => {
-  logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`🔌 Socket.io server is ready`);
-});
+// Only start listening locally
+if (process.env.NODE_ENV !== 'production') {
+  server.listen(PORT, () => {
+    logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`🔌 Socket.io server is ready`);
+  });
+}
+
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
