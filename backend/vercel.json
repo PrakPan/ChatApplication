@@ -3,9 +3,15 @@
     {
       "src": "backend/src/server.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "chat-frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "chat-frontend/dist" }
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "backend/src/server.js" }
+    { "src": "/api/(.*)", "dest": "backend/src/server.js" },
+    { "src": "/(.*)", "dest": "chat-frontend/dist/$1" }
   ]
 }
