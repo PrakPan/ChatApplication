@@ -9,6 +9,7 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
     remoteStream,
     callStatus,
     startCall,
+    acceptCall,
     endCall,
     toggleAudio,
     toggleVideo,
@@ -22,26 +23,33 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
 
   // Initialize call
 useEffect(() => {
-  const initCall = async () => {
-    console.log('🎬 Initializing call:', { isHost, callId, remoteUserId });
-    
-    try {
-      if (!isHost && callId && remoteUserId) {
-        console.log('📞 Starting outgoing call to:', remoteUserId);
-        await startCall(remoteUserId, callId);
-      } else if (isHost) {
-        console.log('🎬 Waiting for incoming call as host');
+    const initCall = async () => {
+      console.log('🎬 Initializing call:', { 
+        isHost, 
+        hasIncomingOffer: !!incomingOffer, 
+        callId, 
+        remoteUserId 
+      });
+      
+      try {
+        if (incomingOffer && remoteUserId) {
+          console.log('📲 Accepting incoming call from:', remoteUserId);
+          await acceptCall(remoteUserId, incomingOffer, callId);
+        } else if (!isHost && callId && remoteUserId) {
+          console.log('📞 Starting outgoing call to:', remoteUserId);
+          await startCall(remoteUserId, callId);
+        } else if (isHost) {
+          console.log('🎬 Waiting for incoming call as host');
+        }
+      } catch (error) {
+        console.error('Failed to initialize call:', error);
+        toast.error('Failed to initialize call');
+        onEnd();
       }
-    } catch (error) {
-      console.error('Failed to start call:', error);
-      toast.error('Failed to start call');
-      onEnd();
-    }
-  };
+    };
 
-  initCall();
-}, []);
-
+    initCall();
+  }, []);
   // Initialize call - only caller initiates
   // useEffect(() => {
   //   if (!isHost && callId && remoteUserId) {
