@@ -2,16 +2,24 @@ const logger = require('../utils/logger');
 
 const getIceServers = () => {
   return [
+
     {
       urls: 'stun:stun.l.google.com:19302'
     },
     {
-      urls: 'stun:stun1.l.google.com:19302'
+      urls: 'turn:a.relay.metered.ca:80',
+      username: process.env.METERED_API_KEY,
+      credential: process.env.METERED_API_KEY
     },
     {
-      urls: process.env.TURN_SERVER_URL,
-      username: process.env.TURN_USERNAME,
-      credential: process.env.TURN_CREDENTIAL
+      urls: 'turn:a.relay.metered.ca:443',
+      username: process.env.METERED_API_KEY,
+      credential: process.env.METERED_API_KEY
+    },
+    {
+      urls: 'turn:a.relay.metered.ca:443?transport=tcp',
+      username: process.env.METERED_API_KEY,
+      credential: process.env.METERED_API_KEY
     }
   ];
 };
