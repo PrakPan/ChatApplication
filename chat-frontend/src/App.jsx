@@ -10,6 +10,7 @@ import { Profile } from './pages/Profile';
 import { CoinPurchase } from './pages/CoinPurchase';
 // import { CallHistory } from './pages/CallHistory';
 import { HostDashboard } from './pages/HostDashboard';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
   return (
@@ -47,8 +48,20 @@ function App() {
               },
             }}
           />
+
+          <AppRoutes />
           
-          <Routes>
+        
+        </SocketProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
+
+function AppRoutes() {
+  const { user } = useAuth(); // ✅ now inside AuthProvider
+  return (
+     <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -58,7 +71,7 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <Home />
+                 { user?.role == 'host'? <Home/> : <Home />}
                 </ProtectedRoute>
               }
             />
@@ -185,9 +198,6 @@ function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </SocketProvider>
-      </AuthProvider>
-    </BrowserRouter>
   );
 }
 

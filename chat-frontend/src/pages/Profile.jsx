@@ -90,7 +90,7 @@ export const Profile = () => {
             <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors group">
               <span className="text-base font-medium text-gray-700">Coin Balance</span>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
+                <span className="font-semibold text-gray-900">{user?.coinBalance || user?.totalEarnings || 0}</span>
                 <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               </div>
             </button>
