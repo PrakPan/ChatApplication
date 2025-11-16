@@ -4,13 +4,14 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Home } from './pages/Home';
 import { Profile } from './pages/Profile';
 import { CoinPurchase } from './pages/CoinPurchase';
 // import { CallHistory } from './pages/CallHistory';
 import { HostDashboard } from './pages/HostDashboard';
 import { useAuth } from './hooks/useAuth';
+import AdminPanel from './components/AdminPanel';
+import Register from './pages/Register';
 
 function App() {
   return (
@@ -72,6 +73,15 @@ function AppRoutes() {
               element={
                 <ProtectedRoute>
                  { user?.role == 'host'? <Home/> : <Home />}
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin-panel"
+              element={
+                <ProtectedRoute>
+                 <AdminPanel/>
                 </ProtectedRoute>
               }
             />

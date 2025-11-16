@@ -40,7 +40,7 @@ export const Login = () => {
           <p className="mt-2 text-sm text-gray-600">
             Don't have an account?{' '}
             <Link 
-              to="/signup" 
+              to="/register" 
               className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
             >
               Sign up for free

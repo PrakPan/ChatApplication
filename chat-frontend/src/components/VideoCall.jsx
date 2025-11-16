@@ -1,7 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Video as VideoIcon, VideoOff, Phone, RefreshCw } from 'lucide-react';
+import { 
+  Mic, 
+  MicOff, 
+  Video, 
+  VideoOff, 
+  Phone, 
+  RefreshCw,
+  SwitchCamera,
+  Sparkles,
+  X
+} from 'lucide-react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import toast from 'react-hot-toast';
+
+const FILTERS = [
+  { id: 'none', name: 'None', filter: 'none' },
+  { id: 'grayscale', name: 'B&W', filter: 'grayscale(100%)' },
+  { id: 'sepia', name: 'Vintage', filter: 'sepia(80%)' },
+  { id: 'warm', name: 'Warm', filter: 'saturate(1.3) contrast(1.1) brightness(1.05)' },
+  { id: 'cool', name: 'Cool', filter: 'hue-rotate(180deg) saturate(1.2)' },
+  { id: 'vivid', name: 'Vivid', filter: 'saturate(1.5) contrast(1.2)' },
+  { id: 'soft', name: 'Soft', filter: 'brightness(1.1) contrast(0.9) saturate(0.8)' },
+  { id: 'dramatic', name: 'Drama', filter: 'contrast(1.4) saturate(0.8) brightness(0.9)' },
+  { id: 'blur', name: 'Bokeh', filter: 'blur(0px)', hasBackground: true },
+];
 
 export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false, incomingOffer = null }) => {
   const {
@@ -17,12 +39,32 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const canvasRef = useRef(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('none');
+  const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
+  const [availableCameras, setAvailableCameras] = useState([]);
+
+  // Get available cameras
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(videoDevices);
+        console.log('📹 Available cameras:', videoDevices.length);
+      } catch (error) {
+        console.error('Error getting cameras:', error);
+      }
+    };
+    getCameras();
+  }, []);
 
   // Initialize call
-useEffect(() => {
+  useEffect(() => {
     const initCall = async () => {
       console.log('🎬 Initializing call:', { 
         isHost, 
@@ -43,28 +85,24 @@ useEffect(() => {
         }
       } catch (error) {
         console.error('Failed to initialize call:', error);
-        toast.error('Failed to initialize call');
+        
+        // Check if it's a permission error
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          toast.error('Camera/microphone access denied. Please allow permissions and refresh.');
+        } else if (error.name === 'NotFoundError') {
+          toast.error('No camera or microphone found on this device.');
+        } else {
+          toast.error('Failed to initialize call: ' + error.message);
+        }
+        
         onEnd();
       }
     };
 
     initCall();
   }, []);
-  // Initialize call - only caller initiates
-  // useEffect(() => {
-  //   if (!isHost && callId && remoteUserId) {
-  //     console.log('🎬 VideoCallComponent: Initiating call as caller');
-  //     startCall(remoteUserId, callId).catch((error) => {
-  //       console.error('Failed to start call:', error);
-  //       toast.error('Failed to start call');
-  //       onEnd();
-  //     });
-  //   } else if (isHost) {
-  //     console.log('🎬 VideoCallComponent: Waiting for incoming call as host');
-  //   }
-  // }, []); // Empty dependency array - run once on mount
 
-  // Update local video
+  // Update local video with filter
   useEffect(() => {
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
@@ -108,11 +146,62 @@ useEffect(() => {
     await onEnd();
   };
 
+  const switchCamera = async () => {
+    if (availableCameras.length < 2) {
+      toast.error('No other camera available');
+      return;
+    }
+
+    try {
+      const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+      
+      // Stop current tracks
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+
+      // Get new stream with different camera
+      const constraints = {
+        video: { 
+          facingMode: newFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: true
+      };
+
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Update local video
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = newStream;
+      }
+
+      // Update the stream in WebRTC connection
+      // Note: You'll need to add this method to your useWebRTC hook
+      // to replace video track in peer connection
+      
+      setFacingMode(newFacingMode);
+      toast.success(`Switched to ${newFacingMode === 'user' ? 'front' : 'back'} camera`);
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      toast.error('Failed to switch camera');
+    }
+  };
+
+  const applyFilter = (filterId) => {
+    setSelectedFilter(filterId);
+    setShowFilters(false);
+    toast.success(`Filter applied: ${FILTERS.find(f => f.id === filterId)?.name}`);
+  };
+
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const currentFilter = FILTERS.find(f => f.id === selectedFilter);
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -160,41 +249,97 @@ useEffect(() => {
           
           {/* Placeholder if no remote stream */}
           {!remoteStream && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/30 to-blue-900/30 backdrop-blur-xl">
               <div className="text-center">
-                <div className="w-24 h-24 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <VideoIcon className="h-12 w-12 text-gray-500" />
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
+                  <Video className="h-12 w-12 text-white" />
                 </div>
-                <p className="text-white text-lg">Waiting for video...</p>
+                <p className="text-white text-lg font-semibold">Waiting for video...</p>
                 <p className="text-white/60 text-sm mt-2">Status: {callStatus}</p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Local Video (Picture-in-Picture) */}
-        <div className="absolute bottom-20 right-4 w-32 h-44 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+        {/* Local Video (Picture-in-Picture) with Filter */}
+        <div className="absolute bottom-32 right-4 w-32 h-44 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
           <video
             ref={localVideoRef}
             autoPlay
             playsInline
             muted
             className="w-full h-full object-cover"
+            style={{
+              filter: currentFilter?.filter !== 'none' ? currentFilter?.filter : 'none'
+            }}
           />
           {!videoEnabled && (
-            <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
               <VideoOff className="h-8 w-8 text-white" />
+            </div>
+          )}
+          {selectedFilter !== 'none' && videoEnabled && (
+            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full">
+              <span className="text-white text-xs flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                {currentFilter?.name}
+              </span>
             </div>
           )}
         </div>
       </div>
 
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="absolute bottom-28 left-0 right-0 bg-black/90 backdrop-blur-xl p-4 border-t border-white/10">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Filters
+            </h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="p-1 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => applyFilter(filter.id)}
+                className={`flex-shrink-0 transition-all ${
+                  selectedFilter === filter.id
+                    ? 'ring-2 ring-purple-500 scale-105'
+                    : 'hover:scale-105'
+                }`}
+              >
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-gradient-to-br from-purple-500 to-blue-500 relative">
+                  <div 
+                    className="w-full h-full bg-white/20"
+                    style={{ filter: filter.filter !== 'none' ? filter.filter : 'none' }}
+                  />
+                  {selectedFilter === filter.id && (
+                    <div className="absolute inset-0 bg-purple-500/30 flex items-center justify-center">
+                      <div className="w-4 h-4 bg-white rounded-full" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-white text-xs mt-1 text-center">{filter.name}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="bg-gradient-to-t from-black/80 to-transparent p-6 absolute bottom-0 left-0 right-0">
-        <div className="flex justify-center items-center space-x-4 max-w-md mx-auto">
+      <div className="bg-gradient-to-t from-black/90 to-transparent p-6 absolute bottom-0 left-0 right-0">
+        <div className="flex justify-center items-center space-x-3 max-w-md mx-auto mb-4">
+          {/* Audio Toggle */}
           <button
             onClick={handleToggleAudio}
-            className={`p-4 rounded-full transition-all transform active:scale-95 ${
+            className={`p-4 rounded-full transition-all transform active:scale-95 shadow-lg ${
               audioEnabled
                 ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
                 : 'bg-red-600 hover:bg-red-700'
@@ -207,35 +352,67 @@ useEffect(() => {
             )}
           </button>
 
+          {/* End Call */}
           <button
             onClick={handleEndCall}
-            className="p-5 rounded-full bg-red-600 hover:bg-red-700 transition-all transform active:scale-95 shadow-lg"
+            className="p-5 rounded-full bg-red-600 hover:bg-red-700 transition-all transform active:scale-95 shadow-xl scale-110"
           >
             <Phone className="h-7 w-7 text-white transform rotate-135" />
           </button>
 
+          {/* Video Toggle */}
           <button
             onClick={handleToggleVideo}
-            className={`p-4 rounded-full transition-all transform active:scale-95 ${
+            className={`p-4 rounded-full transition-all transform active:scale-95 shadow-lg ${
               videoEnabled
                 ? 'bg-white/20 hover:bg-white/30 backdrop-blur-sm'
                 : 'bg-red-600 hover:bg-red-700'
             }`}
           >
             {videoEnabled ? (
-              <VideoIcon className="h-6 w-6 text-white" />
+              <Video className="h-6 w-6 text-white" />
             ) : (
               <VideoOff className="h-6 w-6 text-white" />
             )}
           </button>
         </div>
 
+        {/* Secondary Controls */}
+        <div className="flex justify-center items-center space-x-3 max-w-md mx-auto">
+          {/* Switch Camera */}
+          {availableCameras.length > 1 && (
+            <button
+              onClick={switchCamera}
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all transform active:scale-95"
+              title="Switch Camera"
+            >
+              <SwitchCamera className="h-5 w-5 text-white" />
+            </button>
+          )}
+
+          {/* Filters */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-3 rounded-full backdrop-blur-sm transition-all transform active:scale-95 ${
+              showFilters || selectedFilter !== 'none'
+                ? 'bg-purple-600 hover:bg-purple-700'
+                : 'bg-white/10 hover:bg-white/20'
+            }`}
+            title="Filters"
+          >
+            <Sparkles className="h-5 w-5 text-white" />
+          </button>
+        </div>
+
         <div className="text-center mt-4">
           <p className="text-white/60 text-sm">
-            {callStatus === 'connected' ? 'Call in progress' : 'Establishing connection...'}
+            {callStatus === 'connected' ? '🟢 Call in progress' : '🔄 Establishing connection...'}
           </p>
         </div>
       </div>
+
+      {/* Hidden canvas for advanced effects */}
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };
