@@ -1,8 +1,7 @@
 const logger = require('../utils/logger');
 
 const getIceServers = () => {
-  return [
-
+  const servers = [
     {
       urls: 'stun:stun.l.google.com:19302'
     },
@@ -22,6 +21,11 @@ const getIceServers = () => {
       credential: process.env.METERED_API_KEY
     }
   ];
+  
+  logger.info('ICE Servers configured:', servers);
+  logger.info('METERED_API_KEY exists:', !!process.env.METERED_API_KEY);
+  
+  return servers;
 };
 
 const validateSdp = (sdp) => {

@@ -6,7 +6,12 @@ const validators = {
     email: Joi.string().email().required(),
     phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
     password: Joi.string().min(8).required(),
-    role: Joi.string().valid('user', 'host').default('user')
+    role: Joi.string().valid('user', 'host').default('user'),
+    // Host-specific optional fields
+    bio: Joi.string().max(500).optional(),
+    ratePerMinute: Joi.number().min(10).optional(),
+    languages: Joi.array().items(Joi.string()).optional(),
+    interests: Joi.array().items(Joi.string()).optional()
   }),
 
   login: Joi.object({

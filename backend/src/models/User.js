@@ -1,7 +1,26 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Function to generate unique 6-character alphanumeric ID
+const generateUserId = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let id = '';
+  for (let i = 0; i < 6; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return id;
+};
+
 const userSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    unique: true,
+    required: false,
+    uppercase: true,
+    minlength: 6,
+    maxlength: 6,
+    index: true
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -62,8 +81,32 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
+// Generate unique userId before saving
 userSchema.pre('save', async function(next) {
+  // Generate userId if it's a new document
+  if (this.isNew && !this.userId) {
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+      this.userId = generateUserId();
+      
+      // Check if this userId already exists
+      const existingUser = await mongoose.model('User').findOne({ userId: this.userId });
+      
+      if (!existingUser) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      return next(new Error('Unable to generate unique user ID. Please try again.'));
+    }
+  }
+
+  // Hash password if modified
   if (!this.isModified('password')) return next();
   
   try {
@@ -87,6 +130,18 @@ userSchema.methods.toJSON = function() {
   delete user.refreshToken;
   delete user.__v;
   return user;
+};
+
+// Static method to find user by userId or email
+userSchema.statics.findByCredential = async function(credential) {
+  const isEmail = /^\S+@\S+\.\S+$/.test(credential);
+  
+  if (isEmail) {
+    return await this.findOne({ email: credential.toLowerCase() }).select('+password');
+  } else {
+    // Assume it's a userId
+    return await this.findOne({ userId: credential.toUpperCase() }).select('+password');
+  }
 };
 
 module.exports = mongoose.model('User', userSchema);
