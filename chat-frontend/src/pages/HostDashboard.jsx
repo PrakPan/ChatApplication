@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { Coins, Search, Power, PowerOff, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
+import { VideoCallComponent } from '../components/VideoCall';
+import { useSocket } from '../hooks/useSocket';
+import { callService } from '../services/callService';
+import toast from 'react-hot-toast';
 
 const HostDashboard = () => { 
   const [user, setUser] = useState(null);
@@ -13,6 +17,10 @@ const HostDashboard = () => {
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [hostProfile, setHostProfile] = useState(null);
+  const [inCall, setInCall] = useState(false);
+  const [currentCall, setCurrentCall] = useState(null);
+  
+  const { socket } = useSocket();
   const navigate = useNavigate();
 
   const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5500/api/v1';
@@ -21,6 +29,23 @@ const HostDashboard = () => {
     fetchUser();
     fetchHosts();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listen for incoming calls
+    socket.on('call:offer', handleIncomingCall);
+    socket.on('call:rejected', handleCallRejected);
+    socket.on('call:ended', handleCallEnded);
+    socket.on('call:cancelled', handleCallCancelled);
+
+    return () => {
+      socket.off('call:offer');
+      socket.off('call:rejected');
+      socket.off('call:ended');
+      socket.off('call:cancelled');
+    };
+  }, [socket]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -84,6 +109,146 @@ const HostDashboard = () => {
     }
   };
 
+  // ============= CALL HANDLERS =============
+  const handleIncomingCall = ({ from, offer, callId, caller }) => {
+    console.log('📞 Incoming call from:', from, 'caller:', caller);
+    
+    // Only show incoming call notification if host is online
+    if (!isOnline) return;
+
+    toast((t) => (
+      <div className="flex flex-col">
+        <p className="font-semibold mb-2">Incoming call from {caller?.name || 'User'}</p>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              acceptIncomingCall(from, offer, callId);
+              toast.dismiss(t.id);
+            }}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => {
+              rejectIncomingCall(from, callId);
+              toast.dismiss(t.id);
+            }}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+    ), { duration: 30000 });
+  };
+
+  const acceptIncomingCall = (from, offer, callId) => {
+    console.log('✅ Accepting call from:', from);
+    setCurrentCall({ 
+      from, 
+      callId, 
+      offer, 
+      isIncoming: true,
+      isHost: true 
+    });
+    setInCall(true);
+  };
+
+  const rejectIncomingCall = (from, callId) => {
+    console.log('❌ Rejecting call from:', from);
+    if (socket) {
+      socket.emit('call:reject', { 
+        to: from, 
+        callId, 
+        reason: 'Host declined call' 
+      });
+    }
+    toast.success('Call rejected');
+  };
+
+  const handleCallRejected = ({ callId, reason }) => {
+    console.log('📞 Call rejected:', reason);
+    toast.error(`Call rejected: ${reason}`);
+    setInCall(false);
+    setCurrentCall(null);
+  };
+
+  const handleCallEnded = ({ callId, reason }) => {
+    console.log('📞 Call ended:', reason);
+    setInCall(false);
+    setCurrentCall(null);
+    toast.success('Call ended');
+    fetchHosts(); // Refresh hosts list
+  };
+
+  const handleCallCancelled = ({ callId, reason }) => {
+    console.log('📞 Call cancelled:', reason);
+    toast.info(`Call cancelled: ${reason}`);
+    setInCall(false);
+    setCurrentCall(null);
+  };
+
+  const handleEndCall = async () => {
+    console.log('☎️ Ending call:', currentCall);
+    
+    if (currentCall?.callId) {
+      try {
+        await callService.endCall(currentCall.callId);
+        if (socket) {
+          const recipientId = currentCall.from;
+          console.log('📤 Sending call:end to:', recipientId);
+          
+          socket.emit('call:end', { 
+            to: recipientId, 
+            callId: currentCall.callId 
+          });
+        }
+      } catch (error) {
+        console.error('Error ending call:', error);
+        toast.error('Failed to end call properly');
+      }
+    }
+    setInCall(false);
+    setCurrentCall(null);
+    fetchHosts();
+  };
+
+  const handleCallHost = async (host) => {
+    console.log('📞 Calling host:', host);
+    
+    if (!user) {
+      toast.error('Please login first');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await callService.initiateCall(host._id);
+      const callData = response.data.call;
+      
+      console.log('📞 Call data:', callData);
+      console.log('📞 Host data:', host);
+      
+      const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
+      
+      console.log('🆔 Using host user ID:', hostUserId);
+      
+      setCurrentCall({ 
+        callId: callData._id || callData.id, 
+        hostId: hostUserId,
+        host,
+        isIncoming: false,
+        isHost: false
+      });
+      setInCall(true);
+    } catch (error) {
+      console.error('❌ Error initiating call:', error);
+      toast.error(error.response?.data?.message || 'Failed to initiate call');
+    }
+  };
+
+  // ============= ONLINE STATUS HANDLERS =============
   const checkPhotosAndToggle = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -108,7 +273,7 @@ const HostDashboard = () => {
       }
     } catch (error) {
       console.error('Failed to check photos:', error);
-      alert('Failed to check photo status');
+      toast.error('Failed to check photo status');
       return false;
     }
   };
@@ -128,15 +293,15 @@ const HostDashboard = () => {
       
       if (data.success) {
         setIsOnline(data.data.isOnline);
-        alert(`You are now ${data.data.isOnline ? 'online' : 'offline'}`);
+        toast.success(`You are now ${data.data.isOnline ? 'online' : 'offline'}`);
         return true;
       } else {
-        alert(data.message || 'Failed to toggle online status');
+        toast.error(data.message || 'Failed to toggle online status');
         return false;
       }
     } catch (error) {
       console.error('Failed to toggle online status:', error);
-      alert('Failed to toggle online status');
+      toast.error('Failed to toggle online status');
       return false;
     } finally {
       setTogglingOnline(false);
@@ -149,13 +314,24 @@ const HostDashboard = () => {
 
   const handleUploadPhotos = () => {
     setShowPhotoModal(false);
-    navigate('/profile?tab=photos'); // Navigate to profile photo upload section
+    navigate('/profile?tab=photos');
   };
 
-  const handleCallHost = (hostId) => {
-    console.log('Calling host:', hostId);
-    // Navigate to call screen
-  };
+  // ============= RENDER VIDEO CALL =============
+  if (inCall && currentCall) {
+    const remoteUserId = currentCall.hostId || currentCall.from;
+    console.log('🎥 Rendering video call with remote user:', remoteUserId);
+    
+    return (
+      <VideoCallComponent
+        callId={currentCall.callId}
+        remoteUserId={remoteUserId}
+        onEnd={handleEndCall}
+        isHost={currentCall.isHost || currentCall.isIncoming}
+        incomingOffer={currentCall.offer}
+      />
+    );
+  }
 
   // Photo Upload Modal Component
   const PhotoUploadModal = () => (
@@ -205,12 +381,12 @@ const HostDashboard = () => {
               {user?.role === 'host' && (
                 <button
                   onClick={handleToggleOnline}
-                  disabled={togglingOnline}
+                  disabled={togglingOnline || inCall}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${
                     isOnline
                       ? 'bg-green-50 border-green-500 text-green-700'
                       : 'bg-gray-50 border-gray-300 text-gray-600'
-                  } ${togglingOnline ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
+                  } ${togglingOnline || inCall ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
                 >
                   {isOnline ? (
                     <>
@@ -265,7 +441,7 @@ const HostDashboard = () => {
             {hosts.map((host) => (
               <div
                 key={host._id}
-                onClick={() => handleCallHost(host._id)}
+                onClick={() => handleCallHost(host)}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
               >
                 {/* Host Image */}
