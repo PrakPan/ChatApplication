@@ -8,10 +8,11 @@ import { Home } from './pages/Home';
 import { Profile } from './pages/Profile';
 import { CoinPurchase } from './pages/CoinPurchase';
 // import { CallHistory } from './pages/CallHistory';
-import { HostDashboard } from './pages/HostDashboard';
+
 import { useAuth } from './hooks/useAuth';
 import AdminPanel from './components/AdminPanel';
 import Register from './pages/Register';
+import HostDashboard from './pages/HostDashboard';
 
 function App() {
   return (
@@ -72,7 +73,7 @@ function AppRoutes() {
               path="/"
               element={
                 <ProtectedRoute>
-                 { user?.role == 'host'? <Home/> : <Home />}
+                 { user?.role == 'host'? <HostDashboard/> : user?.role == 'user' ? <Home /> : <Login/>}
                 </ProtectedRoute>
               }
             />

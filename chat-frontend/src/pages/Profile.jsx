@@ -4,15 +4,27 @@ import { callService } from '../services/callService';
 import { authService } from '../services/authService';
 import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight, Coins, User, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { HostProfileModal } from '../components/HostProfileModal';
+import { HostPhotoUploadModal } from '../components/HostPhotoUploadModal';
 
 export const Profile = () => {
   const { user, logout } = useAuth();
   const [callHistory, setCallHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+const [userPhotos, setUserPhotos] = useState([]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCallHistory();
   }, []);
+
+  const handleUploadSuccess = (newPhotos) => {
+  setUserPhotos(newPhotos);
+  // Optionally refresh user data
+};
 
   const fetchCallHistory = async () => {
     try {
@@ -46,7 +58,7 @@ export const Profile = () => {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
+              <ChevronLeft className="w-6 h-6 text-gray-700" onClick={()=>navigate("-1")}/>
             </button>
             <h1 className="text-xl font-semibold text-gray-900">My Profile</h1>
             <div className="w-10" />
@@ -80,6 +92,13 @@ export const Profile = () => {
 
           {/* Menu Items */}
           <div className="space-y-1">
+
+            {user?.role == 'host' ? <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors group">
+              <span className="text-base font-medium text-gray-700">Upload Photos</span>
+              <div className="flex items-center gap-2">
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600" onClick={()=>setShowPhotoModal(true)}/>
+              </div>
+            </button> : null}
             {/* Get More Coins */}
             <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors group">
               <span className="text-base font-medium text-gray-700">Get More Coins</span>
@@ -94,6 +113,8 @@ export const Profile = () => {
                 <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
               </div>
             </button>
+
+
 
             {/* Video Chat History */}
             <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors group">
@@ -166,6 +187,13 @@ export const Profile = () => {
           </div>
         )}
       </div>
+
+      <HostPhotoUploadModal
+  isOpen={showPhotoModal}
+  onClose={() => setShowPhotoModal(false)}
+  currentPhotos={userPhotos}
+  onUploadSuccess={handleUploadSuccess}
+/>
 
       {/* Bottom Navigation Spacer */}
       <div className="h-20" />

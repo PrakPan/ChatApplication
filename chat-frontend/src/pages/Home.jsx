@@ -8,6 +8,8 @@ import { HostCard } from '../components/HostCard';
 import { VideoCallComponent } from '../components/VideoCall';
 import toast from 'react-hot-toast';
 import { Coins } from 'lucide-react';
+import { ProfileMenu } from './ProfileMenu';
+import { HostProfileModal } from '../components/HostProfileModal';
 
 export const Home = () => {
   const { user } = useAuth();
@@ -17,6 +19,8 @@ export const Home = () => {
   const [loading, setLoading] = useState(true);
   const [inCall, setInCall] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
+  const [selectedHost, setSelectedHost] = useState(null);
+
 
   useEffect(() => {
     fetchHosts();
@@ -188,6 +192,11 @@ export const Home = () => {
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center justify-between max-w-lg mx-auto">
           <h1 className="text-xl font-bold text-gray-900">Live Hosts</h1>
+          <ProfileMenu
+  user={user} 
+  onLogout={()=>{}}
+  onNavigateToProfile={() => navigate('/profile')}
+/>
           <button 
             onClick={() => navigate('/coins')}
             className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
@@ -199,15 +208,15 @@ export const Home = () => {
       </div>
 
       {/* Hosts Grid */}
-      <main className="p-4 max-w-lg mx-auto">
+      <main className="p-4 max-w-fit mx-auto">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
           </div>
         ) : hosts.length > 0 ? (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {hosts.map((host) => (
-              <HostCard key={host._id} host={host} onCall={handleCallHost} />
+              <HostCard key={host._id} host={host} onCall={handleCallHost} onViewProfile={(host)=>setSelectedHost(host)} />
             ))}
           </div>
         ) : (
@@ -217,6 +226,14 @@ export const Home = () => {
           </div>
         )}
       </main>
+
+      {selectedHost && (
+  <HostProfileModal
+    host={selectedHost}
+    onClose={() => setSelectedHost(null)}
+    onCall={handleCallHost}
+  />
+)}
     </div>
   );
 };

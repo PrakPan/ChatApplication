@@ -5,6 +5,8 @@ import { MdOutlineAttachMoney, MdOutlinePhoneInTalk } from 'react-icons/md';
 import { BiCoin, BiDiamond } from 'react-icons/bi';
 import axios from 'axios';
 import { TbBan } from "react-icons/tb";
+import { PhotoApprovalPanel } from './PhotoApprovalPanel';
+import { ImageIcon } from 'lucide-react';
 
 
 const API_BASE_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5500/api/v1';
@@ -46,61 +48,81 @@ const AdminPanel = () => {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  // Add to existing state declarations at the top
+const [pendingCount, setPendingCount] = useState(0);
+
+// Add after sortData function
+const fetchPendingCount = async () => {
+  try {
+    const { data } = await api.get('/admin/photos/pending');
+    setPendingCount(data.data.total || 0);
+  } catch (error) {
+    console.error('Failed to fetch pending count:', error);
+  }
+};
+
+useEffect(() => {
+  loadData();
+  if (activeTab === 'photo-approvals') {
+    fetchPendingCount();
+  }
+}, [activeTab, activeSubTab, pagination.page, searchTerm, sortBy, sortOrder]);
 
   useEffect(() => {
     loadData();
   }, [activeTab, activeSubTab, pagination.page, searchTerm, sortBy, sortOrder]);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'dashboard') {
-        const { data } = await api.get('/admin/dashboard/stats');
-        setDashboardStats(data.data);
-      } else if (activeTab === 'hosts') {
-        if (activeSubTab === 'list') {
-          const { data } = await api.get('/admin/hosts', {
-            params: { page: pagination.page, limit: pagination.limit, search: searchTerm }
-          });
-          let hostsData = data.data.hosts;
-          hostsData = sortData(hostsData);
-          setHosts(hostsData);
-          setPagination(prev => ({ ...prev, total: data.data.pagination.total }));
-        } else if (activeSubTab === 'leaderboard') {
-          const { data } = await api.get('/admin/leaderboard', { params: { type: 'host' } });
-          setLeaderboard(prev => ({ ...prev, hosts: data.data.hosts || [] }));
-        } else if (activeSubTab === 'history') {
-          const { data } = await api.get('/admin/calls', {
-            params: { page: pagination.page, limit: pagination.limit }
-          });
-          setCalls(data.data.calls.filter(call => call.hostId));
-        }
-      } else if (activeTab === 'users') {
-        if (activeSubTab === 'list') {
-          const { data } = await api.get('/admin/users', {
-            params: { page: pagination.page, limit: pagination.limit, search: searchTerm }
-          });
-          let usersData = data.data.users;
-          usersData = sortData(usersData);
-          setUsers(usersData);
-          setPagination(prev => ({ ...prev, total: data.data.pagination.total }));
-        } else if (activeSubTab === 'leaderboard') {
-          const { data } = await api.get('/admin/leaderboard', { params: { type: 'user' } });
-          setLeaderboard(prev => ({ ...prev, users: data.data.users || [] }));
-        } else if (activeSubTab === 'history') {
-          const { data } = await api.get('/admin/calls', {
-            params: { page: pagination.page, limit: pagination.limit }
-          });
-          setCalls(data.data.calls.filter(call => call.userId));
-        }
+ const loadData = async () => {
+  setLoading(true);
+  try {
+    if (activeTab === 'dashboard') {
+      const { data } = await api.get('/admin/dashboard/stats');
+      setDashboardStats(data.data);
+    } else if (activeTab === 'hosts') {
+      if (activeSubTab === 'list') {
+        const { data } = await api.get('/admin/hosts', {
+          params: { page: pagination.page, limit: pagination.limit, search: searchTerm }
+        });
+        let hostsData = data.data.hosts;
+        hostsData = sortData(hostsData);
+        setHosts(hostsData);
+        setPagination(prev => ({ ...prev, total: data.data.pagination.total }));
+      } else if (activeSubTab === 'leaderboard') {
+        const { data } = await api.get('/admin/leaderboard', { params: { type: 'host' } });
+        setLeaderboard(prev => ({ ...prev, hosts: data.data.hosts || [] }));
+      } else if (activeSubTab === 'history') {
+        const { data } = await api.get('/admin/calls', {
+          params: { page: pagination.page, limit: pagination.limit }
+        });
+        setCalls(data.data.calls.filter(call => call.hostId));
+      } 
+    } else if (activeTab === 'users') {
+      if (activeSubTab === 'list') {
+        const { data } = await api.get('/admin/users', {
+          params: { page: pagination.page, limit: pagination.limit, search: searchTerm }
+        });
+        let usersData = data.data.users;
+        usersData = sortData(usersData);
+        setUsers(usersData);
+        setPagination(prev => ({ ...prev, total: data.data.pagination.total }));
+      } else if (activeSubTab === 'leaderboard') {
+        const { data } = await api.get('/admin/leaderboard', { params: { type: 'user' } });
+        setLeaderboard(prev => ({ ...prev, users: data.data.users || [] }));
+      } else if (activeSubTab === 'history') {
+        const { data } = await api.get('/admin/calls', {
+          params: { page: pagination.page, limit: pagination.limit }
+        });
+        setCalls(data.data.calls.filter(call => call.userId));
       }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      alert(error.response?.data?.error || 'Failed to load data');
-    } finally {
-      setLoading(false);
     }
-  };
+    // Remove the problematic else condition that was here
+  } catch (error) {
+    console.error('Error loading data:', error);
+    alert(error.response?.data?.error || 'Failed to load data');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const sortData = (data) => {
     return [...data].sort((a, b) => {
@@ -523,6 +545,7 @@ const AdminPanel = () => {
                   >
                     Levels
                   </button>
+                 
                   <button
                     onClick={() => { setActiveSubTab('leaderboard'); setSidebarOpen(false); }}
                     className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
@@ -602,6 +625,23 @@ const AdminPanel = () => {
                   </button>
                 </div>
               )}
+              <button 
+  onClick={() => { 
+    setActiveTab('photo-approvals'); 
+    setSidebarOpen(false); 
+  }}
+  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+    activeTab === 'photo-approvals' ? 'bg-white text-blue-900' : 'hover:bg-blue-700'
+  }`}
+>
+  <ImageIcon className="w-5 h-5" />
+  <span>Photo Approvals</span>
+  {pendingCount > 0 && (
+    <span className="ml-auto bg-red-500 text-white px-2 py-0.5 rounded-full text-xs min-w-6 flex items-center justify-center">
+      {pendingCount}
+    </span>
+  )}
+</button>
             </div>
           </nav>
         </div>
@@ -644,7 +684,70 @@ const AdminPanel = () => {
     </div>
   );
 
-  const HostsListTab = () => (
+  const HostsListTab = () => {
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [selectedHost, setSelectedHost] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
+  const [reason, setReason] = useState('');
+
+  const handleStatusChange = async (host, newStatus) => {
+    // For rejections and suspensions, require a reason
+    if (newStatus === 'rejected' || newStatus === 'suspended') {
+      setSelectedHost(host);
+      setNewStatus(newStatus);
+      setShowReasonModal(true);
+      return;
+    }
+
+    await updateHostStatus(host, newStatus);
+  };
+
+  const updateHostStatus = async (host, status, reason = '') => {
+    setUpdatingStatus(host._id);
+    try {
+      await api.patch(`/admin/hosts/${host._id}/status`, { 
+        status, 
+        reason 
+      });
+      alert(`Host status updated to ${status}`);
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to update status');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if ((newStatus === 'rejected' || newStatus === 'suspended') && !reason.trim()) {
+      alert('Please provide a reason for rejection or suspension');
+      return;
+    }
+
+    await updateHostStatus(selectedHost, newStatus, reason);
+    setShowReasonModal(false);
+    setReason('');
+    setSelectedHost(null);
+    setNewStatus('');
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'suspended': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusOptions = (currentStatus) => {
+    const allStatuses = ['pending', 'approved', 'rejected', 'suspended'];
+    return allStatuses.filter(status => status !== currentStatus);
+  };
+
+  return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold">Manage Hosts</h2>
@@ -690,6 +793,11 @@ const AdminPanel = () => {
                     <div>
                       <div className="font-medium text-gray-900">{host.userId?.name}</div>
                       <div className="text-sm text-gray-500">{host.userId?.email}</div>
+                      {host.rejectionReason && host.status === 'rejected' && (
+                        <div className="text-xs text-red-600 mt-1">
+                          Reason: {host.rejectionReason}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -708,13 +816,27 @@ const AdminPanel = () => {
                     <div className="font-semibold text-green-600">₹{host.totalEarnings?.toLocaleString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      host.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      host.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {host.status}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(host.status)}`}>
+                        {host.status}
+                      </span>
+                      <select
+                        value=""
+                        onChange={(e) => handleStatusChange(host, e.target.value)}
+                        disabled={updatingStatus === host._id}
+                        className="text-xs border rounded px-2 py-1 focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="">Change...</option>
+                        {getStatusOptions(host.status).map(status => (
+                          <option key={status} value={status}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                      {updatingStatus === host._id && (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
@@ -727,9 +849,6 @@ const AdminPanel = () => {
                       <button onClick={() => handleViewCallHistory(host._id, 'host')} className="text-blue-600 hover:text-blue-800" title="View History">
                         <FiEye className="w-5 h-5" />
                       </button>
-                      <button onClick={() => handleSuspend(host._id, 'host')} className="text-yellow-600 hover:text-yellow-800" title="Suspend">
-                        <TbBan className="w-5 h-5" />
-                      </button>
                       <button onClick={() => handleDelete(host._id, 'host')} className="text-red-600 hover:text-red-800" title="Delete">
                         <FiTrash2 className="w-5 h-5" />
                       </button>
@@ -741,8 +860,80 @@ const AdminPanel = () => {
           </table>
         </div>
       </div>
+
+      {/* Reason Modal for Rejections/Suspensions */}
+      {showReasonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">
+                  {newStatus === 'rejected' ? 'Reject Host' : 'Suspend Host'}
+                </h3>
+                <button 
+                  onClick={() => {
+                    setShowReasonModal(false);
+                    setReason('');
+                    setSelectedHost(null);
+                    setNewStatus('');
+                  }} 
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Host</p>
+                <p className="font-semibold">{selectedHost?.userId?.name}</p>
+                <p className="text-sm text-gray-600">{selectedHost?.userId?.email}</p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for {newStatus === 'rejected' ? 'rejection' : 'suspension'} *
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={`Enter reason for ${newStatus === 'rejected' ? 'rejecting' : 'suspending'} this host...`}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows="4"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowReasonModal(false);
+                    setReason('');
+                    setSelectedHost(null);
+                    setNewStatus('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmStatusChange}
+                  disabled={!reason.trim()}
+                  className={`flex-1 px-4 py-2 text-white rounded-lg font-semibold transition-colors ${
+                    newStatus === 'rejected' 
+                      ? 'bg-red-600 hover:bg-red-700 disabled:opacity-50' 
+                      : 'bg-orange-600 hover:bg-orange-700 disabled:opacity-50'
+                  }`}
+                >
+                  {newStatus === 'rejected' ? 'Reject Host' : 'Suspend Host'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
 
   const UsersListTab = () => (
     <div className="space-y-6">
@@ -1107,6 +1298,7 @@ const AdminPanel = () => {
                   {activeSubTab === 'history' && <CallHistoryTab />}
                 </>
               )}
+              {activeTab === 'photo-approvals' && <PhotoApprovalPanel />}
             </>
           )}
         </div>

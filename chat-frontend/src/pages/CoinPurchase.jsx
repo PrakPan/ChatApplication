@@ -68,7 +68,7 @@ export const CoinPurchase = () => {
       const { order, package: packageData } = data;
 
       const options = {
-        key: "rzp_test_Rg6uxquiilZAWe",
+        key: "rzp_test_Rg6uxquiilZAWe", 
         amount: order.amount,
         currency: order.currency,
         name: 'VideoCall Platform',
