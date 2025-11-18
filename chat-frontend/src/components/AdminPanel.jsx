@@ -189,7 +189,7 @@ useEffect(() => {
 
     try {
       const endpoint = selectedUser.type === 'host' 
-        ? `/admin/hosts/${selectedUser._id}/add-coins`
+        ? `/admin/users/${selectedUser._id}/add-coins`
         : `/admin/users/${selectedUser._id}/add-coins`;
       
       await api.post(endpoint, { amount, reason });
