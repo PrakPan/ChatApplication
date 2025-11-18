@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const photoSchema = require('./photoSchema');
 
 const hostSchema = new mongoose.Schema({
   userId: {
@@ -50,14 +51,13 @@ const hostSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  photos: [{
-    type: String
-  }],
+  photos: [photoSchema],
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected', 'suspended'],
     default: 'pending'
   },
+  rejectionReason: String,
   bankDetails: {
     accountName: String,
     accountNumber: String,
@@ -75,9 +75,25 @@ const hostSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
-// hostSchema.index({ userId: 1 });
-// hostSchema.index({ isOnline: 1, status: 1 });
-// hostSchema.index({ rating: -1 });
+// Virtual to get approved photos count
+hostSchema.virtual('approvedPhotosCount').get(function() {
+  return this.photos.filter(photo => photo.approvalStatus === 'approved').length;
+});
+
+// Method to check if host can go online
+hostSchema.methods.canGoOnline = function() {
+  return this.status === 'approved' && this.approvedPhotosCount >= 3;
+};
+
+// Pre-save hook to auto-approve host if they have 3+ approved photos
+hostSchema.pre('save', function(next) {
+  if (this.isModified('photos')) {
+    const approvedCount = this.photos.filter(photo => photo.approvalStatus === 'approved').length;
+    if (approvedCount >= 3 && this.status === 'pending') {
+      this.status = 'approved';
+    }
+  }
+  next();
+});
 
 module.exports = mongoose.model('Host', hostSchema);

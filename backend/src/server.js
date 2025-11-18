@@ -29,6 +29,7 @@ const hostRoutes = require('./routes/hostRoutes');
 const coinRoutes = require('./routes/coinRoutes');
 const callRoutes = require('./routes/callRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const photoApprovalRoutes = require("./routes/photoApproval")
 
 // Initialize express
 const app = express();
@@ -61,7 +62,18 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://chat-application-khaki-two.vercel.app',
+  origin:  process.env.CLIENT_URL || 'https://chat-application-khaki-two.vercel.app',
+  credentials: true
+}));
+
+app.use(cors({
+  origin: [
+    'https://chat-application-khaki-two.vercel.app',
+    'https://your-second-domain.com',
+    'https://your-third-domain.com',
+    'http://localhost:3000',
+    'http://localhost:5173',process.env.CLIENT_URL,'https://catlive.in','https://www.catlive.in','https://catlive.in/','https://www.catlive.in/'
+  ],
   credentials: true
 }));
 
@@ -106,6 +118,7 @@ app.use('/api/v1/hosts', hostRoutes);
 app.use('/api/v1/coins', coinRoutes);
 app.use('/api/v1/calls', callRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/admin', photoApprovalRoutes);
 
 // Socket.io handler
 socketHandler(io);

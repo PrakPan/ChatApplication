@@ -8,7 +8,7 @@ const validators = {
     password: Joi.string().min(8).required(),
     role: Joi.string().valid('user', 'host').default('user'),
     // Host-specific optional fields
-    bio: Joi.string().max(500).optional(),
+    bio: Joi.string().max(500).min(0).optional(),
     ratePerMinute: Joi.number().min(10).optional(),
     languages: Joi.array().items(Joi.string()).optional(),
     interests: Joi.array().items(Joi.string()).optional()

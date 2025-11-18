@@ -56,7 +56,8 @@ const {
   getPendingWithdrawals,
   processWithdrawal,
   rejectWithdrawal,
-  getRevenueStats
+  getRevenueStats,
+  updateHostStatus
 } = require('../controllers/adminController');
 
 // Middleware to check if user is admin
@@ -109,5 +110,9 @@ router.get('/leaderboard', getWeeklyLeaderboard);
 router.get('/withdrawals/pending', getPendingWithdrawals);
 router.post('/withdrawals/:withdrawalId/process', processWithdrawal);
 router.post('/withdrawals/:withdrawalId/reject', rejectWithdrawal);
+
+
+router.patch('/hosts/:hostId/status', updateHostStatus);
+
 
 module.exports = router;

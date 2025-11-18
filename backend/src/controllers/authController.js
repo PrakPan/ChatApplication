@@ -6,16 +6,22 @@ const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = requir
 const logger = require('../utils/logger');
 
 const register = asyncHandler(async (req, res) => {
-
-  console.log('Received body:', req.body); // Add this line
-  console.log('Name:', req.body.name, 'Type:', typeof req.body.name); // Add this
-  console.log('Email:', req.body.email, 'Type:', typeof req.body.email); // Add this
-  console.log('Phone:', req.body.phone, 'Type:', typeof req.body.phone); // Add this
-  console.log('Password:', req.body.password ? 'EXISTS' : 'MISSING'); // Ad
+  console.log('Received registration request:', req.body);
+  
   const { name, email, phone, password, role, bio, ratePerMinute, languages, interests } = req.body;
 
-  if (!name?.trim() || !email?.trim() || !phone?.trim() || !password) {
-    throw new ApiError(400, 'Please provide all required fields: name, email, phone, password');
+  // Validate required fields - be more explicit
+  if (!name || name.trim() === '') {
+    throw new ApiError(400, 'Name is required');
+  }
+  if (!email || email.trim() === '') {
+    throw new ApiError(400, 'Email is required');
+  }
+  if (!phone || phone.trim() === '') {
+    throw new ApiError(400, 'Phone number is required');
+  }
+  if (!password || password.trim() === '') {
+    throw new ApiError(400, 'Password is required');
   }
 
   // Password validation
@@ -23,10 +29,28 @@ const register = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Password must be at least 8 characters');
   }
 
+  // Email format validation
+  const emailRegex = /^\S+@\S+\.\S+$/;
+  if (!emailRegex.test(email)) {
+    throw new ApiError(400, 'Please provide a valid email address');
+  }
+
+  // Phone format validation (10 digits)
+  const phoneRegex = /^[0-9]{10}$/;
+  if (!phoneRegex.test(phone)) {
+    throw new ApiError(400, 'Phone number must be exactly 10 digits');
+  }
+
   // Check if user exists
-  const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+  const existingUser = await User.findOne({ 
+    $or: [
+      { email: email.toLowerCase().trim() }, 
+      { phone: phone.trim() }
+    ] 
+  });
+  
   if (existingUser) {
-    if (existingUser.email === email) {
+    if (existingUser.email === email.toLowerCase().trim()) {
       throw new ApiError(400, 'Email already registered');
     }
     throw new ApiError(400, 'Phone number already registered');
@@ -34,10 +58,10 @@ const register = asyncHandler(async (req, res) => {
 
   // Create user (password will be automatically hashed by User model pre-save hook)
   const user = await User.create({
-    name,
-    email,
-    phone,
-    password, 
+    name: name.trim(),
+    email: email.toLowerCase().trim(),
+    phone: phone.trim(),
+    password: password, // Don't hash here - model middleware will handle it
     role: role || 'user'
   });
  
@@ -66,7 +90,7 @@ const register = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 201, `${role === 'host' ? 'Host' : 'User'} registered successfully`, {
     user: {
       ...user.toJSON(),
-      userId: user.userId // Include the alphanumeric ID in response
+      userId: user.userId
     },
     hostProfile,
     token: accessToken,
@@ -75,8 +99,9 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body; // credential can be userId, email, or phone
+  const { email, password } = req.body;
   const credential = email;
+  
   // Validate input
   if (!credential || !password) {
     throw new ApiError(400, 'Please provide login credentials and password');
@@ -251,7 +276,6 @@ const changePassword = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Password changed successfully');
 });
 
-// New endpoint to check if credential is available
 const checkAvailability = asyncHandler(async (req, res) => {
   const { email, phone } = req.query;
 

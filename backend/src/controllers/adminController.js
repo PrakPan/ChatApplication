@@ -731,6 +731,51 @@ const updateUserLevel = asyncHandler(async (req, res) => {
   });
 });
 
+const updateHostStatus = asyncHandler(async (req, res) => {
+  const { hostId } = req.params;
+  const { status, reason } = req.body;
+
+  const validStatuses = ['pending', 'approved', 'rejected', 'suspended'];
+  
+  if (!validStatuses.includes(status)) {
+    throw new ApiError(400, 'Invalid status');
+  }
+
+  const host = await Host.findById(hostId).populate('userId', 'name email');
+  if (!host) {
+    throw new ApiError(404, 'Host not found');
+  }
+
+  // Store the previous status for logging
+  const previousStatus = host.status;
+  
+  host.status = status;
+  
+  // Add reason if provided (especially for rejections/suspensions)
+  if (reason) {
+    host.rejectionReason = reason;
+  }
+
+  await host.save();
+
+  logger.info(`Host status updated: ${hostId} from ${previousStatus} to ${status} by admin`);
+
+  // Send email notifications for status changes
+  try {
+    if (status === 'approved' && previousStatus !== 'approved') {
+      // await sendHostApprovalEmail(host.userId, host);
+    } else if (status === 'rejected') {
+      // await sendHostRejectionEmail(host.userId, reason || 'No reason provided');
+    } else if (status === 'suspended') {
+      // await sendHostSuspensionEmail(host.userId, reason || 'Account suspended by admin');
+    }
+  } catch (error) {
+    logger.error(`Failed to send status email: ${error.message}`);
+  }
+
+  ApiResponse.success(res, 200, `Host status updated to ${status}`, { host });
+});
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -755,5 +800,6 @@ module.exports = {
   processWithdrawal,
   rejectWithdrawal,
   getRevenueStats,
+  updateHostStatus,
   toggleUserStatus  // if you have this route
 };

@@ -5,6 +5,7 @@ const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const { uploadToCloudinary } = require('../config/cloudinary');
 const logger = require('../utils/logger');
+const Level = require('../models/Level');
 
 const createHostProfile = asyncHandler(async (req, res) => {
   const { bio, ratePerMinute, languages, interests, bankDetails } = req.body;
@@ -242,6 +243,150 @@ const getHostCallHistory = asyncHandler(async (req, res) => {
   });
 });
 
+const getAllHosts = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, search = '', status, isOnline } = req.query;
+
+  const query = {};
+  if (status) query.status = status;
+  if (isOnline !== undefined) query.isOnline = isOnline === 'true';
+
+  const hosts = await Host.find(query)
+    .populate('userId', 'name email phone avatar')
+    .sort({ createdAt: -1 })
+    .limit(limit * 1)
+    .skip((page - 1) * limit)
+    .lean();
+
+  // Filter by search if provided
+  let filteredHosts = hosts;
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filteredHosts = hosts.filter(h => 
+      h.userId?.name?.toLowerCase().includes(searchLower) ||
+      h.userId?.email?.toLowerCase().includes(searchLower) ||
+      h._id.toString().includes(search)
+    );
+  }
+
+  // Populate with level information
+  const userIds = filteredHosts.map(h => h.userId?._id).filter(Boolean);
+  const levels = await Level.find({ userId: { $in: userIds } });
+  const levelMap = {};
+  levels.forEach(l => {
+    levelMap[l.userId.toString()] = l.currentLevel;
+  });
+
+  const hostsWithLevel = filteredHosts.map(h => ({
+    ...h,
+    level: levelMap[h.userId?._id?.toString()] || 1
+  }));
+
+  const total = await Host.countDocuments(query);
+
+  ApiResponse.success(res, 200, 'Hosts retrieved', {
+    hosts: hostsWithLevel,
+    pagination: {
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit)
+    }
+  });
+});
+
+// Toggle host online/offline status
+const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const user = await User.findById(userId);
+
+  // Check if user is a host
+  if (user.role !== 'host') {
+    throw new ApiError(403, 'Only hosts can toggle online status');
+  }
+
+  // Find host profile
+  const host = await Host.findOne({ userId });
+  
+  if (!host) {
+    throw new ApiError(404, 'Host profile not found');
+  }
+
+  // Check if host is approved
+  if (host.status !== 'approved') {
+    throw new ApiError(403, 'Host profile must be approved to go online');
+  }
+
+  // Toggle the online status
+  host.isOnline = !host.isOnline;
+  await host.save();
+
+  ApiResponse.success(res, 200, `Host is now ${host.isOnline ? 'online' : 'offline'}`, {
+    isOnline: host.isOnline,
+    host: {
+      ...host.toObject(),
+      userId: host.userId
+    }
+  });
+});
+
+// Get specific host by ID
+const getHostById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const host = await Host.findById(id).populate('userId', 'name email phone avatar');
+  
+  if (!host) {
+    throw new ApiError(404, 'Host not found');
+  }
+
+  // Get level information
+  const level = await Level.findOne({ userId: host.userId._id });
+
+  ApiResponse.success(res, 200, 'Host retrieved', {
+    host: {
+      ...host.toObject(),
+      level: level?.currentLevel || 1
+    }
+  });
+});
+
+
+const saveHostPhotos = asyncHandler(async (req, res) => {
+  console.log('Request body:', req.body);
+  
+  let { photos } = req.body;
+
+  if (!photos || !Array.isArray(photos) || photos.length === 0) {
+    throw new ApiError(400, 'No photo URLs provided');
+  }
+
+  // Validate that all items are strings (URLs)
+  const allStrings = photos.every(photo => typeof photo === 'string');
+  if (!allStrings) {
+    throw new ApiError(400, 'All photos must be URL strings');
+  }
+
+  const host = await Host.findOne({ userId: req.user._id });
+  if (!host) {
+    throw new ApiError(404, 'Host profile not found');
+  }
+
+  // Push each URL as a subdocument with approval status
+  photos.forEach(url => {
+    host.photos.push({
+      url: url.trim(),
+      approvalStatus: 'pending',
+      uploadedAt: new Date()
+    });
+  });
+
+  // Save the document
+  await host.save();
+
+  logger.info(`Host photos saved: ${req.user.email} - ${photos.length} photos`);
+
+  ApiResponse.success(res, 200, 'Photos saved successfully', { photos: host.photos });
+});
+
 module.exports = {
   createHostProfile,
   updateHostProfile,
@@ -250,5 +395,9 @@ module.exports = {
   getOnlineHosts,
   getHostDetails,
   getHostEarnings,
-  getHostCallHistory
+  getHostCallHistory,
+  toggleHostOnlineStatus,
+  getHostById,
+  getAllHosts,
+  saveHostPhotos
 };

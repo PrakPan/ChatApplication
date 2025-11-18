@@ -8,7 +8,11 @@ const {
   getOnlineHosts,
   getHostDetails,
   getHostEarnings,
-  getHostCallHistory
+  getHostCallHistory,
+  toggleHostOnlineStatus,
+  getHostById,
+  getAllHosts,
+  saveHostPhotos
 } = require('../controllers/hostController');
 const { authenticate, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validation');
@@ -18,7 +22,8 @@ const upload = require('../middleware/upload');
 // Public routes
 router.get('/online', getOnlineHosts);
 router.get('/:hostId', getHostDetails);
-
+router.get('/', authenticate, getAllHosts);
+router.get('/:id', authenticate, getHostById);
 // Protected routes (authenticated users)
 router.use(authenticate);
 
@@ -29,5 +34,8 @@ router.post('/photos', authorize('host', 'admin'), upload.array('photos', 5), up
 router.put('/status', authorize('host', 'admin'), updateOnlineStatus);
 router.get('/me/earnings', authorize('host', 'admin'), getHostEarnings);
 router.get('/me/calls', authorize('host', 'admin'), getHostCallHistory);
+router.put('/toggle-online', authorize('host', 'admin'), toggleHostOnlineStatus);
+
+router.post('/photos/save', authorize('host', 'admin'), saveHostPhotos);
 
 module.exports = router;
