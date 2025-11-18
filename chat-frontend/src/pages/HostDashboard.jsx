@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coins, Search, Power, PowerOff, Camera } from 'lucide-react';
+import { Coins, Search, Power, PowerOff, Camera, Phone, PhoneOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
 import { VideoCallComponent } from '../components/VideoCall';
@@ -19,6 +19,7 @@ const HostDashboard = () => {
   const [hostProfile, setHostProfile] = useState(null);
   const [inCall, setInCall] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null); // ADD THIS STATE
   
   const { socket } = useSocket();
   const navigate = useNavigate();
@@ -31,21 +32,30 @@ const HostDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log('⚠️ Socket not available');
+      return;
+    }
+
+    console.log('👂 Setting up socket listeners for host');
+    console.log('🆔 Host socket ID:', socket.id);
 
     // Listen for incoming calls
     socket.on('call:offer', handleIncomingCall);
     socket.on('call:rejected', handleCallRejected);
     socket.on('call:ended', handleCallEnded);
     socket.on('call:cancelled', handleCallCancelled);
+    socket.on('call:answer', handleCallAnswer);
 
     return () => {
+      console.log('🧹 Cleaning up host socket listeners');
       socket.off('call:offer');
       socket.off('call:rejected');
       socket.off('call:ended');
       socket.off('call:cancelled');
+      socket.off('call:answer');
     };
-  }, [socket]);
+  }, [socket, isOnline]); // ADD isOnline dependency
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -55,8 +65,256 @@ const HostDashboard = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  console.log("User", user);
+  // ============= CALL HANDLERS =============
+  const handleIncomingCall = ({ from, offer, callId, caller }) => {
+    console.log('📞 HOST: Incoming call from:', from, 'caller:', caller);
+    
+    // Only accept calls if host is online
+    if (!isOnline) {
+      console.log('❌ Host is offline, rejecting call');
+      socket.emit('call:reject', { 
+        to: from, 
+        callId, 
+        reason: 'Host is offline' 
+      });
+      return;
+    }
 
+    // Show incoming call notification
+    setIncomingCall({
+      from,
+      offer,
+      callId,
+      caller: caller || { name: 'User' }
+    });
+
+    // Show toast notification
+    toast((t) => (
+      <div className="flex flex-col bg-white p-4 rounded-lg shadow-lg border">
+        <p className="font-semibold text-lg mb-2 text-gray-900">
+          📞 Incoming Call
+        </p>
+        <p className="text-gray-700 mb-3">
+          From: <strong>{caller?.name || 'User'}</strong>
+        </p>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              acceptIncomingCall(from, offer, callId);
+              toast.dismiss(t.id);
+            }}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+          >
+            <Phone className="w-4 h-4 inline mr-1" />
+            Accept
+          </button>
+          <button
+            onClick={() => {
+              rejectIncomingCall(from, callId);
+              toast.dismiss(t.id);
+            }}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
+            <PhoneOff className="w-4 h-4 inline mr-1" />
+            Reject
+          </button>
+        </div>
+      </div>
+    ), { 
+      duration: 30000,
+      position: 'top-center'
+    });
+  };
+
+  const acceptIncomingCall = (from, offer, callId) => {
+    console.log('✅ HOST: Accepting call from:', from);
+    setCurrentCall({ 
+      from, 
+      callId, 
+      offer, 
+      isIncoming: true,
+      isHost: true 
+    });
+    setIncomingCall(null);
+    setInCall(true);
+  };
+
+  const rejectIncomingCall = (from, callId) => {
+    console.log('❌ HOST: Rejecting call from:', from);
+    if (socket) {
+      socket.emit('call:reject', { 
+        to: from, 
+        callId, 
+        reason: 'Host declined call' 
+      });
+    }
+    setIncomingCall(null);
+    toast.success('Call rejected');
+  };
+
+  const handleCallRejected = ({ callId, reason }) => {
+    console.log('📞 HOST: Call rejected:', reason);
+    toast.error(`Call rejected: ${reason}`);
+    setInCall(false);
+    setCurrentCall(null);
+    setIncomingCall(null);
+  };
+
+  const handleCallEnded = ({ callId, reason }) => {
+    console.log('📞 HOST: Call ended:', reason);
+    setInCall(false);
+    setCurrentCall(null);
+    setIncomingCall(null);
+    toast.success('Call ended');
+    fetchHosts();
+  };
+
+  const handleCallCancelled = ({ callId, reason }) => {
+    console.log('📞 HOST: Call cancelled:', reason);
+    setIncomingCall(null);
+    toast.info(`Call cancelled: ${reason}`);
+  };
+
+  const handleCallAnswer = ({ from, answer }) => {
+    console.log('📞 HOST: Received answer from:', from);
+    // This will be handled by the VideoCallComponent
+  };
+
+  const handleEndCall = async () => {
+    console.log('☎️ HOST: Ending call:', currentCall);
+    
+    if (currentCall?.callId) {
+      try {
+        await callService.endCall(currentCall.callId);
+        if (socket) {
+          const recipientId = currentCall.from;
+          console.log('📤 HOST: Sending call:end to:', recipientId);
+          
+          socket.emit('call:end', { 
+            to: recipientId, 
+            callId: currentCall.callId 
+          });
+        }
+      } catch (error) {
+        console.error('HOST: Error ending call:', error);
+        toast.error('Failed to end call properly');
+      }
+    }
+    setInCall(false);
+    setCurrentCall(null);
+    fetchHosts();
+  };
+
+  const handleCallHost = async (host) => {
+    console.log('📞 HOST: Calling another host:', host);
+    
+    if (!user) {
+      toast.error('Please login first');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await callService.initiateCall(host._id);
+      const callData = response.data.call;
+      
+      console.log('📞 HOST: Call data:', callData);
+      
+      const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
+      
+      console.log('🆔 HOST: Using host user ID:', hostUserId);
+      
+      setCurrentCall({ 
+        callId: callData._id || callData.id, 
+        hostId: hostUserId,
+        host,
+        isIncoming: false,
+        isHost: false
+      });
+      setInCall(true);
+    } catch (error) {
+      console.error('❌ HOST: Error initiating call:', error);
+      toast.error(error.response?.data?.message || 'Failed to initiate call');
+    }
+  };
+
+  // ============= ONLINE STATUS HANDLERS =============
+  const checkPhotosAndToggle = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success && data.data.hostProfile) {
+        const currentHostProfile = data.data.hostProfile;
+        
+        // Check if host has uploaded at least one photo
+        if (!currentHostProfile.photos || currentHostProfile.photos.length === 0) {
+          setShowPhotoModal(true);
+          return false;
+        }
+        
+        // If photos exist, proceed with toggle
+        return await toggleOnlineStatus();
+      }
+    } catch (error) {
+      console.error('Failed to check photos:', error);
+      toast.error('Failed to check photo status');
+      return false;
+    }
+  };
+
+  const toggleOnlineStatus = async () => {
+    try {
+      setTogglingOnline(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/hosts/toggle-online`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        const newOnlineStatus = data.data.isOnline;
+        setIsOnline(newOnlineStatus);
+        toast.success(`You are now ${newOnlineStatus ? 'online' : 'offline'}`);
+        
+        // If going offline and there's an incoming call, reject it
+        if (!newOnlineStatus && incomingCall) {
+          rejectIncomingCall(incomingCall.from, incomingCall.callId);
+        }
+        
+        return true;
+      } else {
+        toast.error(data.message || 'Failed to toggle online status');
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to toggle online status:', error);
+      toast.error('Failed to toggle online status');
+      return false;
+    } finally {
+      setTogglingOnline(false);
+    }
+  };
+
+  const handleToggleOnline = async () => {
+    await checkPhotosAndToggle();
+  };
+
+  const handleUploadPhotos = () => {
+    setShowPhotoModal(false);
+    navigate('/profile?tab=photos');
+  };
+
+  // ============= USER DATA FETCHING =============
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -109,218 +367,10 @@ const HostDashboard = () => {
     }
   };
 
-  // ============= CALL HANDLERS =============
-  const handleIncomingCall = ({ from, offer, callId, caller }) => {
-    console.log('📞 Incoming call from:', from, 'caller:', caller);
-    
-    // Only show incoming call notification if host is online
-    if (!isOnline) return;
-
-    toast((t) => (
-      <div className="flex flex-col">
-        <p className="font-semibold mb-2">Incoming call from {caller?.name || 'User'}</p>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => {
-              acceptIncomingCall(from, offer, callId);
-              toast.dismiss(t.id);
-            }}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium"
-          >
-            Accept
-          </button>
-          <button
-            onClick={() => {
-              rejectIncomingCall(from, callId);
-              toast.dismiss(t.id);
-            }}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium"
-          >
-            Reject
-          </button>
-        </div>
-      </div>
-    ), { duration: 30000 });
-  };
-
-  const acceptIncomingCall = (from, offer, callId) => {
-    console.log('✅ Accepting call from:', from);
-    setCurrentCall({ 
-      from, 
-      callId, 
-      offer, 
-      isIncoming: true,
-      isHost: true 
-    });
-    setInCall(true);
-  };
-
-  const rejectIncomingCall = (from, callId) => {
-    console.log('❌ Rejecting call from:', from);
-    if (socket) {
-      socket.emit('call:reject', { 
-        to: from, 
-        callId, 
-        reason: 'Host declined call' 
-      });
-    }
-    toast.success('Call rejected');
-  };
-
-  const handleCallRejected = ({ callId, reason }) => {
-    console.log('📞 Call rejected:', reason);
-    toast.error(`Call rejected: ${reason}`);
-    setInCall(false);
-    setCurrentCall(null);
-  };
-
-  const handleCallEnded = ({ callId, reason }) => {
-    console.log('📞 Call ended:', reason);
-    setInCall(false);
-    setCurrentCall(null);
-    toast.success('Call ended');
-    fetchHosts(); // Refresh hosts list
-  };
-
-  const handleCallCancelled = ({ callId, reason }) => {
-    console.log('📞 Call cancelled:', reason);
-    toast.info(`Call cancelled: ${reason}`);
-    setInCall(false);
-    setCurrentCall(null);
-  };
-
-  const handleEndCall = async () => {
-    console.log('☎️ Ending call:', currentCall);
-    
-    if (currentCall?.callId) {
-      try {
-        await callService.endCall(currentCall.callId);
-        if (socket) {
-          const recipientId = currentCall.from;
-          console.log('📤 Sending call:end to:', recipientId);
-          
-          socket.emit('call:end', { 
-            to: recipientId, 
-            callId: currentCall.callId 
-          });
-        }
-      } catch (error) {
-        console.error('Error ending call:', error);
-        toast.error('Failed to end call properly');
-      }
-    }
-    setInCall(false);
-    setCurrentCall(null);
-    fetchHosts();
-  };
-
-  const handleCallHost = async (host) => {
-    console.log('📞 Calling host:', host);
-    
-    if (!user) {
-      toast.error('Please login first');
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const response = await callService.initiateCall(host._id);
-      const callData = response.data.call;
-      
-      console.log('📞 Call data:', callData);
-      console.log('📞 Host data:', host);
-      
-      const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
-      
-      console.log('🆔 Using host user ID:', hostUserId);
-      
-      setCurrentCall({ 
-        callId: callData._id || callData.id, 
-        hostId: hostUserId,
-        host,
-        isIncoming: false,
-        isHost: false
-      });
-      setInCall(true);
-    } catch (error) {
-      console.error('❌ Error initiating call:', error);
-      toast.error(error.response?.data?.message || 'Failed to initiate call');
-    }
-  };
-
-  // ============= ONLINE STATUS HANDLERS =============
-  const checkPhotosAndToggle = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/auth/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success && data.data.hostProfile) {
-        const currentHostProfile = data.data.hostProfile;
-        
-        // Check if host has uploaded at least one photo
-        if (!currentHostProfile.photos || currentHostProfile.photos.length === 0) {
-          setShowPhotoModal(true);
-          return false;
-        }
-        
-        // If photos exist, proceed with toggle
-        return await toggleOnlineStatus();
-      }
-    } catch (error) {
-      console.error('Failed to check photos:', error);
-      toast.error('Failed to check photo status');
-      return false;
-    }
-  };
-
-  const toggleOnlineStatus = async () => {
-    try {
-      setTogglingOnline(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/hosts/toggle-online`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        setIsOnline(data.data.isOnline);
-        toast.success(`You are now ${data.data.isOnline ? 'online' : 'offline'}`);
-        return true;
-      } else {
-        toast.error(data.message || 'Failed to toggle online status');
-        return false;
-      }
-    } catch (error) {
-      console.error('Failed to toggle online status:', error);
-      toast.error('Failed to toggle online status');
-      return false;
-    } finally {
-      setTogglingOnline(false);
-    }
-  };
-
-  const handleToggleOnline = async () => {
-    await checkPhotosAndToggle();
-  };
-
-  const handleUploadPhotos = () => {
-    setShowPhotoModal(false);
-    navigate('/profile?tab=photos');
-  };
-
   // ============= RENDER VIDEO CALL =============
   if (inCall && currentCall) {
     const remoteUserId = currentCall.hostId || currentCall.from;
-    console.log('🎥 Rendering video call with remote user:', remoteUserId);
+    console.log('🎥 HOST: Rendering video call with remote user:', remoteUserId);
     
     return (
       <VideoCallComponent
@@ -332,6 +382,52 @@ const HostDashboard = () => {
       />
     );
   }
+
+  // ============= INCOMING CALL MODAL =============
+  const IncomingCallModal = () => {
+    if (!incomingCall) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 animate-pulse">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
+              <Phone className="w-10 h-10 text-green-600" />
+            </div>
+            
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              Incoming Call
+            </h3>
+            
+            <p className="text-gray-600 mb-2 text-lg">
+              From: <strong>{incomingCall.caller.name}</strong>
+            </p>
+            
+            <p className="text-gray-500 text-sm mb-6">
+              You have 30 seconds to respond
+            </p>
+            
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => rejectIncomingCall(incomingCall.from, incomingCall.callId)}
+                className="flex-1 px-6 py-4 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <PhoneOff className="w-5 h-5" />
+                Reject
+              </button>
+              <button
+                onClick={() => acceptIncomingCall(incomingCall.from, incomingCall.offer, incomingCall.callId)}
+                className="flex-1 px-6 py-4 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Phone className="w-5 h-5" />
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Photo Upload Modal Component
   const PhotoUploadModal = () => (
@@ -525,6 +621,9 @@ const HostDashboard = () => {
 
       {/* Bottom Navigation Spacer */}
       <div className="h-20" />
+
+      {/* Incoming Call Modal */}
+      <IncomingCallModal />
 
       {/* Photo Upload Modal */}
       {showPhotoModal && <PhotoUploadModal />}
