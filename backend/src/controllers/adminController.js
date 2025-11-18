@@ -7,6 +7,7 @@ const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 const Level = require('../models/Level');
+const WeeklyLeaderboard = require('../models/WeeklyLeaderboard');
 
 
 
