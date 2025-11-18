@@ -62,18 +62,29 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin:  process.env.CLIENT_URL || 'https://chat-application-khaki-two.vercel.app',
-  credentials: true
-}));
-
-app.use(cors({
-  origin: [
-    'https://chat-application-khaki-two.vercel.app',
-    'https://your-second-domain.com',
-    'https://your-third-domain.com',
-    'http://localhost:3000',
-    'http://localhost:5173',process.env.CLIENT_URL,'https://catlive.in','https://www.catlive.in','https://catlive.in/','https://www.catlive.in/'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://chat-application-khaki-two.vercel.app',
+      'https://catlive.in',
+      'https://www.catlive.in',
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // You can also allow all origins in development
+      if (process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true
 }));
 
