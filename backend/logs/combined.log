@@ -430,3 +430,41 @@
 {"level":"info","message":"User disconnected: user1@example.com (8NP-k3l306Jazf-fAAAD)","service":"videocall-backend","timestamp":"2025-11-18 17:11:48"}
 {"level":"info","message":"User connected: user1@example.com (2ADQopVKZhmc0z6BAAAH)","service":"videocall-backend","timestamp":"2025-11-18 17:11:48"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-18 17:12:09"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-18 18:17:57"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-18 18:17:58"}
+{"level":"info","message":"User logged in: host1@example.com (userId: undefined)","service":"videocall-backend","timestamp":"2025-11-18 18:18:10"}
+{"level":"info","message":"User connected: host1@example.com (ol8_w3mzkMoiQGtHAAAB)","service":"videocall-backend","timestamp":"2025-11-18 18:18:10"}
+{"ip":"::1","level":"error","message":"Insufficient coin balance","method":"POST","service":"videocall-backend","stack":"Error: Insufficient coin balance\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:30:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-18 18:18:16","url":"/api/v1/calls/initiate"}
+{"ip":"::1","level":"error","message":"Insufficient coin balance","method":"POST","service":"videocall-backend","stack":"Error: Insufficient coin balance\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:30:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-18 18:18:23","url":"/api/v1/calls/initiate"}
+{"level":"info","message":"User connected: user1@example.com (-bGpgqs9cjD543sqAAAD)","service":"videocall-backend","timestamp":"2025-11-18 18:19:12"}
+{"level":"info","message":"User disconnected: user1@example.com (-bGpgqs9cjD543sqAAAD)","service":"videocall-backend","timestamp":"2025-11-18 18:19:12"}
+{"level":"info","message":"User connected: user1@example.com (R7j76_KHa4hwreiDAAAF)","service":"videocall-backend","timestamp":"2025-11-18 18:19:13"}
+{"level":"info","message":"Call initiated: User user1@example.com to Host 68ea759e76b8ec8d829ebc4f","service":"videocall-backend","timestamp":"2025-11-18 18:19:17"}
+{"level":"info","message":"Call offer sent from 68ea759576b8ec8d829ebc23 to 68ea759e76b8ec8d829ebc4d","service":"videocall-backend","timestamp":"2025-11-18 18:19:20"}
+{"level":"info","message":"Call ended by 68ea759576b8ec8d829ebc23","service":"videocall-backend","timestamp":"2025-11-18 18:19:57"}
+{"ip":"::1","level":"error","message":"Host validation failed: photos.0.url: Path `url` is required., photos.1.url: Path `url` is required., photos.2.url: Path `url` is required.","method":"POST","service":"videocall-backend","stack":"ValidationError: Host validation failed: photos.0.url: Path `url` is required., photos.1.url: Path `url` is required., photos.2.url: Path `url` is required.\n    at Document.invalidate (/Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/document.js:3362:32)\n    at Subdocument.invalidate (/Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/types/subdocument.js:229:12)\n    at /Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/document.js:3123:17\n    at /Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/schemaType.js:1417:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","statusCode":400,"timestamp":"2025-11-18 18:19:58","url":"/api/v1/calls/end"}
+{"level":"info","message":"User logged out: host1@example.com (userId: undefined)","service":"videocall-backend","timestamp":"2025-11-18 18:20:19"}
+{"level":"info","message":"User disconnected: host1@example.com (ol8_w3mzkMoiQGtHAAAB)","service":"videocall-backend","timestamp":"2025-11-18 18:20:19"}
+{"level":"info","message":"User logged in: user1@example.com (userId: undefined)","service":"videocall-backend","timestamp":"2025-11-18 18:20:34"}
+{"level":"info","message":"User connected: user1@example.com (xnt2NuTfxBXH2GrVAAAH)","service":"videocall-backend","timestamp":"2025-11-18 18:20:35"}
+{"level":"info","message":"Call initiated: User user1@example.com to Host 691c683fd68eb3bcc6721d1a","service":"videocall-backend","timestamp":"2025-11-18 18:20:44"}
+{"level":"info","message":"Call ended: 691c6ba49e1460e9cc5c5298, Duration: 1min, Coins: 50","service":"videocall-backend","timestamp":"2025-11-18 18:21:32"}
+{"level":"info","message":"Call initiated: User user1@example.com to Host 691c683fd68eb3bcc6721d1a","service":"videocall-backend","timestamp":"2025-11-18 18:21:42"}
+{"level":"info","message":"Call ended: 691c6bdd9e1460e9cc5c52bd, Duration: 1min, Coins: 50","service":"videocall-backend","timestamp":"2025-11-18 18:22:39"}
+{"level":"info","message":"Call initiated: User user1@example.com to Host 691c683fd68eb3bcc6721d1a","service":"videocall-backend","timestamp":"2025-11-18 18:22:59"}
+{"level":"info","message":"Call ended: 691c6c2b9e1460e9cc5c52e2, Duration: 1min, Coins: 50","service":"videocall-backend","timestamp":"2025-11-18 18:23:06"}
+{"level":"info","message":"Call initiated: User user1@example.com to Host 691c683fd68eb3bcc6721d1a","service":"videocall-backend","timestamp":"2025-11-18 18:23:10"}
+{"level":"info","message":"Call ended: 691c6c369e1460e9cc5c5307, Duration: 2min, Coins: 100","service":"videocall-backend","timestamp":"2025-11-18 18:24:21"}
+{"level":"info","message":"User disconnected: user1@example.com (R7j76_KHa4hwreiDAAAF)","service":"videocall-backend","timestamp":"2025-11-18 18:30:38"}
+{"level":"info","message":"User disconnected: user1@example.com (xnt2NuTfxBXH2GrVAAAH)","service":"videocall-backend","timestamp":"2025-11-18 18:35:34"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-18 18:59:05"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-18 19:06:04"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-18 22:46:11"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-18 23:25:15"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-18 23:44:56"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-19 00:04:28"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-19 01:23:17"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-19 01:34:52"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-19 09:27:27"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-19 09:51:51"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-19 10:01:51"}
