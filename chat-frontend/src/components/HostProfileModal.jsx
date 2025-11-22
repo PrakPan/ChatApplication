@@ -4,14 +4,23 @@ import { useState } from 'react';
 export const HostProfileModal = ({ host, onClose, onCall }) => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   
-  const user = host.userId || host.user;
-  const approvedPhotos = (host.photos || []).filter(photo => 
-    photo.approvalStatus === 'approved' || !photo.approvalStatus
-  );
+  const user = host.userId || host.user || {};
   
-  const displayPhoto = approvedPhotos[selectedPhotoIndex]?.url || 
-                       approvedPhotos[selectedPhotoIndex] || 
-                       user?.avatar;
+  console.log("Host",host)
+  const approvedPhotos = (host.photos || []).filter(photo => {
+    if (!photo) return false;
+    return photo.approvalStatus === 'approved' || !photo.approvalStatus;
+  });
+  
+  const getPhotoUrl = (photo) => {
+    if (!photo) return null;
+    return typeof photo === 'string' ? photo : photo.url;
+  };
+  
+  const displayPhoto = getPhotoUrl(approvedPhotos[selectedPhotoIndex]) || user?.avatar || 'https://via.placeholder.com/400x500?text=No+Photo';
+
+
+      
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -179,12 +188,12 @@ export const HostProfileModal = ({ host, onClose, onCall }) => {
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {host.isOnline ? '📞 Start Call' : 'Host is Offline'}
+            {host.isOnline && onCall ? '📞 Start Call' : onCall ? 'Host is Offline' : ''}
           </button>
 
           {!host.isOnline && (
             <p className="text-center text-sm text-gray-500">
-              This host is currently offline. Try again later!
+              This host is currently offline.
             </p>
           )}
         </div>

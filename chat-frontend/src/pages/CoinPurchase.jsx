@@ -120,7 +120,7 @@ export const CoinPurchase = () => {
             <button className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
               <ChevronLeft className="w-6 h-6 text-gray-700" onClick={() => window.history.back()} />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">Get More Coins</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Get More {user?.role == 'host' ? 'Diamonds' : 'Coins'}</h1>
             <div className="w-10" />
           </div>
         </div>
@@ -147,11 +147,11 @@ export const CoinPurchase = () => {
                 {/* Left Side - Coin Info */}
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center shadow-md">
-                    <Coins className="w-8 h-8" />
+                   {user?.role == 'host' ? <p className="text-lg text-purple-600">💎</p> :<Coins className="w-8 h-8" />}
                   </div>
                   <div>
                     <p className="text-lg font-bold text-gray-900">
-                      {pkg.coins.toLocaleString()} coins
+                      {pkg.coins.toLocaleString()} {user?.role == 'host' ? 'diamonds' : 'coins'}
                     </p>
                     {pkg.discount > 0 && (
                       <p className="text-xs text-green font-medium">

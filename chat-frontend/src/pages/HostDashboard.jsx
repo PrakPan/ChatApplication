@@ -6,6 +6,8 @@ import { VideoCallComponent } from '../components/VideoCall';
 import { useSocket } from '../hooks/useSocket';
 import { callService } from '../services/callService';
 import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
+import { HostProfileModal } from '../components/HostProfileModal';
 
 const HostDashboard = () => { 
   const [user, setUser] = useState(null);
@@ -20,6 +22,8 @@ const HostDashboard = () => {
   const [inCall, setInCall] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null); // ADD THIS STATE
+    const { logout } = useAuth();
+    const [selectedHost, setSelectedHost] = useState(null);
   
   const { socket } = useSocket();
   const navigate = useNavigate();
@@ -309,6 +313,11 @@ const HostDashboard = () => {
     await checkPhotosAndToggle();
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+  };
+
   const handleUploadPhotos = () => {
     setShowPhotoModal(false);
     navigate('/profile?tab=photos');
@@ -465,6 +474,8 @@ const HostDashboard = () => {
     </div>
   );
 
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -475,36 +486,43 @@ const HostDashboard = () => {
             <div className="flex items-center gap-3">
               {/* Online Toggle - Only for hosts */}
               {user?.role === 'host' && (
-                <button
-                  onClick={handleToggleOnline}
-                  disabled={togglingOnline || inCall}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${
-                    isOnline
-                      ? 'bg-green-50 border-green-500 text-green-700'
-                      : 'bg-gray-50 border-gray-300 text-gray-600'
-                  } ${togglingOnline || inCall ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
-                >
-                  {isOnline ? (
-                    <>
-                      <Power className="w-5 h-5" />
-                      <span className="font-semibold">Online</span>
-                    </>
-                  ) : (
-                    <>
-                      <PowerOff className="w-5 h-5" />
-                      <span className="font-semibold">Offline</span>
-                    </>
-                  )}
-                </button>
+        <div className="flex flex-row items-center gap-2">
+          <span className={`text-sm font-semibold ${
+            isOnline ? 'text-green-700' : 'text-gray-600'
+          }`}>
+            {isOnline ? 'Online' : 'Offline'}
+          </span>
+          
+          <button
+            onClick={handleToggleOnline}
+            disabled={togglingOnline || inCall}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-300 ${
+              isOnline ? 'bg-green-500' : 'bg-gray-300'
+            } ${togglingOnline || inCall ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                isOnline ? 'translate-x-7' : 'translate-x-1'
+              }`}
+            >
+              {isOnline ? (
+                <Power className="w-4 h-4 text-green-600 m-1" />
+              ) : (
+                <PowerOff className="w-4 h-4 text-gray-500 m-1" />
               )}
+            </span>
+          </button>
+        </div>
+      )}
               <ProfileMenu
                 user={user} 
-                onLogout={()=>{}}
+                onLogout={()=>{handleLogout();}}
                 onNavigateToProfile={() => navigate('/profile')}
               />
               {/* Coin Balance */}
               <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200 cursor-pointer" onClick={()=>navigate("/coins")}>
-                <Coins className="w-5 h-5 text-yellow-600" />
+                {/* <Coins className="w-5 h-5 text-yellow-600" /> */}
+                <p className="text-lg text-purple-600">💎</p>
                 <span className="font-semibold text-gray-900">
                   {host || 0}
                 </span>
@@ -537,20 +555,20 @@ const HostDashboard = () => {
             {hosts.map((host) => (
               <div
                 key={host._id}
-                onClick={() => handleCallHost(host)}
+                onClick={()=>{ setSelectedHost(host);}}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
               >
                 {/* Host Image */}
                 <div className="relative aspect-[3/4] bg-gradient-to-br from-purple-100 to-pink-100">
                   {host.userId?.avatar ? (
                     <img
-                      src={host.userId.avatar}
+                      src={host.userId.avatar || host?.photos?.[0]?.url}
                       alt={host.userId?.name}
                       className="w-full h-full object-cover"
                     />
                   ) : host.photos?.[0] ? (
                     <img
-                      src={host.photos[0]}
+                      src={host.photos[0]?.url}
                       alt={host.userId?.name}
                       className="w-full h-full object-cover"
                     />
@@ -627,6 +645,15 @@ const HostDashboard = () => {
 
       {/* Photo Upload Modal */}
       {showPhotoModal && <PhotoUploadModal />}
+
+
+            {selectedHost && (
+        <HostProfileModal
+          host={selectedHost}
+          onClose={() => setSelectedHost(null)}
+          // onCall={handleCallHost}
+        />
+      )}
     </div>
   );
 }

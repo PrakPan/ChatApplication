@@ -12,7 +12,7 @@ import { ProfileMenu } from './ProfileMenu';
 import { HostProfileModal } from '../components/HostProfileModal';
 
 export const Home = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
   const [hosts, setHosts] = useState([]);
@@ -186,6 +186,11 @@ export const Home = () => {
     );
   }
 
+  const handleLogout = ()=>{
+    logout();
+    toast.success("Logout Successfully");
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -194,7 +199,7 @@ export const Home = () => {
           <h1 className="text-xl font-bold text-gray-900">Live Hosts</h1>
           <ProfileMenu
   user={user} 
-  onLogout={()=>{}}
+  onLogout={()=>{handleLogout()}}
   onNavigateToProfile={() => navigate('/profile')}
 />
           <button 
