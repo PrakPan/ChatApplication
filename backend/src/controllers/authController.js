@@ -211,6 +211,7 @@ const getProfile = asyncHandler(async (req, res) => {
   let hostProfile = null;
   if (user.role === 'host') {
     hostProfile = await Host.findOne({ userId: user._id });
+    console.log("Host profile",hostProfile);
   }
 
   ApiResponse.success(res, 200, 'Profile retrieved successfully', {
