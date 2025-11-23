@@ -29,14 +29,19 @@ export const HostCard = ({ host, onCall, onViewProfile }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Online Status Badge */}
-        {host.isOnline && (
+        {host.isOnline ? (
           <div className="absolute top-3 right-3 z-10">
             <div className="relative">
               <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75" />
               <div className="relative w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-lg" />
             </div>
           </div>
-        )}
+        ) : <div className="absolute top-3 right-3 z-10">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gray-400 rounded-full animate-ping opacity-75" />
+              <div className="relative w-3 h-3 bg-gray-500 rounded-full border-2 border-white shadow-lg" />
+            </div>
+          </div>}
 
         {/* Rating Badge */}
         {host.rating > 0 && (

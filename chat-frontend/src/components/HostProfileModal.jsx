@@ -1,4 +1,5 @@
 import { X, Star, DollarSign, Globe, MapPin, Check, Clock, Phone } from 'lucide-react';
+import { CgProfile } from "react-icons/cg";
 import { useState } from 'react';
 
 export const HostProfileModal = ({ host, onClose, onCall }) => {
@@ -99,6 +100,13 @@ export const HostProfileModal = ({ host, onClose, onCall }) => {
                 <DollarSign className="w-4 h-4 text-green-600" />
                 <span className="font-semibold text-gray-900">
                   {host.ratePerMinute} coins/min
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-sm">
+                <CgProfile className="w-4 h-4 text-green-600" />
+                <span className="font-semibold text-gray-900">
+                  Id: {host?.userId?.userId} 
                 </span>
               </div>
             </div>

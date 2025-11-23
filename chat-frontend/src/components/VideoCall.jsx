@@ -15,14 +15,9 @@ import toast from 'react-hot-toast';
 
 const FILTERS = [
   { id: 'none', name: 'None', filter: 'none' },
-  { id: 'grayscale', name: 'B&W', filter: 'grayscale(100%)' },
-  { id: 'sepia', name: 'Vintage', filter: 'sepia(80%)' },
-  { id: 'warm', name: 'Warm', filter: 'saturate(1.3) contrast(1.1) brightness(1.05)' },
-  { id: 'cool', name: 'Cool', filter: 'hue-rotate(180deg) saturate(1.2)' },
-  { id: 'vivid', name: 'Vivid', filter: 'saturate(1.5) contrast(1.2)' },
-  { id: 'soft', name: 'Soft', filter: 'brightness(1.1) contrast(0.9) saturate(0.8)' },
-  { id: 'dramatic', name: 'Drama', filter: 'contrast(1.4) saturate(0.8) brightness(0.9)' },
-  { id: 'blur', name: 'Bokeh', filter: 'blur(0px)', hasBackground: true },
+  { id: 'beautiful', name: 'Beautiful', filter: 'brightness(1.1) contrast(1.05) saturate(1.2) blur(0.3px)' },
+  { id: 'cute', name: 'Cute', filter: 'brightness(1.15) saturate(1.3) contrast(0.95) hue-rotate(-5deg)' },
+  { id: 'white', name: 'Fair', filter: 'brightness(1.2) contrast(1.1) saturate(0.9)' },
 ];
 
 export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false, incomingOffer = null }) => {
@@ -35,17 +30,19 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
     endCall,
     toggleAudio,
     toggleVideo,
+    changeFilter,
+    canvasRef: webRTCCanvasRef,
+    videoRef: webRTCVideoRef,
   } = useWebRTC();
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const canvasRef = useRef(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('none');
-  const [facingMode, setFacingMode] = useState('user'); // 'user' or 'environment'
+  const [facingMode, setFacingMode] = useState('user');
   const [availableCameras, setAvailableCameras] = useState([]);
 
   // Get available cameras
@@ -86,7 +83,6 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
       } catch (error) {
         console.error('Failed to initialize call:', error);
         
-        // Check if it's a permission error
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
           toast.error('Camera/microphone access denied. Please allow permissions and refresh.');
         } else if (error.name === 'NotFoundError') {
@@ -102,13 +98,19 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
     initCall();
   }, []);
 
-  // Update local video with filter
+  // Update local video and apply current filter
   useEffect(() => {
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
       console.log('🎥 Local video stream attached');
+      
+      // Apply current filter to the video element
+      const filter = FILTERS.find(f => f.id === selectedFilter);
+      if (filter) {
+        localVideoRef.current.style.filter = filter.filter !== 'none' ? filter.filter : 'none';
+      }
     }
-  }, [localStream]);
+  }, [localStream, selectedFilter]);
 
   // Update remote video
   useEffect(() => {
@@ -155,12 +157,10 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
     try {
       const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
       
-      // Stop current tracks
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
 
-      // Get new stream with different camera
       const constraints = {
         video: { 
           facingMode: newFacingMode,
@@ -172,14 +172,9 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
 
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      // Update local video
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = newStream;
       }
-
-      // Update the stream in WebRTC connection
-      // Note: You'll need to add this method to your useWebRTC hook
-      // to replace video track in peer connection
       
       setFacingMode(newFacingMode);
       toast.success(`Switched to ${newFacingMode === 'user' ? 'front' : 'back'} camera`);
@@ -190,9 +185,30 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
   };
 
   const applyFilter = (filterId) => {
+    const filter = FILTERS.find(f => f.id === filterId);
+    
+    // Apply filter immediately to local video preview
+    if (localVideoRef.current) {
+      localVideoRef.current.style.filter = filter.filter !== 'none' ? filter.filter : 'none';
+    }
+    
+    // Also update the WebRTC canvas filter for remote stream
+    if (changeFilter) {
+      changeFilter(filter.filter);
+    }
+    
+    const previousFilter = selectedFilter;
     setSelectedFilter(filterId);
     setShowFilters(false);
-    toast.success(`Filter applied: ${FILTERS.find(f => f.id === filterId)?.name}`);
+    
+    if (previousFilter !== filterId) {
+      const filterName = filter?.name;
+      if (filterId === 'none') {
+        toast.success('Filter removed');
+      } else {
+        toast.success(`${filterName} filter applied`);
+      }
+    }
   };
 
   const formatDuration = (seconds) => {
@@ -205,6 +221,10 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      {/* Hidden canvas and video for filter processing */}
+      <canvas ref={webRTCCanvasRef} className="hidden" />
+      <video ref={webRTCVideoRef} className="hidden" />
+
       {/* Header */}
       <div className="bg-gradient-to-b from-black/80 to-transparent p-4 absolute top-0 left-0 right-0 z-10">
         <div className="flex justify-between items-center">
@@ -261,7 +281,7 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
           )}
         </div>
 
-        {/* Local Video (Picture-in-Picture) with Filter */}
+        {/* Local Video (Picture-in-Picture) */}
         <div className="absolute bottom-32 right-4 w-32 h-44 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
           <video
             ref={localVideoRef}
@@ -269,16 +289,13 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
             playsInline
             muted
             className="w-full h-full object-cover"
-            style={{
-              filter: currentFilter?.filter !== 'none' ? currentFilter?.filter : 'none'
-            }}
           />
           {!videoEnabled && (
             <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
               <VideoOff className="h-8 w-8 text-white" />
             </div>
           )}
-          {selectedFilter !== 'none' && videoEnabled && (
+          {selectedFilter !== 'none' && videoEnabled && isHost && (
             <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full">
               <span className="text-white text-xs flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
@@ -290,12 +307,12 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
       </div>
 
       {/* Filters Panel */}
-      {showFilters && (
+      {showFilters && isHost && (
         <div className="absolute bottom-28 left-0 right-0 bg-black/90 backdrop-blur-xl p-4 border-t border-white/10">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-white font-semibold flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
-              Filters
+              Beauty Filters
             </h3>
             <button
               onClick={() => setShowFilters(false)}
@@ -390,29 +407,33 @@ export const VideoCallComponent = ({ callId, remoteUserId, onEnd, isHost = false
             </button>
           )}
 
-          {/* Filters */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-3 rounded-full backdrop-blur-sm transition-all transform active:scale-95 ${
-              showFilters || selectedFilter !== 'none'
-                ? 'bg-purple-600 hover:bg-purple-700'
-                : 'bg-white/10 hover:bg-white/20'
-            }`}
-            title="Filters"
-          >
-            <Sparkles className="h-5 w-5 text-white" />
-          </button>
+          {/* Filters - Only for Host */}
+          {isHost && (
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-3 rounded-full backdrop-blur-sm transition-all transform active:scale-95 ${
+                showFilters || selectedFilter !== 'none'
+                  ? 'bg-purple-600 hover:bg-purple-700'
+                  : 'bg-white/10 hover:bg-white/20'
+              }`}
+              title="Beauty Filters"
+            >
+              <Sparkles className="h-5 w-5 text-white" />
+            </button>
+          )}
         </div>
 
         <div className="text-center mt-4">
           <p className="text-white/60 text-sm">
             {callStatus === 'connected' ? '🟢 Call in progress' : '🔄 Establishing connection...'}
           </p>
+          {isHost && selectedFilter !== 'none' && (
+            <p className="text-purple-400 text-xs mt-1">
+              ✨ {currentFilter?.name} filter active
+            </p>
+          )}
         </div>
       </div>
-
-      {/* Hidden canvas for advanced effects */}
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };

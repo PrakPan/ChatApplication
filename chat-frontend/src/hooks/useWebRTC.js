@@ -31,37 +31,13 @@ export const useWebRTC = () => {
   const remoteUserId = useRef(null);
   const pendingIceCandidates = useRef([]);
   const currentCallId = useRef(null);
-
-  // useEffect(() => {
-  //   const initCall = async () => {
-  //     console.log('🎬 Initializing call:', { 
-  //       // isHost, 
-  //       hasIncomingOffer: !!incomingOffer, 
-  //       remoteUserId, 
-  //       callId 
-  //     });
-      
-  //     try {
-  //       if (incomingOffer && remoteUserId) {
-  //         // This is the receiver - accept the incoming call
-  //         console.log('📲 Accepting incoming call from:', remoteUserId);
-  //         await acceptCall(remoteUserId, incomingOffer, callId);
-  //       } else if (callId && remoteUserId) {
-  //         // This is the caller - start a new call
-  //         console.log('📞 Starting outgoing call to:', remoteUserId);
-  //         await startCall(remoteUserId, callId);
-  //       } else {
-  //         console.error('❌ Missing required call parameters');
-  //       }
-  //     } catch (error) {
-  //       console.error('Failed to initialize call:', error);
-  //       toast.error('Failed to initialize call');
-  //       onEnd();
-  //     }
-  //   };
-
-  //   initCall();
-  // }, []);
+  
+  // New refs for filter processing
+  const originalStream = useRef(null);
+  const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const animationFrameId = useRef(null);
+  const currentFilter = useRef('none');
 
   const initializePeerConnection = useCallback(() => {
     console.log('🔧 Initializing peer connection');
@@ -124,6 +100,8 @@ export const useWebRTC = () => {
 
       console.log('✅ Got local stream with tracks:', 
         stream.getTracks().map(t => `${t.kind}: ${t.label}`));
+      
+      originalStream.current = stream;
       setLocalStream(stream);
       return stream;
     } catch (error) {
@@ -131,6 +109,93 @@ export const useWebRTC = () => {
       throw error;
     }
   };
+
+  // Apply filter to video stream
+  const applyFilterToStream = useCallback((filterCSS) => {
+    if (!originalStream.current || !canvasRef.current || !videoRef.current) {
+      return originalStream.current;
+    }
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    // Set video source
+    video.srcObject = originalStream.current;
+    video.play();
+
+    // Set canvas size to match video
+    canvas.width = 1280;
+    canvas.height = 720;
+
+    // Store current filter
+    currentFilter.current = filterCSS;
+
+    // Stop previous animation if exists
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+    }
+
+    const processFrame = () => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        // Apply CSS filter to context
+        ctx.filter = filterCSS;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+      animationFrameId.current = requestAnimationFrame(processFrame);
+    };
+
+    processFrame();
+
+    // Create new stream from canvas
+    const filteredStream = canvas.captureStream(30);
+    
+    // Add audio from original stream
+    const audioTracks = originalStream.current.getAudioTracks();
+    audioTracks.forEach(track => filteredStream.addTrack(track));
+
+    return filteredStream;
+  }, []);
+
+  // Update video track in peer connection
+  const updateVideoTrack = useCallback((newStream) => {
+    if (!peerConnection.current) return;
+
+    const senders = peerConnection.current.getSenders();
+    const videoSender = senders.find(sender => sender.track?.kind === 'video');
+    
+    if (videoSender) {
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      videoSender.replaceTrack(newVideoTrack);
+      console.log('🔄 Replaced video track with filtered stream');
+    }
+  }, []);
+
+  // Method to change filter
+  const changeFilter = useCallback((filterCSS) => {
+    console.log('🎨 Applying filter:', filterCSS);
+    
+    if (filterCSS === 'none') {
+      // Revert to original stream
+      if (originalStream.current && peerConnection.current) {
+        updateVideoTrack(originalStream.current);
+        setLocalStream(originalStream.current);
+        
+        // Stop animation
+        if (animationFrameId.current) {
+          cancelAnimationFrame(animationFrameId.current);
+          animationFrameId.current = null;
+        }
+      }
+    } else {
+      // Apply filter
+      const filteredStream = applyFilterToStream(filterCSS);
+      if (filteredStream) {
+        updateVideoTrack(filteredStream);
+        setLocalStream(filteredStream);
+      }
+    }
+  }, [applyFilterToStream, updateVideoTrack]);
 
   const startCall = async (hostId, callId) => {
     try {
@@ -253,6 +318,20 @@ export const useWebRTC = () => {
   const endCall = () => {
     console.log('☎️ Ending call');
     
+    // Stop animation frame
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+      animationFrameId.current = null;
+    }
+    
+    if (originalStream.current) {
+      originalStream.current.getTracks().forEach((track) => {
+        track.stop();
+        console.log('⏹️ Stopped original track:', track.kind);
+      });
+      originalStream.current = null;
+    }
+    
     if (localStream) {
       localStream.getTracks().forEach((track) => {
         track.stop();
@@ -280,6 +359,7 @@ export const useWebRTC = () => {
     remoteUserId.current = null;
     currentCallId.current = null;
     pendingIceCandidates.current = [];
+    currentFilter.current = 'none';
   };
 
   const rejectCall = (from, callId, reason = 'User declined') => {
@@ -289,8 +369,9 @@ export const useWebRTC = () => {
   };
 
   const toggleAudio = () => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
+    const stream = originalStream.current || localStream;
+    if (stream) {
+      const audioTrack = stream.getAudioTracks()[0];
       audioTrack.enabled = !audioTrack.enabled;
       console.log('🎤 Audio:', audioTrack.enabled ? 'enabled' : 'disabled');
       return audioTrack.enabled;
@@ -299,8 +380,9 @@ export const useWebRTC = () => {
   };
 
   const toggleVideo = () => {
-    if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
+    const stream = originalStream.current || localStream;
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
       videoTrack.enabled = !videoTrack.enabled;
       console.log('📹 Video:', videoTrack.enabled ? 'enabled' : 'disabled');
       return videoTrack.enabled;
@@ -326,7 +408,6 @@ export const useWebRTC = () => {
     // Handle incoming call offer
     socket.on('call:offer', ({ from, offer, callId, caller }) => {
       console.log('📞 ✅ Received call:offer from:', from, 'caller:', caller?.name, 'callId:', callId);
-      // Auto-accept for now - you can add UI confirmation later
       acceptCall(from, offer, callId);
     });
 
@@ -381,5 +462,8 @@ export const useWebRTC = () => {
     rejectCall,
     toggleAudio,
     toggleVideo,
+    changeFilter, 
+    canvasRef, 
+    videoRef,
   };
 };

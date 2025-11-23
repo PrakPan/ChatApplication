@@ -3,11 +3,11 @@ import { Coins, Search, Power, PowerOff, Camera, Phone, PhoneOff } from 'lucide-
 import { useNavigate } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
 import { VideoCallComponent } from '../components/VideoCall';
-import { useSocket } from '../hooks/useSocket';
-import { callService } from '../services/callService';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
 import { HostProfileModal } from '../components/HostProfileModal';
+import { callService } from '../services/callService';
+import { useSocket } from '../hooks/useSocket';
 
 const HostDashboard = () => { 
   const [user, setUser] = useState(null);
@@ -21,23 +21,25 @@ const HostDashboard = () => {
   const [hostProfile, setHostProfile] = useState(null);
   const [inCall, setInCall] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null); // ADD THIS STATE
-    const { logout } = useAuth();
-    const [selectedHost, setSelectedHost] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [selectedHost, setSelectedHost] = useState(null);
   
-  const { socket } = useSocket();
+  const { socket, connected, setHostOnlineStatus } = useSocket();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5500/api/v1';
 
+  // Fetch user and hosts on mount
   useEffect(() => {
     fetchUser();
     fetchHosts();
   }, []);
 
+  // Socket event listeners
   useEffect(() => {
-    if (!socket) {
-      console.log('⚠️ Socket not available');
+    if (!socket || !connected) {
+      console.log('⚠️ Socket not available or not connected');
       return;
     }
 
@@ -51,6 +53,17 @@ const HostDashboard = () => {
     socket.on('call:cancelled', handleCallCancelled);
     socket.on('call:answer', handleCallAnswer);
 
+    // Listen for host status changes
+    socket.on('host:offline', (data) => {
+      console.log('📡 Host went offline:', data);
+      fetchHosts(); // Refresh host list
+    });
+
+    socket.on('host:online', (data) => {
+      console.log('📡 Host came online:', data);
+      fetchHosts(); // Refresh host list
+    });
+
     return () => {
       console.log('🧹 Cleaning up host socket listeners');
       socket.off('call:offer');
@@ -58,9 +71,19 @@ const HostDashboard = () => {
       socket.off('call:ended');
       socket.off('call:cancelled');
       socket.off('call:answer');
+      socket.off('host:offline');
+      socket.off('host:online');
     };
-  }, [socket, isOnline]); // ADD isOnline dependency
+  }, [socket, connected, isOnline]);
 
+  // Update socket context when host online status changes
+  useEffect(() => {
+    if (user?.role === 'host') {
+      setHostOnlineStatus(isOnline);
+    }
+  }, [isOnline, user, setHostOnlineStatus]);
+
+  // Search debounce
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchHosts(searchQuery);
@@ -93,41 +116,41 @@ const HostDashboard = () => {
     });
 
     // Show toast notification
-    toast((t) => (
-      <div className="flex flex-col bg-white p-4 rounded-lg shadow-lg border">
-        <p className="font-semibold text-lg mb-2 text-gray-900">
-          📞 Incoming Call
-        </p>
-        <p className="text-gray-700 mb-3">
-          From: <strong>{caller?.name || 'User'}</strong>
-        </p>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => {
-              acceptIncomingCall(from, offer, callId);
-              toast.dismiss(t.id);
-            }}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
-          >
-            <Phone className="w-4 h-4 inline mr-1" />
-            Accept
-          </button>
-          <button
-            onClick={() => {
-              rejectIncomingCall(from, callId);
-              toast.dismiss(t.id);
-            }}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
-          >
-            <PhoneOff className="w-4 h-4 inline mr-1" />
-            Reject
-          </button>
-        </div>
-      </div>
-    ), { 
-      duration: 30000,
-      position: 'top-center'
-    });
+    // toast((t) => (
+    //   <div className="flex flex-col bg-white p-4 rounded-lg shadow-lg border">
+    //     <p className="font-semibold text-lg mb-2 text-gray-900">
+    //       📞 Incoming Call
+    //     </p>
+    //     <p className="text-gray-700 mb-3">
+    //       From: <strong>{caller?.name || 'User'}</strong>
+    //     </p>
+    //     <div className="flex space-x-2">
+    //       <button
+    //         onClick={() => {
+    //           acceptIncomingCall(from, offer, callId);
+    //           toast.dismiss(t.id);
+    //         }}
+    //         className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+    //       >
+    //         <Phone className="w-4 h-4 inline mr-1" />
+    //         Accept
+    //       </button>
+    //       <button
+    //         onClick={() => {
+    //           rejectIncomingCall(from, callId);
+    //           toast.dismiss(t.id);
+    //         }}
+    //         className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+    //       >
+    //         <PhoneOff className="w-4 h-4 inline mr-1" />
+    //         Reject
+    //       </button>
+    //     </div>
+    //   </div>
+    // ), { 
+    //   duration: 30000,
+    //   position: 'top-center'
+    // });
   };
 
   const acceptIncomingCall = (from, offer, callId) => {
@@ -313,7 +336,25 @@ const HostDashboard = () => {
     await checkPhotosAndToggle();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Mark host offline before logging out
+    if (isOnline && user?.role === 'host') {
+      try {
+        const token = localStorage.getItem('accessToken');
+        await fetch(`${API_URL}/hosts/toggle-online`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ forceOffline: true })
+        });
+        console.log('✅ Host marked offline on logout');
+      } catch (error) {
+        console.error('Failed to mark offline on logout:', error);
+      }
+    }
+    
     logout();
     toast.success('Logged out successfully');
   };
@@ -474,8 +515,6 @@ const HostDashboard = () => {
     </div>
   );
 
-
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -484,44 +523,53 @@ const HostDashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Live Hosts</h1>
             <div className="flex items-center gap-3">
+              {/* Socket Connection Indicator */}
+              {/* <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-xs text-gray-500">
+                  {connected ? 'Connected' : 'Disconnected'}
+                </span>
+              </div> */}
+
               {/* Online Toggle - Only for hosts */}
               {user?.role === 'host' && (
-        <div className="flex flex-row items-center gap-2">
-          <span className={`text-sm font-semibold ${
-            isOnline ? 'text-green-700' : 'text-gray-600'
-          }`}>
-            {isOnline ? 'Online' : 'Offline'}
-          </span>
-          
-          <button
-            onClick={handleToggleOnline}
-            disabled={togglingOnline || inCall}
-            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-300 ${
-              isOnline ? 'bg-green-500' : 'bg-gray-300'
-            } ${togglingOnline || inCall ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
-          >
-            <span
-              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                isOnline ? 'translate-x-7' : 'translate-x-1'
-              }`}
-            >
-              {isOnline ? (
-                <Power className="w-4 h-4 text-green-600 m-1" />
-              ) : (
-                <PowerOff className="w-4 h-4 text-gray-500 m-1" />
+                <div className="flex flex-row items-center gap-2">
+                  <span className={`text-sm font-semibold ${
+                    isOnline ? 'text-green-700' : 'text-gray-600'
+                  }`}>
+                    {isOnline ? 'Online' : 'Offline'}
+                  </span>
+                  
+                  <button
+                    onClick={handleToggleOnline}
+                    disabled={togglingOnline || inCall}
+                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-300 ${
+                      isOnline ? 'bg-green-500' : 'bg-gray-300'
+                    } ${togglingOnline || inCall ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'}`}
+                  >
+                    <span
+                      className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        isOnline ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    >
+                      {isOnline ? (
+                        <Power className="w-4 h-4 text-green-600 m-1" />
+                      ) : (
+                        <PowerOff className="w-4 h-4 text-gray-500 m-1" />
+                      )}
+                    </span>
+                  </button>
+                </div>
               )}
-            </span>
-          </button>
-        </div>
-      )}
+
               <ProfileMenu
                 user={user} 
-                onLogout={()=>{handleLogout();}}
+                onLogout={handleLogout}
                 onNavigateToProfile={() => navigate('/profile')}
               />
+
               {/* Coin Balance */}
-              <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200 cursor-pointer" onClick={()=>navigate("/coins")}>
-                {/* <Coins className="w-5 h-5 text-yellow-600" /> */}
+              <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200 cursor-pointer" onClick={() => navigate("/coins")}>
                 <p className="text-lg text-purple-600">💎</p>
                 <span className="font-semibold text-gray-900">
                   {host || 0}
@@ -552,37 +600,42 @@ const HostDashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {hosts.map((host) => (
+            {hosts.map((hostItem) => (
               <div
-                key={host._id}
-                onClick={()=>{ setSelectedHost(host);}}
+                key={hostItem._id}
+                onClick={() => setSelectedHost(hostItem)}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
               >
                 {/* Host Image */}
                 <div className="relative aspect-[3/4] bg-gradient-to-br from-purple-100 to-pink-100">
-                  {host.userId?.avatar ? (
+                  {hostItem.userId?.avatar ? (
                     <img
-                      src={host.userId.avatar || host?.photos?.[0]?.url}
-                      alt={host.userId?.name}
+                      src={hostItem.userId.avatar || hostItem?.photos?.[0]?.url}
+                      alt={hostItem.userId?.name}
                       className="w-full h-full object-cover"
                     />
-                  ) : host.photos?.[0] ? (
+                  ) : hostItem.photos?.[0] ? (
                     <img
-                      src={host.photos[0]?.url}
-                      alt={host.userId?.name}
+                      src={hostItem.photos[0]?.url}
+                      alt={hostItem.userId?.name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-purple-400">
-                      {host.userId?.name?.charAt(0) || '?'}
+                      {hostItem.userId?.name?.charAt(0) || '?'}
                     </div>
                   )}
                   
                   {/* Online Status Badge */}
-                  {host.isOnline && (
+                  {hostItem.isOnline ? (
                     <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-full shadow-sm">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                       <span className="text-xs font-medium text-gray-700">Online</span>
+                    </div>
+                  ) : (
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-full shadow-sm">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full" />
+                      <span className="text-xs font-medium text-gray-700">Offline</span>
                     </div>
                   )}
                 </div>
@@ -590,12 +643,12 @@ const HostDashboard = () => {
                 {/* Host Info */}
                 <div className="p-3">
                   <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">
-                    {host.userId?.name || 'Host'}
+                    {hostItem.userId?.name || 'Host'}
                   </h3>
                   
                   {/* Bio or Status */}
                   <p className="text-xs text-gray-500 mb-2 line-clamp-2 min-h-[2rem]">
-                    {host.bio || 'Available for call'}
+                    {hostItem.bio || 'Available for call'}
                   </p>
 
                   {/* Rate */}
@@ -603,15 +656,15 @@ const HostDashboard = () => {
                     <div className="flex items-center gap-1">
                       <Coins className="w-4 h-4 text-yellow-600" />
                       <span className="text-sm font-semibold text-gray-900">
-                        {host.ratePerMinute}
+                        {hostItem.ratePerMinute}
                       </span>
                       <span className="text-xs text-gray-500">coins/min</span>
                     </div>
-                    {host.rating > 0 && (
+                    {hostItem.rating > 0 && (
                       <div className="flex items-center gap-0.5">
                         <span className="text-yellow-500 text-sm">★</span>
                         <span className="text-xs font-medium text-gray-600">
-                          {host.rating.toFixed(1)}
+                          {hostItem.rating.toFixed(1)}
                         </span>
                       </div>
                     )}
@@ -646,12 +699,11 @@ const HostDashboard = () => {
       {/* Photo Upload Modal */}
       {showPhotoModal && <PhotoUploadModal />}
 
-
-            {selectedHost && (
+     
+      {selectedHost && (
         <HostProfileModal
           host={selectedHost}
           onClose={() => setSelectedHost(null)}
-          // onCall={handleCallHost}
         />
       )}
     </div>
