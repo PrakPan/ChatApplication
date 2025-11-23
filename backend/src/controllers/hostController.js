@@ -103,7 +103,7 @@ const getOnlineHosts = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, search = '', minRate, maxRate, languages } = req.query;
 
   const query = {
-    isOnline: true,
+    // isOnline: true,
     status: 'approved'
   };
 
@@ -248,11 +248,18 @@ const getAllHosts = asyncHandler(async (req, res) => {
 
   const query = {};
   if (status) query.status = status;
-  if (isOnline !== undefined) query.isOnline = isOnline === 'true';
+  // if (isOnline !== undefined) query.isOnline = isOnline === 'true';
+
+  if (req.user?.role === "host") {
+    query.userId = { $ne: req.user._id };
+  }
+
+  const sortOrder = { isOnline: -1, createdAt: -1 };
+
 
   const hosts = await Host.find(query)
-    .populate('userId', 'name email phone avatar')
-    .sort({ createdAt: -1 })
+    .populate('userId', 'name email phone avatar userId')
+    .sort(sortOrder)
     .limit(limit * 1)
     .skip((page - 1) * limit)
     .lean();
@@ -296,6 +303,8 @@ const getAllHosts = asyncHandler(async (req, res) => {
 // Toggle host online/offline status
 const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
   const userId = req.user._id;
+  const { forceOffline } = req.body;
+  
   const user = await User.findById(userId);
 
   // Check if user is a host
@@ -310,14 +319,69 @@ const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Host profile not found');
   }
 
-  // Check if host is approved
-  if (host.status !== 'approved') {
+  // If forceOffline is true, set to offline regardless of current state
+  if (forceOffline === true) {
+    if (host.isOnline) {
+      host.isOnline = false;
+      host.lastSeen = new Date();
+      await host.save();
+      
+      // Emit socket event if socket.io is available
+      if (req.io) {
+        req.io.emit('host:offline', { 
+          hostId: host._id,
+          userId: host.userId 
+        });
+      }
+      
+      logger.info(`Host force offline: ${req.user.email}`);
+    }
+    
+    return ApiResponse.success(res, 200, 'Host is now offline', {
+      isOnline: false,
+      host: {
+        ...host.toObject(),
+        userId: host.userId
+      }
+    });
+  }
+
+  // Check if host is approved (only when trying to go online)
+  if (!host.isOnline && host.status !== 'approved') {
     throw new ApiError(403, 'Host profile must be approved to go online');
   }
 
-  // Toggle the online status
+  // Check if host has uploaded at least one photo
+  if (!host.isOnline && (!host.photos || host.photos.length === 0)) {
+    throw new ApiError(403, 'Please upload at least one photo before going online');
+  }
+
+  // Toggle the online status normally
   host.isOnline = !host.isOnline;
+  
+  // Update lastSeen when going offline
+  if (!host.isOnline) {
+    host.lastSeen = new Date();
+  }
+  
   await host.save();
+
+  // Emit socket event
+  if (req.io) {
+    if (host.isOnline) {
+      req.io.emit('host:online', { 
+        hostId: host._id,
+        userId: host.userId 
+      });
+    } else {
+      req.io.emit('host:offline', { 
+        hostId: host._id,
+        userId: host.userId 
+      });
+    }
+  }
+
+  logger.info(`Host online status updated: ${req.user.email} - ${host.isOnline ? 'online' : 'offline'}`);
 
   ApiResponse.success(res, 200, `Host is now ${host.isOnline ? 'online' : 'offline'}`, {
     isOnline: host.isOnline,

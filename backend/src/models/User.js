@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 // Function to generate unique 6-character alphanumeric ID
 const generateUserId = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = '0123456789';
   let id = '';
   for (let i = 0; i < 6; i++) {
     id += chars.charAt(Math.floor(Math.random() * chars.length));

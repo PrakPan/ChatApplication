@@ -22,6 +22,10 @@ const hostSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  lastSeen: {
+    type: Date,
+    default: null
+  },
   isKycVerified: {
     type: Boolean,
     default: false
@@ -75,6 +79,10 @@ const hostSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Index for better query performance on online status and last seen
+hostSchema.index({ isOnline: 1, lastSeen: -1 });
+hostSchema.index({ userId: 1, isOnline: 1 });
+
 // Virtual to get approved photos count
 hostSchema.virtual('approvedPhotosCount').get(function() {
   return this.photos.filter(photo => photo.approvalStatus === 'approved').length;
@@ -85,14 +93,21 @@ hostSchema.methods.canGoOnline = function() {
   return this.status === 'approved' && this.approvedPhotosCount >= 3;
 };
 
-// Pre-save hook to auto-approve host if they have 3+ approved photos
+// Pre-save hook to update lastSeen when going offline
 hostSchema.pre('save', function(next) {
+  // Auto-approve host if they have 3+ approved photos
   if (this.isModified('photos')) {
     const approvedCount = this.photos.filter(photo => photo.approvalStatus === 'approved').length;
     if (approvedCount >= 3 && this.status === 'pending') {
       this.status = 'approved';
     }
   }
+  
+  // Update lastSeen when going offline
+  if (this.isModified('isOnline') && !this.isOnline) {
+    this.lastSeen = new Date();
+  }
+  
   next();
 });
 
