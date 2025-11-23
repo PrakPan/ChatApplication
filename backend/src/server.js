@@ -30,7 +30,7 @@ const coinRoutes = require('./routes/coinRoutes');
 const callRoutes = require('./routes/callRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const photoApprovalRoutes = require("./routes/photoApproval")
-
+const messageRoutes = require("./routes/messageRoutes")
 // Initialize express
 const app = express();
 const server = http.createServer(app);
@@ -130,6 +130,7 @@ app.use('/api/v1/coins', coinRoutes);
 app.use('/api/v1/calls', callRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin', photoApprovalRoutes);
+app.use('/api/v1/', messageRoutes);
 
 // Socket.io handler
 socketHandler(io);
