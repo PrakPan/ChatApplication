@@ -1,7 +1,7 @@
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
-const cloudinary = require('../config/cloudinary'); // Assuming cloudinary setup
+const cloudinary = require('../config/cloudinary');
 
 // Get all conversations for logged-in user
 exports.getConversations = async (req, res) => {
@@ -21,16 +21,19 @@ exports.getConversations = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    // Format response
+    // Format response to match frontend expectations
     const formattedConversations = conversations.map(conv => {
       const otherParticipant = conv.participants.find(
         p => p._id.toString() !== userId.toString()
       );
 
       return {
+        userId: otherParticipant, // Changed from 'participant' to 'userId' to match frontend
         conversationId: conv.conversationId,
-        participant: otherParticipant,
-        lastMessage: conv.lastMessage,
+        lastMessage: conv.lastMessage ? {
+          message: conv.lastMessage.content,
+          createdAt: conv.lastMessage.createdAt
+        } : null,
         lastMessageAt: conv.lastMessageAt,
         unreadCount: conv.unreadCount.get(userId.toString()) || 0,
         isPinned: conv.isPinned.get(userId.toString()) || false,
@@ -40,10 +43,12 @@ exports.getConversations = async (req, res) => {
 
     res.json({
       success: true,
-      conversations: formattedConversations,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(conversations.length / limit)
+      data: {
+        conversations: formattedConversations,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(conversations.length / limit)
+        }
       }
     });
   } catch (error) {
@@ -55,20 +60,30 @@ exports.getConversations = async (req, res) => {
   }
 };
 
-// Get specific conversation
+// Get or create specific conversation
 exports.getConversation = async (req, res) => {
   try {
     const userId = req.user._id;
     const { userId: otherUserId } = req.params;
 
+    // Validate other user exists
+    const otherUser = await User.findById(otherUserId);
+    if (!otherUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     const conversationId = Message.generateConversationId(userId, otherUserId);
     
     let conversation = await Conversation.findOne({ conversationId })
-      .populate('participants', 'name avatar userId isActive');
+      .populate('participants', 'name avatar userId isActive isOnline');
 
+    // If conversation doesn't exist, create it
     if (!conversation) {
       conversation = await Conversation.findOrCreate(userId, otherUserId);
-      await conversation.populate('participants', 'name avatar userId isActive');
+      await conversation.populate('participants', 'name avatar userId isActive isOnline');
     }
 
     const otherParticipant = conversation.participants.find(
@@ -77,10 +92,12 @@ exports.getConversation = async (req, res) => {
 
     res.json({
       success: true,
-      conversation: {
-        conversationId: conversation.conversationId,
-        participant: otherParticipant,
-        unreadCount: conversation.unreadCount.get(userId.toString()) || 0
+      data: {
+        conversation: {
+          conversationId: conversation.conversationId,
+          participant: otherParticipant,
+          unreadCount: conversation.unreadCount.get(userId.toString()) || 0
+        }
       }
     });
   } catch (error) {
@@ -126,14 +143,31 @@ exports.getMessages = async (req, res) => {
 
     const totalMessages = await Message.countDocuments(query);
 
+    // Format messages to match frontend expectations
+    const formattedMessages = messages.map(msg => ({
+      _id: msg._id,
+      senderId: msg.sender._id,
+      sender: msg.sender,
+      message: msg.content,
+      content: msg.content,
+      messageType: msg.messageType,
+      mediaUrl: msg.mediaUrl,
+      createdAt: msg.createdAt,
+      status: msg.status,
+      isRead: msg.status === 'read',
+      replyTo: msg.replyTo
+    }));
+
     res.json({
       success: true,
-      messages: messages.reverse(), // Return in chronological order
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalMessages / limit),
-        totalMessages,
-        hasMore: messages.length === parseInt(limit)
+      data: {
+        messages: formattedMessages.reverse(), // Return in chronological order
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalMessages / limit),
+          totalMessages,
+          hasMore: messages.length === parseInt(limit)
+        }
       }
     });
   } catch (error) {
@@ -145,7 +179,7 @@ exports.getMessages = async (req, res) => {
   }
 };
 
-// Send text message (REST API backup - primary is socket)
+// Send text message
 exports.sendMessage = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -185,21 +219,80 @@ exports.sendMessage = async (req, res) => {
       await message.populate('replyTo', 'content messageType sender');
     }
 
-    // Update conversation
-    const conversation = await Conversation.findOrCreate(userId, recipientId);
+    // Update or create conversation
+    let conversation = await Conversation.findOne({ conversationId });
+    if (!conversation) {
+      conversation = await Conversation.findOrCreate(userId, recipientId);
+    }
+    
     conversation.lastMessage = message._id;
     conversation.lastMessageAt = new Date();
+    await conversation.save();
     await conversation.incrementUnread(recipientId);
+
+    // Format response
+    const formattedMessage = {
+      _id: message._id,
+      senderId: message.sender._id,
+      sender: message.sender,
+      message: message.content,
+      content: message.content,
+      messageType: message.messageType,
+      createdAt: message.createdAt,
+      status: message.status
+    };
 
     res.status(201).json({
       success: true,
-      message: message.toJSON()
+      data: {
+        message: formattedMessage
+      }
     });
   } catch (error) {
     console.error('Error sending message:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to send message'
+    });
+  }
+};
+
+// Mark messages as read
+exports.markAsRead = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { userId: otherUserId } = req.params;
+
+    const conversationId = Message.generateConversationId(userId, otherUserId);
+
+    // Update all unread messages in this conversation
+    await Message.updateMany(
+      {
+        conversationId,
+        recipient: userId,
+        status: { $ne: 'read' }
+      },
+      {
+        status: 'read',
+        readAt: new Date()
+      }
+    );
+
+    // Reset unread count in conversation
+    const conversation = await Conversation.findOne({ conversationId });
+    if (conversation) {
+      await conversation.resetUnread(userId);
+    }
+
+    res.json({
+      success: true,
+      message: 'Messages marked as read'
+    });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark messages as read'
     });
   }
 };
@@ -249,11 +342,14 @@ exports.sendMediaMessage = async (req, res) => {
     const conversation = await Conversation.findOrCreate(userId, recipientId);
     conversation.lastMessage = message._id;
     conversation.lastMessageAt = new Date();
+    await conversation.save();
     await conversation.incrementUnread(recipientId);
 
     res.status(201).json({
       success: true,
-      message: message.toJSON()
+      data: {
+        message: message.toJSON()
+      }
     });
   } catch (error) {
     console.error('Error sending media message:', error);
@@ -355,8 +451,10 @@ exports.searchMessages = async (req, res) => {
 
     res.json({
       success: true,
-      messages,
-      count: messages.length
+      data: {
+        messages,
+        count: messages.length
+      }
     });
   } catch (error) {
     console.error('Error searching messages:', error);
@@ -383,7 +481,9 @@ exports.getUnreadCount = async (req, res) => {
 
     res.json({
       success: true,
-      unreadCount: totalUnread
+      data: {
+        unreadCount: totalUnread
+      }
     });
   } catch (error) {
     console.error('Error getting unread count:', error);
