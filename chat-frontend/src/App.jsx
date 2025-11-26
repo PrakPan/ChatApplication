@@ -8,6 +8,7 @@ import { Home } from './pages/Home';
 import { Profile } from './pages/Profile';
 import { CoinPurchase } from './pages/CoinPurchase';
 // import { CallHistory } from './pages/CallHistory';
+import MessagesPage from './pages/MessagingPage';
 
 import { useAuth } from './hooks/useAuth';
 import AdminPanel from './components/AdminPanel';
@@ -136,8 +137,9 @@ function AppRoutes() {
               path="/messages"
               element={
                 <ProtectedRoute>
-                  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                    <p className="text-gray-500">Messages - Coming Soon</p>
+                  <div className="w-full min-h-screen bg-gray-50 flex items-center justify-center">
+                    {/* <p className="text-gray-500">Messages - Coming Soon</p> */}
+                    <MessagesPage/>
                   </div>
                 </ProtectedRoute>
               }

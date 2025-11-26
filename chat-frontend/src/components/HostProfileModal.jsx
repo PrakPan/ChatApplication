@@ -1,13 +1,14 @@
-import { X, Star, DollarSign, Globe, MapPin, Check, Clock, Phone } from 'lucide-react';
+import { X, Star, DollarSign, Globe, Phone, MessageCircle } from 'lucide-react';
 import { CgProfile } from "react-icons/cg";
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export const HostProfileModal = ({ host, onClose, onCall }) => {
+export const HostProfileModal = ({ host, onClose, onCall, onMessage }) => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const navigate = useNavigate();
   
   const user = host.userId || host.user || {};
   
-  console.log("Host",host)
   const approvedPhotos = (host.photos || []).filter(photo => {
     if (!photo) return false;
     return photo.approvalStatus === 'approved' || !photo.approvalStatus;
@@ -20,8 +21,15 @@ export const HostProfileModal = ({ host, onClose, onCall }) => {
   
   const displayPhoto = getPhotoUrl(approvedPhotos[selectedPhotoIndex]) || user?.avatar || 'https://via.placeholder.com/400x500?text=No+Photo';
 
-
-      
+  const handleMessage = () => {
+    if (onMessage) {
+      onMessage(host);
+    } else {
+      // Navigate to messages page with this host
+      navigate('/messages', { state: { hostId: user._id || host._id } });
+    }
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -183,25 +191,40 @@ export const HostProfileModal = ({ host, onClose, onCall }) => {
             </div>
           )}
 
-          {/* Call Button */}
-          <button
-            onClick={() => {
-              onCall(host);
-              onClose();
-            }}
-            disabled={!host.isOnline}
-            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
-              host.isOnline
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {host.isOnline && onCall ? '📞 Start Call' : onCall ? 'Host is Offline' : ''}
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            {/* Message Button */}
+            <button
+              onClick={handleMessage}
+              className="flex-1 py-4 rounded-2xl font-bold text-lg bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 transition-all flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Message
+            </button>
 
-          {!host.isOnline && (
+            {/* Call Button */}
+            {onCall && (
+              <button
+                onClick={() => {
+                  onCall(host);
+                  onClose();
+                }}
+                disabled={!host.isOnline}
+                className={`flex-1 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
+                  host.isOnline
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Phone className="w-5 h-5" />
+                {host.isOnline ? 'Call' : 'Offline'}
+              </button>
+            )}
+          </div>
+
+          {!host.isOnline && onCall && (
             <p className="text-center text-sm text-gray-500">
-              This host is currently offline.
+              This host is currently offline. You can still send a message!
             </p>
           )}
         </div>

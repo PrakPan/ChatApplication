@@ -4,12 +4,13 @@ import { useAuth } from '../hooks/useAuth';
 import { useSocket } from '../hooks/useSocket';
 import { hostService } from '../services/hostService';
 import { callService } from '../services/callService';
+import { chatService } from '../services/chatService';
 import { HostCard } from '../components/HostCard';
 import { VideoCallComponent } from '../components/VideoCall';
-import toast from 'react-hot-toast';
-import { Coins } from 'lucide-react';
-import { ProfileMenu } from './ProfileMenu';
 import { HostProfileModal } from '../components/HostProfileModal';
+import { ProfileMenu } from './ProfileMenu';
+import toast from 'react-hot-toast';
+import { Coins, MessageCircle } from 'lucide-react';
 
 export const Home = () => {
   const { user, logout } = useAuth();
@@ -20,10 +21,11 @@ export const Home = () => {
   const [inCall, setInCall] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
   const [selectedHost, setSelectedHost] = useState(null);
-
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     fetchHosts();
+    fetchUnreadCount();
   }, []);
 
   useEffect(() => {
@@ -32,18 +34,20 @@ export const Home = () => {
     socket.on('call:offer', handleIncomingCall);
     socket.on('call:rejected', handleCallRejected);
     socket.on('call:ended', handleCallEnded);
+    socket.on('chat:message', handleNewMessage);
 
     return () => {
       socket.off('call:offer');
       socket.off('call:rejected');
       socket.off('call:ended');
+      socket.off('chat:message');
     };
   }, [socket]);
 
   const fetchHosts = async () => {
     try {
       const response = await hostService.getOnlineHosts({ page: 1, limit: 50 });
-      console.log('📋 Fetched hosts:', response.data.hosts); // ADD THIS
+      console.log('📋 Fetched hosts:', response.data.hosts);
       setHosts(response.data.hosts);
     } catch (error) {
       toast.error('Failed to load hosts');
@@ -52,8 +56,22 @@ export const Home = () => {
     }
   };
 
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await chatService.getUnreadCount();
+      setUnreadCount(response.data.unreadCount || 0);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
+
+  const handleNewMessage = () => {
+    // Increment unread count when new message arrives
+    fetchUnreadCount();
+  };
+
   const handleIncomingCall = ({ from, offer, callId, caller }) => {
-    console.log('📞 Incoming call from:', from, 'caller:', caller); // ADD THIS
+    console.log('📞 Incoming call from:', from, 'caller:', caller);
     toast((t) => (
       <div className="flex flex-col">
         <p className="font-semibold mb-2">Incoming call from {caller.name}</p>
@@ -82,8 +100,8 @@ export const Home = () => {
   };
 
   const acceptIncomingCall = (from, offer, callId) => {
-    console.log('✅ Accepting call from:', from); // ADD THIS
-    setCurrentCall({ from, callId, offer, isIncoming: true }); // ADD isIncoming flag
+    console.log('✅ Accepting call from:', from);
+    setCurrentCall({ from, callId, offer, isIncoming: true });
     setInCall(true);
   };
 
@@ -107,55 +125,48 @@ export const Home = () => {
   };
 
   const handleCallHost = async (host) => {
-    console.log('📞 Calling host:', host); // ADD THIS
-    
-    // if (!user) {
-    //   toast.error('Please login first');
-    //   navigate('/login');
-    //   return;
-    // }
-
-    // if (user.coinBalance < host.ratePerMinute) {
-    //   toast.error('Insufficient coins. Please recharge!');
-    //   navigate('/coins');
-    //   return;
-    // }
+    console.log('📞 Calling host:', host);
 
     try {
       const response = await callService.initiateCall(host._id);
       const callData = response.data.call;
       
-      console.log('📞 Call data:', callData); // ADD THIS
-      console.log('📞 Host data:', host); // ADD THIS
+      console.log('📞 Call data:', callData);
+      console.log('📞 Host data:', host);
       
-      // FIX: Determine the correct user ID path
-      // The host user ID might be in different locations depending on your API response
       const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
       
-      console.log('🆔 Using host user ID:', hostUserId); // ADD THIS
+      console.log('🆔 Using host user ID:', hostUserId);
       
       setCurrentCall({ 
         callId: callData._id || callData.id, 
-        hostId: hostUserId, // FIXED
+        hostId: hostUserId,
         host,
         isIncoming: false
       });
       setInCall(true);
     } catch (error) {
-      console.error('❌ Error initiating call:', error); // ADD THIS
+      console.error('❌ Error initiating call:', error);
       toast.error(error.response?.data?.message || 'Failed to initiate call');
     }
   };
 
+  const handleMessageHost = async (host) => {
+    const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
+    
+    // Navigate to messages page
+    navigate('/messages', { state: { openChatWithUserId: hostUserId } });
+  };
+
   const handleEndCall = async () => {
-    console.log('☎️ Ending call:', currentCall); // ADD THIS
+    console.log('☎️ Ending call:', currentCall);
     
     if (currentCall?.callId) {
       try {
         await callService.endCall(currentCall.callId);
         if (socket) {
           const recipientId = currentCall.hostId || currentCall.from;
-          console.log('📤 Sending call:end to:', recipientId); // ADD THIS
+          console.log('📤 Sending call:end to:', recipientId);
           
           socket.emit('call:end', { 
             to: recipientId, 
@@ -173,7 +184,7 @@ export const Home = () => {
 
   if (inCall && currentCall) {
     const remoteUserId = currentCall.hostId || currentCall.from;
-    console.log('🎥 Rendering video call with remote user:', remoteUserId); // ADD THIS
+    console.log('🎥 Rendering video call with remote user:', remoteUserId);
     
     return (
       <VideoCallComponent
@@ -186,34 +197,53 @@ export const Home = () => {
     );
   }
 
-  const handleLogout = ()=>{
+  const handleLogout = () => {
     logout();
     toast.success("Logout Successfully");
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="px-4 py-3 flex items-center justify-between max-w-lg mx-auto">
+        <div className="px-4 py-3 flex items-center justify-between max-w-7xl mx-auto">
           <h1 className="text-xl font-bold text-gray-900">Live Hosts</h1>
-          <ProfileMenu
-  user={user} 
-  onLogout={()=>{handleLogout()}}
-  onNavigateToProfile={() => navigate('/profile')}
-/>
-          <button 
-            onClick={() => navigate('/coins')}
-            className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
-          >
-            <Coins className="h-5 w-5 text-yellow-600" />
-            <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
-          </button>
+          
+          <div className="flex items-center gap-3">
+            {/* Messages Icon with Badge */}
+            <button
+              onClick={() => navigate('/messages')}
+              className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MessageCircle className="w-6 h-6 text-gray-700" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Coins Balance */}
+            <button 
+              onClick={() => navigate('/coins')}
+              className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
+            >
+              <Coins className="h-5 w-5 text-yellow-600" />
+              <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
+            </button>
+
+            {/* Profile Menu */}
+            <ProfileMenu
+              user={user} 
+              onLogout={handleLogout}
+              onNavigateToProfile={() => navigate('/profile')}
+            />
+          </div>
         </div>
       </div>
 
       {/* Hosts Grid */}
-      <main className="p-4 max-w-fit mx-auto">
+      <main className="p-4 max-w-7xl mx-auto">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -221,7 +251,12 @@ export const Home = () => {
         ) : hosts.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {hosts.map((host) => (
-              <HostCard key={host._id} host={host} onCall={handleCallHost} onViewProfile={(host)=>setSelectedHost(host)} />
+              <HostCard 
+                key={host._id} 
+                host={host} 
+                onCall={handleCallHost} 
+                onViewProfile={(host) => setSelectedHost(host)} 
+              />
             ))}
           </div>
         ) : (
@@ -232,13 +267,15 @@ export const Home = () => {
         )}
       </main>
 
+      {/* Host Profile Modal */}
       {selectedHost && (
-  <HostProfileModal
-    host={selectedHost}
-    onClose={() => setSelectedHost(null)}
-    onCall={handleCallHost}
-  />
-)}
+        <HostProfileModal
+          host={selectedHost}
+          onClose={() => setSelectedHost(null)}
+          onCall={handleCallHost}
+          onMessage={handleMessageHost}
+        />
+      )}
     </div>
   );
 };
