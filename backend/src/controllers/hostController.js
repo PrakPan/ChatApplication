@@ -107,22 +107,53 @@ const getOnlineHosts = asyncHandler(async (req, res) => {
     status: 'approved'
   };
 
-  if (minRate || maxRate) {
-    query.ratePerMinute = {};
-    if (minRate) query.ratePerMinute.$gte = Number(minRate);
-    if (maxRate) query.ratePerMinute.$lte = Number(maxRate);
-  }
-
   if (languages) {
     query.languages = { $in: languages.split(',') };
   }
 
-  const hosts = await Host.find(query)
+  let hosts = await Host.find(query)
     .populate('userId', 'name avatar')
     .sort({ rating: -1 })
     .limit(limit * 1)
-    .skip((page - 1) * limit);
+    .skip((page - 1) * limit)
+    .lean();
 
+  // Get levels and apply dynamic rates
+  const hostUserIds = hosts.map(h => h.userId._id);
+  const levels = await Level.find({ userId: { $in: hostUserIds } });
+  const levelMap = {};
+  levels.forEach(l => {
+    levelMap[l.userId.toString()] = {
+      charmLevel: l.charmLevel,
+      richLevel: l.richLevel,
+      ratePerMinute: l.getRatePerMinute()
+    };
+  });
+
+  // Apply dynamic rates and filter by rate if specified
+  hosts = hosts.map(host => {
+    const levelData = levelMap[host.userId._id.toString()];
+    const dynamicRate = levelData?.ratePerMinute || host.ratePerMinute;
+    
+    return {
+      ...host,
+      ratePerMinute: dynamicRate, // Override with dynamic rate
+      charmLevel: levelData?.charmLevel || 1,
+      richLevel: levelData?.richLevel || 1
+    };
+  });
+
+  // Filter by rate range if specified
+  if (minRate || maxRate) {
+    hosts = hosts.filter(host => {
+      const rate = host.ratePerMinute;
+      if (minRate && rate < Number(minRate)) return false;
+      if (maxRate && rate > Number(maxRate)) return false;
+      return true;
+    });
+  }
+
+  // Filter by search if specified
   if (search) {
     const searchRegex = new RegExp(search, 'i');
     hosts = hosts.filter(host => 
@@ -144,10 +175,11 @@ const getOnlineHosts = asyncHandler(async (req, res) => {
   });
 });
 
+// REPLACE getHostDetails function
 const getHostDetails = asyncHandler(async (req, res) => {
   const { hostId } = req.params;
 
-  const host = await Host.findById(hostId).populate('userId', 'name avatar email');
+  const host = await Host.findById(hostId).populate('userId', 'name avatar email').lean();
   
   if (!host) {
     throw new ApiError(404, 'Host not found');
@@ -164,12 +196,53 @@ const getHostDetails = asyncHandler(async (req, res) => {
     { $group: { _id: null, avgRating: { $avg: '$rating' } } }
   ]);
 
+  // Get level info and dynamic rate
+  const level = await Level.findOne({ userId: host.userId._id });
+  const dynamicRate = level ? level.getRatePerMinute() : host.ratePerMinute;
+
   const stats = {
     totalCalls,
-    avgRating: avgRating[0]?.avgRating || 0
+    avgRating: avgRating[0]?.avgRating || 0,
+    charmLevel: level?.charmLevel || 1,
+    richLevel: level?.richLevel || 1,
+    totalBeansEarned: level?.totalBeansEarned || 0,
+    currentRate: dynamicRate
   };
 
-  ApiResponse.success(res, 200, 'Host details retrieved', { host, stats });
+  ApiResponse.success(res, 200, 'Host details retrieved', { 
+    host: {
+      ...host,
+      ratePerMinute: dynamicRate // Override with dynamic rate
+    }, 
+    stats 
+  });
+});
+
+const getHostLevelInfo = asyncHandler(async (req, res) => {
+  const host = await Host.findOne({ userId: req.user._id });
+  if (!host) {
+    throw new ApiError(404, 'Host profile not found');
+  }
+
+  const level = await Level.findOne({ userId: req.user._id });
+  if (!level) {
+    throw new ApiError(404, 'Level data not found');
+  }
+
+  const currentRate = level.getRatePerMinute();
+  const nextCharmLevel = Level.getBeansForNextCharmLevel(level.totalBeansEarned);
+  const nextRichLevel = Level.getDiamondsForNextRichLevel(level.totalDiamondsRecharged);
+
+  ApiResponse.success(res, 200, 'Host level info retrieved', {
+    charmLevel: level.charmLevel,
+    richLevel: level.richLevel,
+    totalBeansEarned: level.totalBeansEarned,
+    totalDiamondsRecharged: level.totalDiamondsRecharged,
+    currentRatePerMinute: currentRate,
+    nextCharmLevel,
+    nextRichLevel,
+    rateThresholds: Level.RATE_BY_CHARM_LEVEL
+  });
 });
 
 const getHostEarnings = asyncHandler(async (req, res) => {
@@ -463,5 +536,6 @@ module.exports = {
   toggleHostOnlineStatus,
   getHostById,
   getAllHosts,
-  saveHostPhotos
+  saveHostPhotos,
+  getHostLevelInfo
 };

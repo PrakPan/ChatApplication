@@ -6,6 +6,8 @@ const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const { REVENUE_SPLIT } = require('../utils/constants');
 const logger = require('../utils/logger');
+const Level = require('../models/Level');
+const WeeklyLeaderboard = require('../models/WeeklyLeaderboard');
 
 const initiateCall = asyncHandler(async (req, res) => {
   const { hostId } = req.body;
@@ -91,17 +93,21 @@ const endCall = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Call already ended');
   }
 
-  // Calculate duration and coins
+  // Calculate duration and beans
   call.endTime = new Date();
   const durationInSeconds = Math.floor((call.endTime - call.startTime) / 1000);
   const durationInMinutes = Math.ceil(durationInSeconds / 60);
   
+  // Get host's charm level to determine rate
+  const hostLevel = await Level.findOne({ userId: call.hostId.userId });
+  const ratePerMinute = hostLevel ? hostLevel.getRatePerMinute() : call.hostId.ratePerMinute;
+  
   call.duration = durationInSeconds;
-  call.coinsSpent = durationInMinutes * call.hostId.ratePerMinute;
+  call.coinsSpent = durationInMinutes * ratePerMinute; // Now using beans
   call.status = 'completed';
   await call.save();
 
-  // Deduct coins from user
+  // Deduct beans from user
   const user = await User.findById(call.userId);
   if (user.coinBalance < call.coinsSpent) {
     call.status = 'failed';
@@ -120,10 +126,10 @@ const endCall = asyncHandler(async (req, res) => {
     coins: call.coinsSpent,
     status: 'completed',
     callId: call._id,
-    description: `Call with host for ${durationInMinutes} minutes`
+    description: `Call with host for ${durationInMinutes} minutes (${call.coinsSpent} beans)`
   });
 
-  // Calculate host earnings (70%)
+  // Calculate host earnings (70% - beans earned)
   const hostEarnings = Math.floor(call.coinsSpent * (REVENUE_SPLIT.HOST_PERCENTAGE / 100));
 
   // Update host earnings
@@ -131,6 +137,17 @@ const endCall = asyncHandler(async (req, res) => {
   hostDoc.totalEarnings += hostEarnings;
   hostDoc.totalCalls += 1;
   await hostDoc.save();
+
+  // Update host's charm level (beans earned)
+  if (!hostLevel) {
+    await Level.create({ 
+      userId: call.hostId.userId,
+      totalBeansEarned: hostEarnings 
+    });
+  } else {
+    hostLevel.totalBeansEarned += hostEarnings;
+    await hostLevel.save();
+  }
 
   // Create credit transaction for host
   await Transaction.create({
@@ -140,18 +157,56 @@ const endCall = asyncHandler(async (req, res) => {
     coins: hostEarnings,
     status: 'completed',
     callId: call._id,
-    description: `Earnings from ${durationInMinutes} minute call`
+    description: `Earnings from ${durationInMinutes} minute call (${hostEarnings} beans earned)`
   });
 
-  logger.info(`Call ended: ${callId}, Duration: ${durationInMinutes}min, Coins: ${call.coinsSpent}`);
+  // Update Weekly Leaderboard
+  await updateWeeklyLeaderboard(call.userId, 'user', durationInSeconds);
+  await updateWeeklyLeaderboard(hostDoc.userId, 'host', durationInSeconds);
+
+  logger.info(`Call ended: ${callId}, Duration: ${durationInMinutes}min, Beans: ${call.coinsSpent}, Host Charm Level: ${hostLevel?.charmLevel || 1}`);
 
   ApiResponse.success(res, 200, 'Call ended successfully', { 
     call,
     coinsSpent: call.coinsSpent,
     duration: durationInMinutes,
-    newBalance: user.coinBalance
+    newBalance: user.coinBalance,
+    hostEarnings,
+    rateUsed: ratePerMinute
   });
 });
+
+// Helper function to update weekly leaderboard
+async function updateWeeklyLeaderboard(userId, userType, durationInSeconds) {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  let leaderboardEntry = await WeeklyLeaderboard.findOne({
+    userId,
+    userType,
+    weekStartDate: weekStart
+  });
+
+  if (!leaderboardEntry) {
+    leaderboardEntry = await WeeklyLeaderboard.create({
+      userId,
+      userType,
+      weekStartDate: weekStart,
+      weekEndDate: weekEnd,
+      totalCallDuration: durationInSeconds,
+      totalCalls: 1
+    });
+  } else {
+    leaderboardEntry.totalCallDuration += durationInSeconds;
+    leaderboardEntry.totalCalls += 1;
+    await leaderboardEntry.save();
+  }
+}
 
 const rateCall = asyncHandler(async (req, res) => {
   const { callId, rating, feedback } = req.body;

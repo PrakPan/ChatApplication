@@ -62,6 +62,33 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  role: {
+    type: String,
+    enum: ['user', 'host', 'admin', 'coinSeller'], 
+    default: 'user'
+  },
+  isCoinSeller: {
+    type: Boolean,
+    default: false
+  },
+  dob: {
+    type: Date,
+    default : new Date(),
+  },
+  gender: {
+    type: String,
+    default: 'female'
+  },
+  bio: {
+    type: String,
+    maxlength: [500, 'Bio cannot exceed 500 characters'],
+    default: ''
+  },
+  
+  isAgent: {
+    type: Boolean,
+    default: false
+  },
   isActive: {
     type: Boolean,
     default: true

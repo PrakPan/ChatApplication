@@ -92,11 +92,22 @@ const verifyPaymentAndAddCoins = asyncHandler(async (req, res) => {
   user.coinBalance += transaction.coins;
   await user.save();
 
-  logger.info(`Payment verified: User ${user.email}, Coins added: ${transaction.coins}`);
+  // Update user's rich level
+  const Level = require('../models/Level');
+  let level = await Level.findOne({ userId: req.user._id });
+  if (!level) {
+    level = await Level.create({ userId: req.user._id });
+  }
+  level.totalDiamondsRecharged += transaction.coins;
+  await level.save();
+
+  logger.info(`Payment verified: User ${user.email}, Coins added: ${transaction.coins}, Rich Level: ${level.richLevel}`);
 
   ApiResponse.success(res, 200, 'Payment verified and coins added', {
     balance: user.coinBalance,
-    coinsAdded: transaction.coins
+    coinsAdded: transaction.coins,
+    richLevel: level.richLevel,
+    totalDiamondsRecharged: level.totalDiamondsRecharged
   });
 });
 

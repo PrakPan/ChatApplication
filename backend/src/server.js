@@ -22,6 +22,7 @@ const Host = require('./models/Host');
 const Call = require('./models/Call');
 const Transaction = require('./models/Transaction');
 const Withdrawal = require('./models/Withdrawal');
+const Level = require('./models/Level');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -31,6 +32,12 @@ const callRoutes = require('./routes/callRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const photoApprovalRoutes = require("./routes/photoApproval")
 const messageRoutes = require("./routes/messageRoutes")
+const coinSellerRoutes = require('./routes/coinSellerRoutes');
+const leaderboardRoutes = require('./routes/leaderboardRoutes');
+const followRoutes = require('./routes/followRoutes');
+const agentRoutes = require('./routes/agentRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+
 // Initialize express
 const app = express();
 const server = http.createServer(app);
@@ -131,6 +138,11 @@ app.use('/api/v1/calls', callRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin', photoApprovalRoutes);
 app.use('/api/v1/', messageRoutes);
+app.use('/api/v1/coin-sellers', coinSellerRoutes);
+app.use('/api/v1/leaderboard', leaderboardRoutes);
+app.use('/api/v1/follow', followRoutes);
+app.use('/api/v1/agents', agentRoutes);
+app.use('/api/v1/profile', profileRoutes);
 
 // Socket.io handler
 socketHandler(io);
@@ -495,5 +507,6 @@ process.on('uncaughtException', (err) => {
 
 // // Run the seed function
 // seedDatabase();
+
 
 module.exports = server;

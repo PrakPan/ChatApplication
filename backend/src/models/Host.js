@@ -74,10 +74,20 @@ const hostSchema = new mongoose.Schema({
   }],
   interests: [{
     type: String
-  }]
+  }],
+  agentId: {
+    type: String,
+    uppercase: true,
+    minlength: 5,
+    maxlength: 5,
+    default: null,
+    index: true
+  },
 }, {
   timestamps: true
 });
+
+hostSchema.index({ agentId: 1 });
 
 // Index for better query performance on online status and last seen
 hostSchema.index({ isOnline: 1, lastSeen: -1 });

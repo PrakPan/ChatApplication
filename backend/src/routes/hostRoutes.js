@@ -12,7 +12,8 @@ const {
   toggleHostOnlineStatus,
   getHostById,
   getAllHosts,
-  saveHostPhotos
+  saveHostPhotos,
+  getHostLevelInfo
 } = require('../controllers/hostController');
 const { authenticate, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validation');
@@ -37,5 +38,6 @@ router.get('/me/calls', authorize('host', 'admin'), getHostCallHistory);
 router.put('/toggle-online', authorize('host', 'admin'), toggleHostOnlineStatus);
 
 router.post('/photos/save', authorize('host', 'admin'), saveHostPhotos);
+router.get('/level-info', authorize('host'), getHostLevelInfo);
 
 module.exports = router;
