@@ -11,11 +11,11 @@ const {
   updateName
 } = require('../controllers/profileController');
 
-router.get('/', authorize, getProfile);
-router.put('/avatar', authorize, upload.single('avatar'), updateAvatar);
-router.put('/phone', authorize, updatePhone);
-router.put('/email', authorize, updateEmail);
-router.put('/bio', authorize, updateBio);
-router.put('/name', authorize, updateName);
+router.get('/', authorize('host','user'), getProfile);
+router.put('/avatar', authorize('host','user'), upload.single('avatar'), updateAvatar);
+router.put('/phone', authorize('host','user'), updatePhone);
+router.put('/email', authorize('host','user'), updateEmail);
+router.put('/bio', authorize('host','user'), updateBio);
+router.put('/name', authorize('host','user'), updateName);
 
 module.exports = router;

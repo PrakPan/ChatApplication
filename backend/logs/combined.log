@@ -1297,3 +1297,71 @@
 {"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:23:02"}
 {"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:23:03"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-30 19:23:24"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:29:07"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:29:09"}
+{"level":"info","message":"User connected: john@gmail.com (mpkw1aipZigWNf3uAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:29:13"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket mpkw1aipZigWNf3uAAAB","service":"videocall-backend","timestamp":"2025-11-30 19:29:13"}
+{"level":"info","message":"User disconnected: john@gmail.com (mpkw1aipZigWNf3uAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:29:13"}
+{"level":"info","message":"User connected: john@gmail.com (9agI5ZtqjRIMgjvPAAAD)","service":"videocall-backend","timestamp":"2025-11-30 19:29:55"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket 9agI5ZtqjRIMgjvPAAAD","service":"videocall-backend","timestamp":"2025-11-30 19:29:55"}
+{"level":"info","message":"User disconnected: john@gmail.com (9agI5ZtqjRIMgjvPAAAD)","service":"videocall-backend","timestamp":"2025-11-30 19:34:33"}
+{"level":"info","message":"User connected: john@gmail.com (gJEoD7Zj2xsjB_nhAAAF)","service":"videocall-backend","timestamp":"2025-11-30 19:34:33"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket gJEoD7Zj2xsjB_nhAAAF","service":"videocall-backend","timestamp":"2025-11-30 19:34:33"}
+{"level":"info","message":"User disconnected: john@gmail.com (gJEoD7Zj2xsjB_nhAAAF)","service":"videocall-backend","timestamp":"2025-11-30 19:35:08"}
+{"level":"info","message":"User connected: john@gmail.com (UtfM0lNIC5gT-OI4AAAH)","service":"videocall-backend","timestamp":"2025-11-30 19:35:09"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket UtfM0lNIC5gT-OI4AAAH","service":"videocall-backend","timestamp":"2025-11-30 19:35:09"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:40:21"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:40:23"}
+{"level":"info","message":"User connected: john@gmail.com (gXruDwTO6Z5sOZzsAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:40:24"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket gXruDwTO6Z5sOZzsAAAB","service":"videocall-backend","timestamp":"2025-11-30 19:40:24"}
+{"level":"info","message":"Name updated: john@gmail.com","service":"videocall-backend","timestamp":"2025-11-30 19:40:38"}
+{"level":"info","message":"User disconnected: john@gmail.com (gXruDwTO6Z5sOZzsAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:40:39"}
+{"level":"info","message":"User connected: john@gmail.com (qYy_WeH__CdvuUVUAAAD)","service":"videocall-backend","timestamp":"2025-11-30 19:40:39"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket qYy_WeH__CdvuUVUAAAD","service":"videocall-backend","timestamp":"2025-11-30 19:40:39"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:40:55"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:40:56"}
+{"level":"info","message":"User connected: john@gmail.com (oP4DBU0_UEW3ewhHAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:40:56"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket oP4DBU0_UEW3ewhHAAAB","service":"videocall-backend","timestamp":"2025-11-30 19:40:56"}
+{"ip":"::1","level":"error","message":"ENOENT: no such file or directory, open 'uploads/avatar-1764511861671-667185766.jpg'","method":"PUT","service":"videocall-backend","stack":"Error: ENOENT: no such file or directory, open 'uploads/avatar-1764511861671-667185766.jpg'","statusCode":500,"timestamp":"2025-11-30 19:41:01","url":"/api/v1/profile/avatar"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:46:19"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:46:20"}
+{"level":"info","message":"User connected: john@gmail.com (rn52WwNXViRDSVLyAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:46:21"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket rn52WwNXViRDSVLyAAAB","service":"videocall-backend","timestamp":"2025-11-30 19:46:21"}
+{"ip":"::1","level":"error","message":"ENOENT: no such file or directory, open 'uploads/avatar-1764512188696-229614327.jpg'","method":"PUT","service":"videocall-backend","stack":"Error: ENOENT: no such file or directory, open 'uploads/avatar-1764512188696-229614327.jpg'","statusCode":500,"timestamp":"2025-11-30 19:46:28","url":"/api/v1/profile/avatar"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:49:58"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:50:00"}
+{"level":"info","message":"User connected: john@gmail.com (MeLIsAANNRR2JaK1AAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:50:01"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket MeLIsAANNRR2JaK1AAAB","service":"videocall-backend","timestamp":"2025-11-30 19:50:01"}
+{"ip":"::1","level":"error","message":"ENOENT: no such file or directory, open 'uploads/avatar-1764512407069-823932408.jpg'","method":"PUT","service":"videocall-backend","stack":"Error: ENOENT: no such file or directory, open 'uploads/avatar-1764512407069-823932408.jpg'","statusCode":500,"timestamp":"2025-11-30 19:50:07","url":"/api/v1/profile/avatar"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 19:51:06"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 19:51:07"}
+{"level":"info","message":"User connected: john@gmail.com (sbq2Cb2MpyEXcsOxAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:51:07"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket sbq2Cb2MpyEXcsOxAAAB","service":"videocall-backend","timestamp":"2025-11-30 19:51:07"}
+{"ip":"::1","level":"error","message":"ENOENT: no such file or directory, open 'uploads/avatar-1764512477710-668924483.jpg'","method":"PUT","service":"videocall-backend","stack":"Error: ENOENT: no such file or directory, open 'uploads/avatar-1764512477710-668924483.jpg'","statusCode":500,"timestamp":"2025-11-30 19:51:17","url":"/api/v1/profile/avatar"}
+{"level":"info","message":"User disconnected: john@gmail.com (sbq2Cb2MpyEXcsOxAAAB)","service":"videocall-backend","timestamp":"2025-11-30 19:53:53"}
+{"level":"info","message":"User connected: john@gmail.com (dOJqKm0evSKNaAfFAAAD)","service":"videocall-backend","timestamp":"2025-11-30 19:53:53"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 authenticated with socket dOJqKm0evSKNaAfFAAAD","service":"videocall-backend","timestamp":"2025-11-30 19:53:53"}
+{"level":"info","message":"User logged in: neha@gmail.com (userId: 666603)","service":"videocall-backend","timestamp":"2025-11-30 19:54:02"}
+{"level":"info","message":"User disconnected: john@gmail.com (dOJqKm0evSKNaAfFAAAD)","service":"videocall-backend","timestamp":"2025-11-30 19:54:02"}
+{"level":"info","message":"User connected: neha@gmail.com (icGPsj88TCRZZMqiAAAF)","service":"videocall-backend","timestamp":"2025-11-30 19:54:02"}
+{"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket icGPsj88TCRZZMqiAAAF","service":"videocall-backend","timestamp":"2025-11-30 19:54:02"}
+{"level":"info","message":"User disconnected: neha@gmail.com (icGPsj88TCRZZMqiAAAF)","service":"videocall-backend","timestamp":"2025-11-30 19:58:41"}
+{"level":"info","message":"User connected: neha@gmail.com (h-DxcOe4f0iACdnWAAAH)","service":"videocall-backend","timestamp":"2025-11-30 19:59:40"}
+{"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket h-DxcOe4f0iACdnWAAAH","service":"videocall-backend","timestamp":"2025-11-30 19:59:40"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-11-30 20:08:20"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-11-30 20:08:21"}
+{"level":"info","message":"User connected: neha@gmail.com (i1NoTPqBpfU8wi20AAAB)","service":"videocall-backend","timestamp":"2025-11-30 20:08:21"}
+{"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket i1NoTPqBpfU8wi20AAAB","service":"videocall-backend","timestamp":"2025-11-30 20:08:21"}
+{"level":"info","message":"User disconnected: neha@gmail.com (i1NoTPqBpfU8wi20AAAB)","service":"videocall-backend","timestamp":"2025-11-30 20:08:51"}
+{"level":"info","message":"User connected: neha@gmail.com (CydfOFiquqBqHXGqAAAD)","service":"videocall-backend","timestamp":"2025-11-30 20:08:52"}
+{"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket CydfOFiquqBqHXGqAAAD","service":"videocall-backend","timestamp":"2025-11-30 20:08:52"}
+{"level":"info","message":"Avatar updated: neha@gmail.com","service":"videocall-backend","timestamp":"2025-11-30 20:12:26"}
+{"level":"info","message":"User disconnected: neha@gmail.com (CydfOFiquqBqHXGqAAAD)","service":"videocall-backend","timestamp":"2025-11-30 20:12:49"}
+{"level":"info","message":"User connected: neha@gmail.com (0y5Y6LiGjfKlanQXAAAF)","service":"videocall-backend","timestamp":"2025-11-30 20:12:50"}
+{"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket 0y5Y6LiGjfKlanQXAAAF","service":"videocall-backend","timestamp":"2025-11-30 20:12:50"}
+{"level":"info","message":"Avatar updated: neha@gmail.com","service":"videocall-backend","timestamp":"2025-11-30 20:12:58"}
+{"level":"info","message":"Avatar updated: neha@gmail.com","service":"videocall-backend","timestamp":"2025-11-30 20:13:55"}
+{"level":"info","message":"User disconnected: neha@gmail.com (0y5Y6LiGjfKlanQXAAAF)","service":"videocall-backend","timestamp":"2025-11-30 20:13:55"}
+{"level":"info","message":"User connected: neha@gmail.com (sHAMhHkwOvtE3495AAAH)","service":"videocall-backend","timestamp":"2025-11-30 20:13:55"}
+{"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket sHAMhHkwOvtE3495AAAH","service":"videocall-backend","timestamp":"2025-11-30 20:13:55"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-11-30 20:14:25"}

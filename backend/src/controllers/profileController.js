@@ -5,7 +5,7 @@ const Follow = require('../models/Follow');
 const Agent = require('../models/Agent');
 const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
-const { uploadToCloudinary } = require('../config/cloudinary');
+const { uploadToCloudinary, uploadBufferToCloudinary } = require('../config/cloudinary');
 const logger = require('../utils/logger');
 
 // Get user profile with all details
@@ -60,24 +60,25 @@ const getProfile = asyncHandler(async (req, res) => {
 
 // Update avatar
 const updateAvatar = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    throw new ApiError(400, 'No file uploaded');
+  const { avatar } = req.body;
+
+  if (!avatar) {
+    throw new ApiError(400, 'Avatar URL is required');
   }
 
-  // Upload to cloudinary
-  const avatarUrl = await uploadToCloudinary(req.file.path, 'avatars');
-
-  // Update user
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    { avatar: avatarUrl },
+    { avatar },
     { new: true }
   ).select('-password -refreshToken');
 
   logger.info(`Avatar updated: ${req.user.email}`);
 
-  ApiResponse.success(res, 200, 'Avatar updated successfully', { avatar: avatarUrl });
+  ApiResponse.success(res, 200, 'Avatar updated successfully', {
+    avatar: user.avatar
+  });
 });
+
 
 // Update phone
 const updatePhone = asyncHandler(async (req, res) => {
