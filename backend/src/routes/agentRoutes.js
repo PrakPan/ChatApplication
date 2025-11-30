@@ -10,11 +10,11 @@ const {
   getFollowStats
 } = require('../controllers/followController');
 
-router.post('/follow', authorize, followHost);
-router.delete('/unfollow/:hostId', authorize, unfollowHost);
-router.get('/followers/:userId?', authorize, getFollowers);
-router.get('/following/:userId?', authorize, getFollowing);
-router.get('/check/:hostId', authorize, checkFollowing);
-router.get('/stats/:userId?', authorize, getFollowStats);
+router.post('/follow', followHost);
+router.delete('/unfollow/:hostId', unfollowHost);
+router.get('/followers/:userId?', getFollowers);
+router.get('/following/:userId?', getFollowing);
+router.get('/check/:hostId', checkFollowing);
+router.get('/stats/:userId?', getFollowStats);
 
 module.exports = router;

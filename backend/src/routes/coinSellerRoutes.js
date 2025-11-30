@@ -19,10 +19,10 @@ const {
 } = coinSellerController;
 
 // Admin routes
-router.post('/assign', authorize('admin'), assignCoinSeller);
-router.delete('/:userId', authorize('admin'), removeCoinSeller);
-router.post('/:coinSellerId/add-diamonds', authorize('admin'), addDiamondsToCoinSeller);
-router.get('/all', authorize('admin'), getAllCoinSellers);
+router.post('/assign', assignCoinSeller);
+router.delete('/:userId',  removeCoinSeller);
+router.post('/:coinSellerId/add-diamonds', addDiamondsToCoinSeller);
+router.get('/all', getAllCoinSellers);
 
 // Coin seller routes
 router.post('/distribute', distributeDiamonds);
