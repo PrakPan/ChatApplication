@@ -661,7 +661,7 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
       userType,
       weekStartDate: weekStart
     })
-      .populate('userId', 'name email')
+      .populate('userId', 'name email avatar')
       .sort({ totalCallDuration: -1 })
       .limit(50)
       .lean();
