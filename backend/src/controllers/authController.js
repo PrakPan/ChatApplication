@@ -8,9 +8,9 @@ const logger = require('../utils/logger');
 const register = asyncHandler(async (req, res) => {
   console.log('Received registration request:', req.body);
   
-  const { name, email, phone, password, role, bio, ratePerMinute, languages, interests } = req.body;
+  const { name, email, phone, password, role, bio, languages, interests, country, dob, gender } = req.body;
 
-  // Validate required fields - be more explicit
+  // Validate required fields
   if (!name || name.trim() === '') {
     throw new ApiError(400, 'Name is required');
   }
@@ -22,6 +22,15 @@ const register = asyncHandler(async (req, res) => {
   }
   if (!password || password.trim() === '') {
     throw new ApiError(400, 'Password is required');
+  }
+  if (!country || country.trim() === '') {
+    throw new ApiError(400, 'Country is required');
+  }
+  if (!dob) {
+    throw new ApiError(400, 'Date of birth is required');
+  }
+  if (!gender || gender.trim() === '') {
+    throw new ApiError(400, 'Gender is required');
   }
 
   // Password validation
@@ -39,6 +48,32 @@ const register = asyncHandler(async (req, res) => {
   const phoneRegex = /^[0-9]{10}$/;
   if (!phoneRegex.test(phone)) {
     throw new ApiError(400, 'Phone number must be exactly 10 digits');
+  }
+
+  // Gender validation
+  if (!['male', 'female', 'other'].includes(gender.toLowerCase())) {
+    throw new ApiError(400, 'Invalid gender value');
+  }
+
+  // Host-specific validations
+  if (role === 'host') {
+    // Age validation for hosts
+    const birthDate = new Date(dob);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+    
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+
+    if (actualAge < 18) {
+      throw new ApiError(400, 'Hosts must be at least 18 years old');
+    }
+
+    // Gender validation for hosts
+    if (gender.toLowerCase() !== 'female') {
+      throw new ApiError(400, 'Only females can register as hosts');
+    }
   }
 
   // Check if user exists
@@ -61,8 +96,11 @@ const register = asyncHandler(async (req, res) => {
     name: name.trim(),
     email: email.toLowerCase().trim(),
     phone: phone.trim(),
-    password: password, // Don't hash here - model middleware will handle it
-    role: role || 'user'
+    password: password,
+    role: role || 'user',
+    country: country.trim(),
+    dob: new Date(dob),
+    gender: gender.toLowerCase()
   });
  
   let hostProfile = null;
@@ -70,7 +108,7 @@ const register = asyncHandler(async (req, res) => {
     hostProfile = await Host.create({
       userId: user._id,
       bio: bio || '',
-      ratePerMinute: ratePerMinute || 50,
+      ratePerMinute: 50, // Default rate
       languages: languages || [],
       interests: interests || [],
       status: 'pending'

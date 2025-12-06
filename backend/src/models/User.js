@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// Function to generate unique 6-character alphanumeric ID
+// Function to generate unique 6-character numeric ID
 const generateUserId = () => {
   const chars = '0123456789';
   let id = '';
@@ -50,8 +50,23 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'host', 'admin'],
+    enum: ['user', 'host', 'admin', 'coinSeller'],
     default: 'user'
+  },
+  country: {
+    type: String,
+    required: [true, 'Country is required'],
+    trim: true
+  },
+  dob: {
+    type: Date,
+    required: [true, 'Date of birth is required']
+  },
+  gender: {
+    type: String,
+    required: [true, 'Gender is required'],
+    enum: ['male', 'female', 'other'],
+    lowercase: true
   },
   coinBalance: {
     type: Number,
@@ -62,29 +77,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  role: {
-    type: String,
-    enum: ['user', 'host', 'admin', 'coinSeller'], 
-    default: 'user'
-  },
   isCoinSeller: {
     type: Boolean,
     default: false
-  },
-  dob: {
-    type: Date,
-    default : new Date(),
-  },
-  gender: {
-    type: String,
-    default: 'female'
   },
   bio: {
     type: String,
     maxlength: [500, 'Bio cannot exceed 500 characters'],
     default: ''
   },
-  
   isAgent: {
     type: Boolean,
     default: false
