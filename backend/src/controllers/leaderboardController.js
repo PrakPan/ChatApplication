@@ -178,8 +178,80 @@ const getLeaderboardHistory = asyncHandler(async (req, res) => {
   });
 });
 
+
+const getAllLeaderboardPoints = asyncHandler(async (req, res) => {
+   const rewards = [
+   {
+          "rank": 1,
+          "position": "Top 1",
+          "reward": 1500000,
+          "currency": "coins"
+        },
+        {
+          "rank": 2,
+          "position": "Top 2",
+          "reward": 1000000,
+          "currency": "coins"
+        },
+        {
+          "rank": 3,
+          "position": "Top 3",
+          "reward": 500000,
+          "currency": "coins"
+        },
+        {
+          "rank": 4,
+          "position": "Top 4",
+          "reward": 100000,
+          "currency": "coins"
+        },
+        {
+          "rank": 5,
+          "position": "Top 5",
+          "reward": 90000,
+          "currency": "coins"
+        },
+        {
+          "rank": 6,
+          "position": "Top 6",
+          "reward": 80000,
+          "currency": "coins"
+        },
+        {
+          "rank": 7,
+          "position": "Top 7",
+          "reward": 70000,
+          "currency": "coins"
+        },
+        {
+          "rank": 8,
+          "position": "Top 8",
+          "reward": 60000,
+          "currency": "coins"
+        },
+        {
+          "rank": 9,
+          "position": "Top 9",
+          "reward": 50000,
+          "currency": "coins"
+        },
+        {
+          "rank": 10,
+          "position": "Top 10",
+          "reward": 40000,
+          "currency": "coins"
+        }
+  ];
+
+  ApiResponse.success(res, 200, 'All Points retrieved successfully', {
+    rewards
+  });
+});
+
+
 module.exports = {
   getWeeklyLeaderboard,
   getMyLeaderboardPosition,
-  getLeaderboardHistory
+  getLeaderboardHistory,
+  getAllLeaderboardPoints
 };

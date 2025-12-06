@@ -13,6 +13,7 @@ router.get('/rich', getRichLevels);
 router.get('/charm', getCharmLevels);
 router.get('/all', getAllLevels);
 
+
 // Protected route - User's current progress
 router.get('/progress', authorize, getUserLevelProgress);
 
