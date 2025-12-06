@@ -137,7 +137,7 @@ app.use('/api/v1/coins', coinRoutes);
 app.use('/api/v1/calls', callRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin', photoApprovalRoutes);
-app.use('/api/v1/', messageRoutes);
+app.use('/api/v1', messageRoutes);
 app.use('/api/v1/coin-sellers', coinSellerRoutes);
 app.use('/api/v1/leaderboard', leaderboardRoutes);
 app.use('/api/v1/follow', followRoutes);

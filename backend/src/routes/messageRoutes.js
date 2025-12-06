@@ -14,7 +14,7 @@ router.get('/conversations', messageController.getConversations);
 router.get('/conversation/:userId', messageController.getConversation);
 
 // Get messages for a conversation
-router.get('/:userId', messageController.getMessages);
+router.get('conversation/:userId', messageController.getMessages);
 
 // Send text message
 router.post('/send', messageController.sendMessage);

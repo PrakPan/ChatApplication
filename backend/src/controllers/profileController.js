@@ -10,6 +10,7 @@ const logger = require('../utils/logger');
 
 // Get user profile with all details
 const getProfile = asyncHandler(async (req, res) => {
+  console.log("Here");
   const user = await User.findById(req.user._id).select('-password -refreshToken').lean();
   
   if (!user) {

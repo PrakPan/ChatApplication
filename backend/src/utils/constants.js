@@ -29,10 +29,12 @@ module.exports = {
   },
   
   COIN_PACKAGES: [
-    { id: '1', coins: 1000, price: 99, currency: 'INR', discount: 0 },
-    { id: '2', coins: 5000, price: 399, currency: 'INR', discount: 20 },
-    { id: '3', coins: 10000, price: 699, currency: 'INR', discount: 30 },
-    { id: '4', coins: 25000, price: 1499, currency: 'INR', discount: 40 }
+    { id: '1', coins: 6600, price: 200, currency: 'INR', discount: 0 },
+    { id: '2', coins: 16500, price: 500, currency: 'INR', discount: 20 },
+    { id: '3', coins: 33500, price: 1000, currency: 'INR', discount: 30 },
+    { id: '4', coins: 68000, price: 2000, currency: 'INR', discount: 40 },
+    { id: '5', coins: 171000, price: 5000, currency: 'INR', discount: 50 },
+    { id: '6', coins: 345000, price: 10000, currency: 'INR', discount: 60 }
   ],
   
   REVENUE_SPLIT: {

@@ -111,6 +111,7 @@ exports.getConversation = async (req, res) => {
 
 // Get messages with pagination
 exports.getMessages = async (req, res) => {
+  console.log("Inside get message");
   try {
     const userId = req.user._id;
     const { userId: otherUserId } = req.params;
