@@ -37,6 +37,7 @@ const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const followRoutes = require('./routes/followRoutes');
 const agentRoutes = require('./routes/agentRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const levelRoutes = require('./routes/levelRoutes');
 
 // Initialize express
 const app = express();
@@ -143,6 +144,8 @@ app.use('/api/v1/leaderboard', leaderboardRoutes);
 app.use('/api/v1/follow', followRoutes);
 app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/profile', profileRoutes);
+
+app.use('/api/v1/levels', levelRoutes);
 
 // Socket.io handler
 socketHandler(io);
