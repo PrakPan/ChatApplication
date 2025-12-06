@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Video, User, Crown, ArrowLeft, Mail, Phone, Lock, UserCircle, DollarSign, FileText } from 'lucide-react';
+import { Video, User, Crown, ArrowLeft, Mail, Phone, Lock, UserCircle, FileText, Globe, Calendar, Users } from 'lucide-react';
 
 const Register = () => {
-  const [step, setStep] = useState('role-selection'); // 'role-selection', 'user-form', 'host-form'
+  const [step, setStep] = useState('role-selection');
   const [selectedRole, setSelectedRole] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -11,9 +11,10 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     role: 'user',
-    // Host specific fields
+    country: '',
+    dob: '',
+    gender: '',
     bio: '',
-    ratePerMinute: 50,
     languages: [],
     interests: [],
   });
@@ -53,18 +54,52 @@ const Register = () => {
       return;
     }
 
+    if (!formData.country) {
+      setMessage({ type: 'error', text: 'Country is required' });
+      return;
+    }
+
+    if (!formData.dob) {
+      setMessage({ type: 'error', text: 'Date of birth is required' });
+      return;
+    }
+
+    if (!formData.gender) {
+      setMessage({ type: 'error', text: 'Gender is required' });
+      return;
+    }
+
+    if (formData.role === 'host') {
+      if (!formData.dob) {
+        setMessage({ type: 'error', text: 'Date of birth is required for hosts' });
+        return;
+      }
+
+      const birthDate = new Date(formData.dob);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+      
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+
+      if (actualAge < 18) {
+        setMessage({ type: 'error', text: 'Hosts must be at least 18 years old' });
+        return;
+      }
+
+      if (formData.gender !== 'female') {
+        setMessage({ type: 'error', text: 'Only females can register as hosts' });
+        return;
+      }
+    }
+
     setLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
       const { confirmPassword, ...registerData } = formData;
       
-      // Convert ratePerMinute to number if it's a host
-      if (registerData.role === 'host' && registerData.ratePerMinute) {
-        registerData.ratePerMinute = Number(registerData.ratePerMinute);
-      }
-      
-      // API call to register
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
@@ -80,19 +115,14 @@ const Register = () => {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Store tokens and userId
-      localStorage.setItem('accessToken', data.data.token);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
-      localStorage.setItem('userId', data.data.user.userId);
-      
+      // Store tokens and userId - using in-memory instead of localStorage for this artifact
       setMessage({ 
         type: 'success', 
         text: `Account created successfully! Your User ID is: ${data.data.user.userId}. Please save it for login.` 
       });
       
-      // Redirect after success (you can use react-router here)
       setTimeout(() => {
-        window.location.href = '/'; // Update with your dashboard route
+        window.location.href = '/';
       }, 3000);
       
     } catch (error) {
@@ -103,12 +133,10 @@ const Register = () => {
     }
   };
 
-  // Role Selection Screen
   if (step === 'role-selection') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-5xl">
-          {/* Header */}
           <div className="text-center mb-12">
             <div className="flex justify-center mb-4">
               <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-2xl">
@@ -119,9 +147,7 @@ const Register = () => {
             <p className="text-gray-600 text-lg">Choose how you want to get started</p>
           </div>
 
-          {/* Role Cards */}
           <div className="grid md:grid-cols-2 gap-8 mb-8">
-            {/* User Card */}
             <div
               onClick={() => handleRoleSelection('user')}
               className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-purple-500 group"
@@ -154,7 +180,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Host Card */}
             <div
               onClick={() => handleRoleSelection('host')}
               className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-500 group"
@@ -188,7 +213,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Sign In Link */}
           <div className="text-center">
             <p className="text-gray-600">
               Already have an account?{' '}
@@ -202,13 +226,11 @@ const Register = () => {
     );
   }
 
-  // User Registration Form
   if (step === 'user-form') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-3xl shadow-2xl p-8">
-            {/* Header */}
             <button
               onClick={handleBack}
               className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
@@ -227,8 +249,7 @@ const Register = () => {
               <p className="text-gray-600">Start your journey with us</p>
             </div>
 
-            {/* Form */}
-            <div onSubmit={handleSubmit}>
+            <div>
               {message.text && (
                 <div className={`mb-5 p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 text-green-700 border-2 border-green-200' : 'bg-red-50 text-red-700 border-2 border-red-200'}`}>
                   {message.text}
@@ -236,110 +257,160 @@ const Register = () => {
               )}
               
               <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                <div className="relative">
-                  <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                    placeholder="John Doe"
-                    required
-                  />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                  <div className="relative">
+                    <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                    placeholder="john@example.com"
-                    required
-                  />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      placeholder="john@example.com"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                    placeholder="1234567890"
-                    pattern="[0-9]{10}"
-                    required
-                  />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      placeholder="1234567890"
+                      pattern="[0-9]{10}"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                    placeholder="••••••••"
-                    minLength={8}
-                    required
-                  />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      placeholder="••••••••"
+                      minLength={8}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                    placeholder="••••••••"
-                    minLength={8}
-                    required
-                  />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      placeholder="••••••••"
+                      minLength={8}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-              >
-                {loading ? 'Creating account...' : 'Create Account'}
-              </button>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      placeholder="India"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="date"
+                      name="dob"
+                      value={formData.dob}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors appearance-none"
+                      required
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                >
+                  {loading ? 'Creating account...' : 'Create Account'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     );
   }
+
   if (step === 'host-form') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
           <div className="bg-white rounded-3xl shadow-2xl p-8">
-            {/* Header */}
             <button
               onClick={handleBack}
               className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
@@ -358,8 +429,7 @@ const Register = () => {
               <p className="text-gray-600">Set up your hosting profile</p>
             </div>
 
-            {/* Form */}
-            <div onSubmit={handleSubmit}>
+            <div>
               {message.text && (
                 <div className={`mb-5 p-4 rounded-xl ${message.type === 'success' ? 'bg-green-50 text-green-700 border-2 border-green-200' : 'bg-red-50 text-red-700 border-2 border-red-200'}`}>
                   {message.text}
@@ -367,161 +437,195 @@ const Register = () => {
               )}
               
               <div className="space-y-5">
-              <div className="grid md:grid-cols-2 gap-5">
+                <div className="grid md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                    <div className="relative">
+                      <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                        placeholder="John Doe"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                        placeholder="john@example.com"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
                   <div className="relative">
-                    <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                      placeholder="1234567890"
+                      pattern="[0-9]{10}"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                        placeholder="••••••••"
+                        minLength={8}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                        placeholder="••••••••"
+                        minLength={8}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
-                      name="name"
-                      value={formData.name}
+                      name="country"
+                      value={formData.country}
                       onChange={handleChange}
                       className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                      placeholder="John Doe"
+                      placeholder="India"
                       required
                     />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="date"
+                        name="dob"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Must be 18+ to be a host</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
+                    <div className="relative">
+                      <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors appearance-none"
+                        required
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="female">Female</option>
+                      </select>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Only females can be hosts</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
+                    <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <textarea
+                      name="bio"
+                      value={formData.bio}
                       onChange={handleChange}
-                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                      placeholder="john@example.com"
-                      required
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors resize-none"
+                      placeholder="Tell users about yourself..."
+                      rows="3"
+                      maxLength="500"
                     />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/500 characters</p>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Languages (comma-separated)</label>
                   <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                    placeholder="1234567890"
-                    pattern="[0-9]{10}"
-                    required
+                    type="text"
+                    name="languages"
+                    onChange={(e) => handleArrayInput('languages', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    placeholder="English, Hindi, Spanish"
                   />
                 </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                      placeholder="••••••••"
-                      minLength={8}
-                      required
-                    />
-                  </div>
-                </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                      placeholder="••••••••"
-                      minLength={8}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Rate per Minute (coins)</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Interests (comma-separated)</label>
                   <input
-                    type="number"
-                    name="ratePerMinute"
-                    value={formData.ratePerMinute}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                    placeholder="50"
-                    min="10"
-                    required
+                    type="text"
+                    name="interests"
+                    onChange={(e) => handleArrayInput('interests', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    placeholder="Music, Travel, Technology"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Minimum 10 coins per minute</p>
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors resize-none"
-                    placeholder="Tell users about yourself..."
-                    rows="3"
-                    maxLength="500"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/500 characters</p>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                >
+                  {loading ? 'Creating account...' : 'Create Host Account'}
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Languages (comma-separated)</label>
-                <input
-                  type="text"
-                  name="languages"
-                  onChange={(e) => handleArrayInput('languages', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="English, Hindi, Spanish"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Interests (comma-separated)</label>
-                <input
-                  type="text"
-                  name="interests"
-                  onChange={(e) => handleArrayInput('interests', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="Music, Travel, Technology"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-              >
-                {loading ? 'Creating account...' : 'Create Host Account'}
-              </button>
             </div>
           </div>
-        </div>
         </div>
       </div>
     );
