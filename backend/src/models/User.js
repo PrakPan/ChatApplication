@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema({
   },
   country: {
     type: String,
-    required: [true, 'Country is required'],
+     required: [false, 'Country is required'],
     trim: true
   },
   dob: {
