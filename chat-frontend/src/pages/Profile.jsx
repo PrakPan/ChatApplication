@@ -502,6 +502,18 @@ export const Profile = () => {
               </div>
             </button>
 
+            {/* Coin Seller */}
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => navigate('/trade-account')}
+                className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full hover:scale-105 transition-transform"
+              >
+                <Crown className="w-4 h-4 text-white" />
+                <span className="text-white font-bold text-sm">Trade Account</span>
+              </button>
+            </div>
+
             {/* Agent Section */}
             {(agentInfo || hostInfo?.agentId) && (
               <button 
@@ -521,6 +533,18 @@ export const Profile = () => {
                 )}
               </button>
             )}
+
+            <button 
+              onClick={() => navigate('/withdraw')}
+              className="w-full flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 rounded-2xl transition-all duration-300 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl">
+                  <History className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-base font-semibold text-gray-700">Withdrawal</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -685,6 +709,27 @@ export const Profile = () => {
               </div>
             )}
 
+             {activeDrawer === 'coin-seller' && (
+              <div className="space-y-3">
+                {drawerData.length > 0 ? drawerData.map((coin_seller) => (
+                  <div key={coin_seller._id} className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">
+                      {coin_seller.avatar ? (
+                        <img src={coin_seller.avatar} className="w-full h-full rounded-full object-cover" alt="" />
+                      ) : (
+                        coin_seller.name?.charAt(0) || 'U'
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{coin_seller?.name}</h4>
+                      <p className="text-sm text-gray-500">{coin_seller?.role}</p>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center py-8 text-gray-500">Please try again, after some time</div>
+                )}
+              </div>
+            )}
             {activeDrawer === 'richLevelTable' && (
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 border-2 border-yellow-200">

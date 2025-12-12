@@ -14,6 +14,8 @@ import { useAuth } from './hooks/useAuth';
 import AdminPanel from './components/AdminPanel';
 import Register from './pages/Register';
 import HostDashboard from './pages/HostDashboard';
+import TradeAccountPage from './pages/TradeAccountPage';
+import HostWithdrawalUI from './components/HostWithdrawalUI';
 
 function App() {
   return (
@@ -94,9 +96,18 @@ function AppRoutes() {
                 <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
-              }
+              } 
             />
             
+            <Route
+              path="/trade-account"
+              element={
+                <ProtectedRoute>
+                  <TradeAccountPage />
+                </ProtectedRoute>
+              } 
+            />
+
             <Route
               path="/coins"
               element={
@@ -182,6 +193,15 @@ function AppRoutes() {
                   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                     <p className="text-gray-500">Earnings - Coming Soon</p>
                   </div>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/withdraw"
+              element={
+                <ProtectedRoute allowedRoles={['host', 'admin']}>
+                  <HostWithdrawalUI/>
                 </ProtectedRoute>
               }
             />

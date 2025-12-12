@@ -16,10 +16,12 @@ import {
   FiEdit,
   FiChevronDown,
   FiChevronRight,
+  FiCheckCircle,
+  FiXCircle,
 } from "react-icons/fi";
 import { IoTrophyOutline } from "react-icons/io5";
 import { MdOutlineAttachMoney, MdOutlinePhoneInTalk } from "react-icons/md";
-import { BiCoin, BiDiamond } from "react-icons/bi";
+import { BiCoin, BiDiamond, BiWallet } from "react-icons/bi";
 import axios from "axios";
 import { TbBan } from "react-icons/tb";
 import { PhotoApprovalPanel } from "./PhotoApprovalPanel";
@@ -31,6 +33,7 @@ const API_BASE_URL =
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
+  Authorization: `Bearer ${localStorage.getItem('accessToken')}`
 });
 
 api.interceptors.request.use((config) => {
@@ -103,107 +106,104 @@ const AdminPanel = () => {
   }, [activeTab, activeSubTab, pagination.page, searchTerm, sortBy, sortOrder]);
 
   const loadData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === "dashboard") {
-        const { data } = await api.get("/admin/dashboard/stats");
-        setDashboardStats(data.data);
-      } else if (activeTab === "hosts") {
-        if (activeSubTab === "list") {
-          const { data } = await api.get("/admin/hosts", {
-            params: {
-              page: pagination.page,
-              limit: pagination.limit,
-              search: searchTerm,
-            },
-          });
-          let hostsData = data.data.hosts;
-          hostsData = sortData(hostsData);
-          setHosts(hostsData);
-          setPagination((prev) => ({
-            ...prev,
-            total: data.data.pagination.total,
-          }));
-        } else if (activeSubTab === "leaderboard") {
-          const { data } = await api.get("/admin/leaderboard", {
-            params: { type: "host" },
-          });
-          setLeaderboard((prev) => ({ ...prev, hosts: data.data.hosts || [] }));
-        } else if (activeSubTab === "history") {
-          const { data } = await api.get("/admin/calls", {
-            params: { page: pagination.page, limit: pagination.limit },
-          });
-          setCalls(data.data.calls.filter((call) => call.hostId));
-        }
-      } else if (activeTab === "users") {
-        if (activeSubTab === "list") {
-          const { data } = await api.get("/admin/users", {
-            params: {
-              page: pagination.page,
-              limit: pagination.limit,
-              search: searchTerm,
-            },
-          });
-          let usersData = data.data.users;
-          usersData = sortData(usersData);
-          setUsers(usersData);
-          setPagination((prev) => ({
-            ...prev,
-            total: data.data.pagination.total,
-          }));
-        } else if (activeSubTab === "leaderboard") {
-          const { data } = await api.get("/admin/leaderboard", {
-            params: { type: "user" },
-          });
-          setLeaderboard((prev) => ({ ...prev, users: data.data.users || [] }));
-        } else if (activeSubTab === "history") {
-          const { data } = await api.get("/admin/calls", {
-            params: { page: pagination.page, limit: pagination.limit },
-          });
-          setCalls(data.data.calls.filter((call) => call.userId));
-        }
-      } else if (activeTab === "agents") {
-        if (activeSubTab === "list") {
-          const { data } = await api.get("/agents/all", {
-            params: {
-              page: pagination.page,
-              limit: pagination.limit,
-              isActive: true,
-            },
-          });
-          let agentsData = data.data.agents;
-          agentsData = sortData(agentsData);
-          setAgents(agentsData);
-          setPagination((prev) => ({
-            ...prev,
-            total: data.data.pagination.total,
-          }));
-        } else if (activeSubTab === "details" && selectedAgent) {
-          const { data } = await api.get("/agents/hosts", {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-            },
-          });
-          setAgentHosts(data.data.hosts || []);
-        }
-      } else if (activeTab === "coin-sellers") {
-        const { data } = await api.get("/coin-sellers/all", {
-          params: { page: pagination.page, limit: pagination.limit },
+  setLoading(true);
+  try {
+    if (activeTab === "dashboard") {
+      const { data } = await api.get("/admin/dashboard/stats");
+      setDashboardStats(data.data);
+    } else if (activeTab === "hosts") {
+      if (activeSubTab === "list") {
+        const { data } = await api.get("/admin/hosts", {
+          params: {
+            page: pagination.page,
+            limit: pagination.limit,
+            search: searchTerm,
+          },
         });
-        setCoinSellers(data.data.coinSellers || []);
+        let hostsData = data.data.hosts;
+        hostsData = sortData(hostsData);
+        setHosts(hostsData);
         setPagination((prev) => ({
           ...prev,
-          total: data.data.pagination?.total || 0,
+          total: data.data.pagination.total,
         }));
+      } else if (activeSubTab === "leaderboard") {
+        const { data } = await api.get("/admin/leaderboard", {
+          params: { type: "host" },
+        });
+        setLeaderboard((prev) => ({ ...prev, hosts: data.data.hosts || [] }));
+      } else if (activeSubTab === "history") {
+        const { data } = await api.get("/admin/calls", {
+          params: { page: pagination.page, limit: pagination.limit },
+        });
+        setCalls(data.data.calls.filter((call) => call.hostId));
       }
-      // Remove the problematic else condition that was here
-    } catch (error) {
-      console.error("Error loading data:", error);
-      alert(error.response?.data?.error || "Failed to load data");
-    } finally {
-      setLoading(false);
+    } else if (activeTab === "users") {
+      if (activeSubTab === "list") {
+        const { data } = await api.get("/admin/users", {
+          params: {
+            page: pagination.page,
+            limit: pagination.limit,
+            search: searchTerm,
+          },
+        });
+        let usersData = data.data.users;
+        usersData = sortData(usersData);
+        setUsers(usersData);
+        setPagination((prev) => ({
+          ...prev,
+          total: data.data.pagination.total,
+        }));
+      } else if (activeSubTab === "leaderboard") {
+        const { data } = await api.get("/admin/leaderboard", {
+          params: { type: "user" },
+        });
+        setLeaderboard((prev) => ({ ...prev, users: data.data.users || [] }));
+      } else if (activeSubTab === "history") {
+        const { data } = await api.get("/admin/calls", {
+          params: { page: pagination.page, limit: pagination.limit },
+        });
+        setCalls(data.data.calls.filter((call) => call.userId));
+      }
+    } else if (activeTab === "agents") {
+      if (activeSubTab === "list") {
+        const { data } = await api.get("/agents/all", {
+          params: {
+            page: pagination.page,
+            limit: pagination.limit,
+            isActive: true,
+          },
+        });
+        let agentsData = data.data.agents;
+        agentsData = sortData(agentsData);
+        setAgents(agentsData);
+        setPagination((prev) => ({
+          ...prev,
+          total: data.data.pagination.total,
+        }));
+      } else if (activeSubTab === "details" && selectedAgent) {
+        const { data } = await api.get("/agents/hosts", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+          },
+        });
+        setAgentHosts(data.data.hosts || []);
+      }
+    } else if (activeTab === "coin-sellers") {
+      const { data } = await api.get("/coin_sellers/all");
+      setCoinSellers(data.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        total: data.count || 0,
+      }));
     }
-  };
+  } catch (error) {
+    console.error("Error loading data:", error);
+    alert(error.response?.data?.message || error.response?.data?.error || "Failed to load data");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const sortData = (data) => {
     return [...data].sort((a, b) => {
@@ -280,8 +280,8 @@ const AdminPanel = () => {
     try {
       const endpoint =
         selectedUser.type === "host"
-          ? `/admin/users/${selectedUser._id}/add-coins`
-          : `/admin/users/${selectedUser._id}/add-coins`;
+          ? `/users/${selectedUser._id}/add-coins`
+          : `/users/${selectedUser._id}/add-coins`;
 
       await api.post(endpoint, { amount, reason });
       alert("Coins added successfully!");
@@ -448,7 +448,7 @@ const AdminPanel = () => {
     const reason = prompt("Enter reason (optional):");
 
     try {
-      await api.post(`/coin-sellers/${coinSellerId}/add-diamonds`, {
+      await api.post(`/coin_sellers/${coinSellerId}/add-diamonds`, {
         amount: parseInt(amount),
         reason,
       });
@@ -805,11 +805,98 @@ const AdminPanel = () => {
 
   // ADD this Coin Sellers Tab component
 
-  const CoinSellersTab = () => (
+  const CoinSellersTab = () => {
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showAddDiamondsModal, setShowAddDiamondsModal] = useState(false);
+  const [selectedSeller, setSelectedSeller] = useState(null);
+  const [assignForm, setAssignForm] = useState({
+    userId: '',
+    initialDiamonds: '',
+    notes: ''
+  });
+  const [diamondsForm, setDiamondsForm] = useState({
+    amount: '',
+    notes: ''
+  });
+
+  const handleAssignCoinSeller = async () => {
+    if (!assignForm.userId) {
+      alert('Please select a user');
+      return;
+    }
+
+    try {
+      await api.post('/coin_sellers/assign', {
+        userId: assignForm.userId,
+        initialDiamonds: parseInt(assignForm.initialDiamonds) || 0,
+        notes: assignForm.notes
+      });
+      alert('Coin seller assigned successfully!');
+      setShowAssignModal(false);
+      setAssignForm({ userId: '', initialDiamonds: '', notes: '' });
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to assign coin seller');
+    }
+  };
+
+  const handleAddDiamondsToSeller = async (seller) => {
+    setSelectedSeller(seller);
+    setShowAddDiamondsModal(true);
+  };
+
+  const handleSubmitAddDiamonds = async () => {
+    if (!diamondsForm.amount || diamondsForm.amount <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      await api.post(`/coin_sellers/${selectedSeller._id}/add-diamonds`, {
+        amount: parseInt(diamondsForm.amount),
+        notes: diamondsForm.notes
+      });
+      alert('Diamonds added successfully!');
+      setShowAddDiamondsModal(false);
+      setDiamondsForm({ amount: '', notes: '' });
+      setSelectedSeller(null);
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to add diamonds');
+    }
+  };
+
+  const handleRemoveCoinSeller = async (userId) => {
+    if (!confirm('Are you sure you want to remove this coin seller?')) return;
+
+    try {
+      await api.delete(`/coin_sellers/${userId}`);
+      alert('Coin seller removed successfully');
+      loadData();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to remove coin seller');
+    }
+  };
+
+  const availableUsers = users.filter(u => !u.isCoinSeller);
+
+  return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold">Coin Sellers</h2>
-        <SortControls />
+        <div>
+          <h2 className="text-2xl font-bold">Coin Sellers Management</h2>
+          <p className="text-sm text-gray-600 mt-1">Manage diamond inventory and coin seller accounts</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <SortControls />
+          <button
+            onClick={() => setShowAssignModal(true)}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center"
+          >
+            <FiPlus className="w-5 h-5 mr-2" />
+            Assign Coin Seller
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-4">
@@ -817,10 +904,10 @@ const AdminPanel = () => {
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, or user ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -828,68 +915,92 @@ const AdminPanel = () => {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Seller
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Seller Info
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  User ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Diamond Balance
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Total Allocated
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Distributed
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Distributed
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Withdrawn
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Withdrawn
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {coinSellers.map((seller) => (
-                <tr key={seller._id} className="hover:bg-gray-50">
+                <tr key={seller._id} className="hover:bg-purple-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {seller.userId?.name}
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                        {seller.userId?.name?.charAt(0).toUpperCase()}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {seller.userId?.email}
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {seller.userId?.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {seller.userId?.email}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-purple-600 font-bold text-lg">
-                      <BiDiamond className="w-5 h-5 mr-1" />
-                      {seller.diamondBalance?.toLocaleString() || 0}
+                    <span className="font-mono font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
+                      {seller.userId?.userId}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <BiDiamond className="w-6 h-6 mr-2 text-purple-600 fill-current" />
+                      <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        {seller.diamondBalance?.toLocaleString() || 0}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-gray-700 font-semibold">
-                      {seller.totalDiamondsAllocated?.toLocaleString() || 0}
-                    </span>
+                    <div className="flex items-center text-gray-700">
+                      <BiDiamond className="w-5 h-5 mr-1 text-gray-400" />
+                      <span className="font-semibold">
+                        {seller.totalDiamondsAllocated?.toLocaleString() || 0}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-blue-600 font-semibold">
-                      {seller.totalDiamondsDistributed?.toLocaleString() || 0}
-                    </span>
+                    <div className="flex items-center text-blue-600">
+                      <FiTrendingUp className="w-4 h-4 mr-1" />
+                      <span className="font-semibold">
+                        {seller.totalDiamondsDistributed?.toLocaleString() || 0}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-orange-600 font-semibold">
-                      {seller.totalDiamondsWithdrawn?.toLocaleString() || 0}
-                    </span>
+                    <div className="flex items-center text-orange-600">
+                      <MdOutlineAttachMoney className="w-5 h-5 mr-1" />
+                      <span className="font-semibold">
+                        {seller.totalDiamondsWithdrawn?.toLocaleString() || 0}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
                         seller.isActive
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
@@ -901,17 +1012,24 @@ const AdminPanel = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleAddDiamondsToSeller(seller._id)}
-                        className="text-purple-600 hover:text-purple-800"
+                        onClick={() => handleAddDiamondsToSeller(seller)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                         title="Add Diamonds"
                       >
-                        <BiDiamond className="w-5 h-5 fill-current" />
+                        <FiPlus className="w-5 h-5" />
                       </button>
                       <button
-                        className="text-blue-600 hover:text-blue-800"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="View Transactions"
                       >
                         <FiEye className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveCoinSeller(seller.userId._id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove Coin Seller"
+                      >
+                        <FiTrash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </td>
@@ -925,11 +1043,180 @@ const AdminPanel = () => {
       {coinSellers.length === 0 && (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <BiDiamond className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500">No coin sellers found</p>
+          <p className="text-gray-500 text-lg font-medium">No coin sellers found</p>
+          <p className="text-gray-400 text-sm mt-2">Click "Assign Coin Seller" to add your first seller</p>
+        </div>
+      )}
+
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Assign Coin Seller</h3>
+                <button
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setAssignForm({ userId: '', initialDiamonds: '', notes: '' });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                <p className="text-sm text-purple-700 flex items-center">
+                  <BiDiamond className="w-4 h-4 mr-2" />
+                  Coin sellers can distribute diamonds (coins) to users and manage their inventory
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select User *
+                  </label>
+                  <select
+                    value={assignForm.userId}
+                    onChange={(e) => setAssignForm({...assignForm, userId: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="">Choose a user...</option>
+                    {availableUsers.map(user => (
+                      <option key={user._id} value={user._id}>
+                        {user.name} ({user.userId}) - {user.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Initial Diamonds (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={assignForm.initialDiamonds}
+                    onChange={(e) => setAssignForm({...assignForm, initialDiamonds: e.target.value})}
+                    placeholder="Enter initial diamond allocation"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Starting inventory for the seller</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={assignForm.notes}
+                    onChange={(e) => setAssignForm({...assignForm, notes: e.target.value})}
+                    placeholder="Add any notes about this assignment..."
+                    rows="3"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleAssignCoinSeller}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-semibold"
+                >
+                  Assign as Coin Seller
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddDiamondsModal && selectedSeller && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Add Diamonds to Inventory</h3>
+                <button
+                  onClick={() => {
+                    setShowAddDiamondsModal(false);
+                    setDiamondsForm({ amount: '', notes: '' });
+                    setSelectedSeller(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-sm text-gray-600">Coin Seller</p>
+                    <p className="font-semibold text-gray-900">{selectedSeller.userId?.name}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                    {selectedSeller.userId?.name?.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-purple-200">
+                  <span className="text-sm text-gray-600">Current Balance:</span>
+                  <div className="flex items-center text-purple-600 font-bold">
+                    <BiDiamond className="w-5 h-5 mr-1 fill-current" />
+                    {selectedSeller.diamondBalance?.toLocaleString() || 0}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Diamond Amount *
+                  </label>
+                  <div className="relative">
+                    <BiDiamond className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-500 w-5 h-5" />
+                    <input
+                      type="number"
+                      value={diamondsForm.amount}
+                      onChange={(e) => setDiamondsForm({...diamondsForm, amount: e.target.value})}
+                      placeholder="Enter diamond amount"
+                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      min="1"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Amount to add to seller's inventory</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={diamondsForm.notes}
+                    onChange={(e) => setDiamondsForm({...diamondsForm, notes: e.target.value})}
+                    placeholder="Restock, bonus, promotion, etc."
+                    rows="3"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSubmitAddDiamonds}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-semibold flex items-center justify-center"
+                >
+                  <FiPlus className="w-5 h-5 mr-2" />
+                  Add Diamonds
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
+};
+
+
   const StatCard = ({ icon: Icon, title, value, trend, color }) => (
     <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
@@ -1563,6 +1850,22 @@ const AdminPanel = () => {
                   </span>
                 )}
               </button>
+
+
+              <button
+  onClick={() => {
+    setActiveTab('withdrawals');
+    setSidebarOpen(false);
+  }}
+  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+    activeTab === 'withdrawals'
+      ? 'bg-white text-blue-900'
+      : 'hover:bg-blue-700'
+  }`}
+>
+  <BiWallet className="w-5 h-5" />
+  <span>Withdrawals</span>
+</button>
             </div>
           </nav>
         </div>
@@ -2421,6 +2724,356 @@ const AdminPanel = () => {
     </div>
   );
 
+  const WithdrawalManagementTab = () => {
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showProcessModal, setShowProcessModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
+  const [transactionId, setTransactionId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [filterStatus, setFilterStatus] = useState('pending');
+
+  useEffect(() => {
+    loadWithdrawals();
+  }, [filterStatus]);
+
+  const loadWithdrawals = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/admin/withdrawals', {
+        params: { status: filterStatus, page: 1, limit: 50 }
+      });
+      setWithdrawals(data.data.withdrawals);
+    } catch (error) {
+      console.error('Error loading withdrawals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProcessWithdrawal = async () => {
+    if (!transactionId.trim()) {
+      alert('Please enter transaction ID');
+      return;
+    }
+
+    try {
+      await api.post(`/admin/withdrawals/${selectedWithdrawal._id}/process`, {
+        transactionId,
+        notes
+      });
+      alert('Withdrawal processed successfully!');
+      setShowProcessModal(false);
+      setTransactionId('');
+      setNotes('');
+      loadWithdrawals();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to process withdrawal');
+    }
+  };
+
+  const handleRejectWithdrawal = async () => {
+    if (!rejectionReason.trim()) {
+      alert('Please provide rejection reason');
+      return;
+    }
+
+    try {
+      await api.post(`/admin/withdrawals/${selectedWithdrawal._id}/reject`, {
+        reason: rejectionReason
+      });
+      alert('Withdrawal rejected and diamonds refunded');
+      setShowRejectModal(false);
+      setRejectionReason('');
+      loadWithdrawals();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to reject withdrawal');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'cancelled': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-2xl font-bold">Withdrawal Management</h2>
+        
+        <div className="flex items-center space-x-3">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+            <option value="rejected">Rejected</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Host Details
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bank Details
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {withdrawals.map((withdrawal) => (
+                  <tr key={withdrawal._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {withdrawal.hostId?.userId?.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {withdrawal.hostId?.userId?.email}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <BiDiamond className="w-5 h-5 mr-1 text-purple-600" />
+                        <span className="font-bold text-lg">{withdrawal.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">≈ ₹{withdrawal.amount.toLocaleString('en-IN')}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm">
+                        <div className="font-medium">{withdrawal.bankDetails.bankName}</div>
+                        <div className="text-gray-600">{withdrawal.bankDetails.accountName}</div>
+                        <div className="text-gray-500 font-mono text-xs">
+                          {withdrawal.bankDetails.accountNumber}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          IFSC: {withdrawal.bankDetails.ifscCode}
+                        </div>
+                        {withdrawal.bankDetails.upiId && (
+                          <div className="text-gray-500 text-xs">
+                            UPI: {withdrawal.bankDetails.upiId}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(withdrawal.status)}`}>
+                        {withdrawal.status}
+                      </span>
+                      {withdrawal.transactionId && (
+                        <div className="text-xs text-gray-500 mt-1 font-mono">
+                          TXN: {withdrawal.transactionId}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="text-gray-900">
+                        {new Date(withdrawal.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-gray-500 text-xs">
+                        {new Date(withdrawal.createdAt).toLocaleTimeString()}
+                      </div>
+                      {withdrawal.processedAt && (
+                        <div className="text-green-600 text-xs mt-1">
+                          Processed: {new Date(withdrawal.processedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {withdrawal.status === 'pending' ? (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedWithdrawal(withdrawal);
+                              setShowProcessModal(true);
+                            }}
+                            className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm flex items-center space-x-1"
+                          >
+                            <FiCheckCircle className="w-4 h-4" />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedWithdrawal(withdrawal);
+                              setShowRejectModal(true);
+                            }}
+                            className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm flex items-center space-x-1"
+                          >
+                            <FiXCircle className="w-4 h-4" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">
+                          {withdrawal.status === 'completed' ? 'Completed' : 
+                           withdrawal.status === 'rejected' ? `Rejected: ${withdrawal.rejectionReason}` :
+                           withdrawal.status}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {withdrawals.length === 0 && (
+            <div className="text-center py-12">
+              <BiWallet className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No {filterStatus} withdrawals found</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Process Withdrawal Modal */}
+      {showProcessModal && selectedWithdrawal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Process Withdrawal</h3>
+              <button onClick={() => setShowProcessModal(false)}>
+                <FiX className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
+
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Host</span>
+                <span className="font-semibold">{selectedWithdrawal.hostId?.userId?.name}</span>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Amount</span>
+                <div className="flex items-center">
+                  <BiDiamond className="w-4 h-4 mr-1 text-purple-600" />
+                  <span className="font-bold">{selectedWithdrawal.amount.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Bank</span>
+                <span className="text-sm">{selectedWithdrawal.bankDetails.bankName}</span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transaction ID *
+                </label>
+                <input
+                  type="text"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Enter transaction ID"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows="3"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  placeholder="Add any notes..."
+                />
+              </div>
+
+              <button
+                onClick={handleProcessWithdrawal}
+                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+              >
+                Confirm & Process
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Withdrawal Modal */}
+      {showRejectModal && selectedWithdrawal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Reject Withdrawal</h3>
+              <button onClick={() => setShowRejectModal(false)}>
+                <FiX className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
+
+            <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="flex items-center text-red-800 mb-2">
+                <FiAlertCircle className="w-5 h-5 mr-2" />
+                <span className="font-semibold">Diamonds will be refunded</span>
+              </div>
+              <p className="text-sm text-red-700">
+                {selectedWithdrawal.amount.toLocaleString()} diamonds will be automatically refunded to the host's account.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rejection Reason *
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows="4"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                placeholder="Please provide a reason for rejection..."
+              />
+            </div>
+
+            <button
+              onClick={handleRejectWithdrawal}
+              className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+            >
+              Reject & Refund
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
@@ -2472,6 +3125,8 @@ const AdminPanel = () => {
               {activeTab === "coin-sellers" && <CoinSellersTab />}
 
               {activeTab === "photo-approvals" && <PhotoApprovalPanel />}
+
+              {activeTab === 'withdrawals' && <WithdrawalManagementTab />}
             </>
           )}
         </div>
@@ -2482,6 +3137,9 @@ const AdminPanel = () => {
       {showDiamondModal && <DiamondModal />}
       {showLevelModal && <LevelModal />}
       {showAgentModal && <AgentModal />}
+      
+
+      
     </div>
   );
 };
