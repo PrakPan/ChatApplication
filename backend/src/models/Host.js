@@ -62,13 +62,13 @@ const hostSchema = new mongoose.Schema({
     default: 'pending'
   },
   rejectionReason: String,
-  bankDetails: {
+  bankDetails: [{
     accountName: String,
     accountNumber: String,
     ifscCode: String,
     bankName: String,
     upiId: String
-  },
+  }],
   languages: [{
     type: String
   }],

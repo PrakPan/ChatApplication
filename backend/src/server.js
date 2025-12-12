@@ -38,6 +38,7 @@ const followRoutes = require('./routes/followRoutes');
 const agentRoutes = require('./routes/agentRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const levelRoutes = require('./routes/levelRoutes');
+const withdrawalRoutes = require('./routes/withdrawalRoutes');
 
 // Initialize express
 const app = express();
@@ -139,12 +140,12 @@ app.use('/api/v1/calls', callRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin', photoApprovalRoutes);
 app.use('/api/v1', messageRoutes);
-app.use('/api/v1/coin-sellers', coinSellerRoutes);
+app.use('/api/v1/coin_sellers', coinSellerRoutes);
 app.use('/api/v1/leaderboard', leaderboardRoutes);
 app.use('/api/v1/follow', followRoutes);
 app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/profile', profileRoutes);
-
+app.use('/api/v1/withdrawals',withdrawalRoutes);
 app.use('/api/v1/levels', levelRoutes);
 
 // Socket.io handler

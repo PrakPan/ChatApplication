@@ -107,7 +107,7 @@ router.get('/calls/host/:hostId', getHostCallHistory);
 router.get('/leaderboard', getWeeklyLeaderboard);
 
 // ============= Withdrawals =============
-router.get('/withdrawals/pending', getPendingWithdrawals);
+router.get('/withdrawals', getPendingWithdrawals);
 router.post('/withdrawals/:withdrawalId/process', processWithdrawal);
 router.post('/withdrawals/:withdrawalId/reject', rejectWithdrawal);
 

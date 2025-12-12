@@ -1,358 +1,422 @@
 const User = require('../models/User');
 const CoinSeller = require('../models/CoinSeller');
 const DiamondTransaction = require('../models/DiamondTransaction');
-const Level = require('../models/Level');
-const { ApiResponse, ApiError } = require('../utils/apiResponse');
-const asyncHandler = require('../utils/asyncHandler');
-const logger = require('../utils/logger');
+const mongoose = require('mongoose');
 
-// ============= Admin: Manage Coin Sellers =============
+const assignCoinSeller = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-const assignCoinSeller = asyncHandler(async (req, res) => {
-  const { userId, initialDiamonds = 0, notes } = req.body;
+  try {
+    const { userId, initialDiamonds, notes } = req.body;
 
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new ApiError(404, 'User not found');
+    if (!userId) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    const user = await User.findById(userId).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const existingCoinSeller = await CoinSeller.findOne({ userId }).session(session);
+    if (existingCoinSeller) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'User is already a coin seller' });
+    }
+
+    user.isCoinSeller = true;
+    user.role = 'coinSeller';
+    await user.save({ session });
+
+    const coinSeller = new CoinSeller({
+      userId,
+      diamondBalance: initialDiamonds || 0,
+      totalDiamondsAllocated: initialDiamonds || 0,
+      assignedBy: req.user?._id,
+      notes
+    });
+
+    await coinSeller.save({ session });
+
+    if (initialDiamonds && initialDiamonds > 0) {
+      const transaction = new DiamondTransaction({
+        coinSellerId: coinSeller._id,
+        recipientId: userId,
+        amount: initialDiamonds,
+        type: 'allocation',
+        status: 'completed',
+        canWithdraw: false,
+        withdrawalDeadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        notes: 'Initial allocation'
+      });
+      await transaction.save({ session });
+    }
+
+    await session.commitTransaction();
+
+    res.status(201).json({
+      success: true,
+      message: 'Coin seller assigned successfully',
+      data: coinSeller
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    session.endSession();
   }
+};
 
-  // Check if already a coin seller
-  const existing = await CoinSeller.findOne({ userId });
-  if (existing) {
-    throw new ApiError(400, 'User is already a coin seller');
+const removeCoinSeller = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const coinSeller = await CoinSeller.findOne({ userId }).session(session);
+    if (!coinSeller) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'Coin seller not found' });
+    }
+
+    coinSeller.isActive = false;
+    await coinSeller.save({ session });
+
+    user.isCoinSeller = false;
+    if (user.role === 'coinSeller') {
+      user.role = 'user';
+    }
+    await user.save({ session });
+
+    await session.commitTransaction();
+
+    res.json({
+      success: true,
+      message: 'Coin seller removed successfully'
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    session.endSession();
   }
+};
 
-  // Update user role
-  user.isCoinSeller = true;
-  await user.save();
+const addDiamondsToCoinSeller = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  // Create coin seller profile
-  const coinSeller = await CoinSeller.create({
-    userId,
-    diamondBalance: initialDiamonds,
-    totalDiamondsAllocated: initialDiamonds,
-    assignedBy: req.user._id,
-    notes
-  });
+  try {
+    const { coinSellerId } = req.params;
+    const { amount, notes } = req.body;
 
-  // Create allocation transaction if diamonds provided
-  if (initialDiamonds > 0) {
-    await DiamondTransaction.create({
+    if (!amount || amount <= 0) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'Invalid amount' });
+    }
+
+    const coinSeller = await CoinSeller.findById(coinSellerId).session(session);
+    if (!coinSeller) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'Coin seller not found' });
+    }
+
+    coinSeller.diamondBalance += amount;
+    coinSeller.totalDiamondsAllocated += amount;
+    await coinSeller.save({ session });
+
+    const transaction = new DiamondTransaction({
       coinSellerId: coinSeller._id,
-      recipientId: userId,
-      amount: initialDiamonds,
+      recipientId: coinSeller.userId,
+      amount,
       type: 'allocation',
       status: 'completed',
       canWithdraw: false,
-      withdrawalDeadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-      notes: `Initial allocation by admin`
+      withdrawalDeadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      notes: notes || 'Diamond allocation by admin'
     });
+    await transaction.save({ session });
+
+    await session.commitTransaction();
+
+    res.json({
+      success: true,
+      message: 'Diamonds added successfully',
+      data: {
+        newBalance: coinSeller.diamondBalance,
+        amountAdded: amount
+      }
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    session.endSession();
   }
+};
 
-  logger.info(`Coin seller assigned: ${userId} by admin ${req.user.email}`);
+const getAllCoinSellers = async (req, res) => {
 
-  ApiResponse.success(res, 201, 'Coin seller assigned successfully', { coinSeller });
-});
-
-const removeCoinSeller = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-
-  const coinSeller = await CoinSeller.findOne({ userId });
-  if (!coinSeller) {
-    throw new ApiError(404, 'Coin seller not found');
-  }
-
-  coinSeller.isActive = false;
-  await coinSeller.save();
-
-  const user = await User.findById(userId);
-  if (user) {
-    user.isCoinSeller = false;
-    await user.save();
-  }
-
-  logger.info(`Coin seller removed: ${userId}`);
-
-  ApiResponse.success(res, 200, 'Coin seller removed successfully');
-});
-
-const addDiamondsToCoinSeller = asyncHandler(async (req, res) => {
-  const { coinSellerId } = req.params;
-  const { amount, notes } = req.body;
-
-  if (!amount || amount <= 0) {
-    throw new ApiError(400, 'Invalid amount');
-  }
-
-  const coinSeller = await CoinSeller.findById(coinSellerId);
-  if (!coinSeller) {
-    throw new ApiError(404, 'Coin seller not found');
-  }
-
-  await coinSeller.addDiamonds(amount);
-
-  // Create allocation transaction
-  await DiamondTransaction.create({
-    coinSellerId: coinSeller._id,
-    recipientId: coinSeller.userId,
-    amount,
-    type: 'allocation',
-    status: 'completed',
-    canWithdraw: false,
-    withdrawalDeadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-    notes: notes || `Diamonds allocated by admin`
-  });
-
-  logger.info(`Diamonds added to coin seller ${coinSellerId}: ${amount}`);
-
-  ApiResponse.success(res, 200, 'Diamonds added successfully', {
-    newBalance: coinSeller.diamondBalance,
-    diamondsAdded: amount
-  });
-});
-
-const getAllCoinSellers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, isActive } = req.query;
-
-  const query = {};
-  if (isActive !== undefined) query.isActive = isActive === 'true';
-
-  const coinSellers = await CoinSeller.find(query)
-    .populate('userId', 'name email phone')
-    .populate('assignedBy', 'name email')
-    .sort({ createdAt: -1 })
-    .limit(limit * 1)
-    .skip((page - 1) * limit);
-
-  const total = await CoinSeller.countDocuments(query);
-
-  ApiResponse.success(res, 200, 'Coin sellers retrieved', {
-    coinSellers,
-    pagination: {
-      total,
-      page: Number(page),
-      pages: Math.ceil(total / limit)
+  console.log("Inside All")
+  try {
+    const { isActive } = req.query;
+    const filter = {};
+    
+    if (isActive !== undefined) {
+      filter.isActive = isActive === 'true';
     }
-  });
-});
 
-// ============= Coin Seller: Distribute Diamonds =============
+    const coinSellers = await CoinSeller.find(filter)
+      .populate('userId', 'name email phone userId avatar')
+      .sort({ createdAt: -1 });
 
-const distributeDiamonds = asyncHandler(async (req, res) => {
-  const { recipientId, amount, notes } = req.body;
-
-  if (!amount || amount <= 0) {
-    throw new ApiError(400, 'Invalid amount');
+    res.json({
+      success: true,
+      count: coinSellers.length,
+      data: coinSellers
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
+};
 
-  // Get coin seller profile
-  const coinSeller = await CoinSeller.findOne({ userId: req.user._id, isActive: true });
-  if (!coinSeller) {
-    throw new ApiError(403, 'You are not an active coin seller');
-  }
+const distributeDiamonds = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  // Check balance
-  if (!coinSeller.hasEnoughDiamonds(amount)) {
-    throw new ApiError(400, 'Insufficient diamond balance');
-  }
+  try {
+    const { recipientUserId, amount, sellingPrice, notes } = req.body;
+    const coinSellerId = req.user.coinSellerId;
 
-  // Get recipient
-  const recipient = await User.findById(recipientId);
-  if (!recipient) {
-    throw new ApiError(404, 'Recipient not found');
-  }
-
-  // Deduct from seller
-  await coinSeller.deductDiamonds(amount);
-
-  // Add to recipient coin balance
-  recipient.coinBalance += amount;
-  await recipient.save();
-
-  // Update recipient's rich level
-  let level = await Level.findOne({ userId: recipientId });
-  if (!level) {
-    level = await Level.create({ userId: recipientId });
-  }
-  level.totalDiamondsRecharged += amount;
-  await level.save();
-
-  // Create distribution transaction (withdrawable for 24 hours)
-  const transaction = await DiamondTransaction.create({
-    coinSellerId: coinSeller._id,
-    recipientId,
-    amount,
-    type: 'distribution',
-    status: 'completed',
-    canWithdraw: true,
-    notes: notes || `Diamonds distributed by coin seller`
-  });
-
-  logger.info(`Diamonds distributed: ${amount} from seller ${req.user.email} to user ${recipient.email}`);
-
-  ApiResponse.success(res, 200, 'Diamonds distributed successfully', {
-    transaction,
-    newBalance: coinSeller.diamondBalance,
-    recipient: {
-      name: recipient.name,
-      newCoinBalance: recipient.coinBalance
+    if (!recipientUserId || !amount || amount <= 0) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'Invalid input' });
     }
-  });
-});
 
-const withdrawDiamonds = asyncHandler(async (req, res) => {
-  const { transactionId } = req.body;
-
-  // Get coin seller profile
-  const coinSeller = await CoinSeller.findOne({ userId: req.user._id, isActive: true });
-  if (!coinSeller) {
-    throw new ApiError(403, 'You are not an active coin seller');
-  }
-
-  // Get transaction
-  const transaction = await DiamondTransaction.findById(transactionId)
-    .populate('recipientId', 'name email coinBalance');
-
-  if (!transaction) {
-    throw new ApiError(404, 'Transaction not found');
-  }
-
-  // Verify ownership
-  if (transaction.coinSellerId.toString() !== coinSeller._id.toString()) {
-    throw new ApiError(403, 'Not authorized');
-  }
-
-  // Check if withdrawal is allowed
-  if (!transaction.isWithdrawalAllowed()) {
-    throw new ApiError(400, 'Withdrawal period expired or transaction not eligible');
-  }
-
-  const recipient = transaction.recipientId;
-
-  // Check if recipient has enough coins
-  if (recipient.coinBalance < transaction.amount) {
-    throw new ApiError(400, 'Recipient has insufficient balance for withdrawal');
-  }
-
-  // Deduct from recipient
-  recipient.coinBalance -= transaction.amount;
-  await recipient.save();
-
-  // Add back to seller
-  coinSeller.diamondBalance += transaction.amount;
-  await coinSeller.save();
-
-  // Update recipient's rich level (decrease)
-  const level = await Level.findOne({ userId: recipient._id });
-  if (level) {
-    level.totalDiamondsRecharged = Math.max(0, level.totalDiamondsRecharged - transaction.amount);
-    await level.save();
-  }
-
-  // Update transaction
-  transaction.status = 'withdrawn';
-  transaction.canWithdraw = false;
-  transaction.withdrawnAt = new Date();
-  await transaction.save();
-
-  logger.info(`Diamonds withdrawn: ${transaction.amount} from user ${recipient.email} by seller ${req.user.email}`);
-
-  ApiResponse.success(res, 200, 'Diamonds withdrawn successfully', {
-    amount: transaction.amount,
-    newBalance: coinSeller.diamondBalance,
-    recipient: {
-      name: recipient.name,
-      newCoinBalance: recipient.coinBalance
+    const coinSeller = await CoinSeller.findById(coinSellerId).session(session);
+    if (!coinSeller) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'Coin seller not found' });
     }
-  });
-});
 
-const getWithdrawableTransactions = asyncHandler(async (req, res) => {
-  const coinSeller = await CoinSeller.findOne({ userId: req.user._id });
-  if (!coinSeller) {
-    throw new ApiError(404, 'Coin seller profile not found');
-  }
-
-  const transactions = await DiamondTransaction.getWithdrawableTransactions(coinSeller._id);
-
-  ApiResponse.success(res, 200, 'Withdrawable transactions retrieved', { transactions });
-});
-
-const getCoinSellerDashboard = asyncHandler(async (req, res) => {
-  const coinSeller = await CoinSeller.findOne({ userId: req.user._id })
-    .populate('userId', 'name email');
-
-  if (!coinSeller) {
-    throw new ApiError(404, 'Coin seller profile not found');
-  }
-
-  // Get transaction stats
-  const [distributionCount, withdrawalCount, withdrawableTransactions] = await Promise.all([
-    DiamondTransaction.countDocuments({ 
-      coinSellerId: coinSeller._id, 
-      type: 'distribution' 
-    }),
-    DiamondTransaction.countDocuments({ 
-      coinSellerId: coinSeller._id, 
-      status: 'withdrawn' 
-    }),
-    DiamondTransaction.getWithdrawableTransactions(coinSeller._id)
-  ]);
-
-  const stats = {
-    diamondBalance: coinSeller.diamondBalance,
-    totalAllocated: coinSeller.totalDiamondsAllocated,
-    totalDistributed: coinSeller.totalDiamondsDistributed,
-    totalWithdrawn: coinSeller.totalDiamondsWithdrawn,
-    distributionCount,
-    withdrawalCount,
-    withdrawableAmount: withdrawableTransactions.reduce((sum, t) => sum + t.amount, 0),
-    withdrawableCount: withdrawableTransactions.length
-  };
-
-  ApiResponse.success(res, 200, 'Dashboard data retrieved', stats);
-});
-
-const getDistributionHistory = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, status } = req.query;
-
-  const coinSeller = await CoinSeller.findOne({ userId: req.user._id });
-  if (!coinSeller) {
-    throw new ApiError(404, 'Coin seller profile not found');
-  }
-
-  const query = { 
-    coinSellerId: coinSeller._id,
-    type: { $in: ['distribution', 'withdrawal'] }
-  };
-  if (status) query.status = status;
-
-  const transactions = await DiamondTransaction.find(query)
-    .populate('recipientId', 'name email')
-    .sort({ createdAt: -1 })
-    .limit(limit * 1)
-    .skip((page - 1) * limit);
-
-  const total = await DiamondTransaction.countDocuments(query);
-
-  ApiResponse.success(res, 200, 'Distribution history retrieved', {
-    transactions,
-    pagination: {
-      total,
-      page: Number(page),
-      pages: Math.ceil(total / limit)
+    if (coinSeller.diamondBalance < amount) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'Insufficient diamond balance' });
     }
-  });
-});
+
+    const recipient = await User.findOne({ userId: recipientUserId }).session(session);
+    if (!recipient) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'Recipient not found' });
+    }
+
+    recipient.coinBalance += amount;
+    await recipient.save({ session });
+
+    coinSeller.diamondBalance -= amount;
+    coinSeller.totalDiamondsDistributed += amount;
+    await coinSeller.save({ session });
+
+    const transaction = new DiamondTransaction({
+      coinSellerId: coinSeller._id,
+      recipientId: recipient._id,
+      amount,
+      type: 'distribution',
+      status: 'completed',
+      canWithdraw: true,
+      notes,
+      metadata: { sellingPrice }
+    });
+    await transaction.save({ session });
+
+    await session.commitTransaction();
+
+    res.json({
+      success: true,
+      message: 'Diamonds distributed successfully',
+      data: {
+        transaction,
+        remainingBalance: coinSeller.diamondBalance
+      }
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+const withdrawDiamonds = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { transactionId } = req.body;
+    const coinSellerId = req.user.coinSellerId;
+
+    const transaction = await DiamondTransaction.findById(transactionId).session(session);
+    if (!transaction) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+
+    if (transaction.coinSellerId.toString() !== coinSellerId.toString()) {
+      await session.abortTransaction();
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!transaction.isWithdrawalAllowed()) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'Withdrawal not allowed or expired' });
+    }
+
+    const recipient = await User.findById(transaction.recipientId).session(session);
+    if (!recipient) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: 'Recipient not found' });
+    }
+
+    if (recipient.coinBalance < transaction.amount) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'Recipient has insufficient balance' });
+    }
+
+    recipient.coinBalance -= transaction.amount;
+    await recipient.save({ session });
+
+    const coinSeller = await CoinSeller.findById(coinSellerId).session(session);
+    coinSeller.diamondBalance += transaction.amount;
+    coinSeller.totalDiamondsWithdrawn += transaction.amount;
+    await coinSeller.save({ session });
+
+    transaction.status = 'withdrawn';
+    transaction.canWithdraw = false;
+    transaction.withdrawnAt = new Date();
+    await transaction.save({ session });
+
+    await session.commitTransaction();
+
+    res.json({
+      success: true,
+      message: 'Diamonds withdrawn successfully',
+      data: {
+        amount: transaction.amount,
+        newBalance: coinSeller.diamondBalance
+      }
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+const getWithdrawableTransactions = async (req, res) => {
+  try {
+    const coinSellerId = req.user.coinSellerId;
+
+    const now = new Date();
+    const transactions = await DiamondTransaction.find({
+      coinSellerId,
+      status: 'completed',
+      canWithdraw: true,
+      withdrawalDeadline: { $gte: now }
+    }).populate('recipientId', 'name email coinBalance');
+
+    res.json({
+      success: true,
+      count: transactions.length,
+      data: transactions
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getCoinSellerDashboard = async (req, res) => {
+  try {
+    const coinSellerId = req.user.coinSellerId;
+
+    const coinSeller = await CoinSeller.findById(coinSellerId).populate('userId', 'name email userId');
+
+    if (!coinSeller) {
+      return res.status(404).json({ success: false, message: 'Coin seller not found' });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayTransactions = await DiamondTransaction.find({
+      coinSellerId,
+      type: 'distribution',
+      createdAt: { $gte: today }
+    });
+
+    const todayStats = {
+      totalTransactions: todayTransactions.length,
+      totalDiamondsDistributed: todayTransactions.reduce((sum, t) => sum + t.amount, 0),
+      totalRevenue: todayTransactions.reduce((sum, t) => sum + (t.metadata?.sellingPrice || 0), 0)
+    };
+
+    res.json({
+      success: true,
+      data: {
+        coinSeller,
+        todayStats
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getDistributionHistory = async (req, res) => {
+  try {
+    const coinSellerId = req.user.coinSellerId;
+    const { page = 1, limit = 20, type } = req.query;
+
+    const filter = { coinSellerId };
+    if (type) {
+      filter.type = type;
+    }
+
+    const transactions = await DiamondTransaction.find(filter)
+      .populate('recipientId', 'name email userId')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const count = await DiamondTransaction.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: transactions,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+      total: count
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 module.exports = {
-  // Admin endpoints
   assignCoinSeller,
   removeCoinSeller,
   addDiamondsToCoinSeller,
   getAllCoinSellers,
-  
-  // Coin seller endpoints
   distributeDiamonds,
   withdrawDiamonds,
   getWithdrawableTransactions,

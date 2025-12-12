@@ -3,6 +3,7 @@ const { ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const User = require('../models/User');
 const { verifyAccessToken } = require('../config/jwt');
+const CoinSeller = require('../models/CoinSeller');
 
 const authenticate = asyncHandler(async (req, res, next) => {
   let token;
@@ -23,12 +24,17 @@ const authenticate = asyncHandler(async (req, res, next) => {
       throw new ApiError(401, 'User not found');
     }
 
-    if (!user.isActive) {
-      throw new ApiError(403, 'Account has been deactivated');
-    }
-
     req.user = user;
-    next();
+
+      if (user.isCoinSeller) {
+        const coinSeller = await CoinSeller.findOne({ userId: user._id });
+        if (coinSeller && coinSeller.isActive) {
+          req.user.coinSellerId = coinSeller._id;
+          req.user.coinSellerData = coinSeller;
+        }
+      }
+
+      next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
       throw new ApiError(401, 'Invalid token');
@@ -81,6 +87,44 @@ const restrictTo = (...roles) => {
     }
     next();
   };
+};
+
+
+exports.isCoinSeller = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    if (!req.user.isCoinSeller) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Coin seller privileges required'
+      });
+    }
+
+    const coinSeller = await CoinSeller.findOne({ userId: req.user._id });
+    
+    if (!coinSeller || !coinSeller.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Coin seller account is not active'
+      });
+    }
+
+    req.user.coinSellerId = coinSeller._id;
+    req.user.coinSellerData = coinSeller;
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error checking coin seller status'
+    });
+  }
 };
 
 

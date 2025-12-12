@@ -1,34 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const {  authorize } = require('../middleware/auth');
-
-// Import controller functions
+const { authenticate, authorize, isCoinSeller } = require('../middleware/auth');
 const coinSellerController = require('../controllers/coinSellerController');
 
-// Verify all functions exist before using them
-const {
-  assignCoinSeller,
-  removeCoinSeller,
-  addDiamondsToCoinSeller,
-  getAllCoinSellers,
-  distributeDiamonds,
-  withdrawDiamonds,
-  getWithdrawableTransactions,
-  getCoinSellerDashboard,
-  getDistributionHistory
-} = coinSellerController;
+router.post('/assign', coinSellerController.assignCoinSeller);
+router.delete('/:userId', coinSellerController.removeCoinSeller);
+router.post('/:coinSellerId/add-diamonds', coinSellerController.addDiamondsToCoinSeller);
+router.get('/all', coinSellerController.getAllCoinSellers);
 
-// Admin routes
-router.post('/assign', assignCoinSeller);
-router.delete('/:userId',  removeCoinSeller);
-router.post('/:coinSellerId/add-diamonds', addDiamondsToCoinSeller);
-router.get('/all', getAllCoinSellers);
-
-// Coin seller routes
-router.post('/distribute', distributeDiamonds);
-router.post('/withdraw', withdrawDiamonds);
-router.get('/withdrawable', getWithdrawableTransactions);
-router.get('/dashboard', getCoinSellerDashboard);
-router.get('/history', getDistributionHistory);
+router.post('/distribute', coinSellerController.distributeDiamonds);
+router.post('/withdraw', coinSellerController.withdrawDiamonds);
+router.get('/withdrawable', coinSellerController.getWithdrawableTransactions);
+router.get('/dashboard', coinSellerController.getCoinSellerDashboard);
+router.get('/history', coinSellerController.getDistributionHistory);
 
 module.exports = router;
