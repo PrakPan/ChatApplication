@@ -534,7 +534,7 @@ const HostDashboard = () => {
               </div> */}
 
               {/* Online Toggle - Only for hosts */}
-              {user?.role === 'host' || ( user?.role === 'coinSeller') && (
+              {user?.role === 'host'  && (
                 <div className="flex flex-row items-center gap-2">
                   <span className={`text-sm font-semibold ${
                     isOnline ? 'text-green-700' : 'text-gray-600'
