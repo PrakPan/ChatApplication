@@ -22,6 +22,22 @@ const TradeAccountPage = () => {
   const API_BASE_URL = '/api/v1/coin_sellers';
   const token = localStorage.getItem('accessToken');
 
+  // Helper function to get headers with cache control
+  const getHeaders = (includeContentType = false) => {
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+    
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    return headers;
+  };
+
   useEffect(() => {
     initializePage();
   }, []);
@@ -38,11 +54,13 @@ const TradeAccountPage = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`${API_BASE_URL}/dashboard?t=${timestamp}`, {
+        method: 'GET',
+        headers: getHeaders()
       });
+      
       const data = await response.json();
       
       if (data.success) {
@@ -64,11 +82,15 @@ const TradeAccountPage = () => {
 
   const fetchTransferHistory = async (page = 1, limit = 20) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/history?page=${page}&limit=${limit}&type=distribution`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const timestamp = new Date().getTime();
+      const response = await fetch(
+        `${API_BASE_URL}/history?page=${page}&limit=${limit}&type=distribution&t=${timestamp}`,
+        {
+          method: 'GET',
+          headers: getHeaders()
         }
-      });
+      );
+      
       const data = await response.json();
       
       if (data.success) {
@@ -86,11 +108,12 @@ const TradeAccountPage = () => {
 
   const fetchWithdrawableTransactions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/withdrawable`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const timestamp = new Date().getTime();
+      const response = await fetch(`${API_BASE_URL}/withdrawable?t=${timestamp}`, {
+        method: 'GET',
+        headers: getHeaders()
       });
+      
       const data = await response.json();
       
       if (data.success) {
@@ -121,10 +144,7 @@ const TradeAccountPage = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/distribute`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getHeaders(true),
         body: JSON.stringify({
           recipientUserId: rechargeData.recipientUserId,
           amount: parseInt(rechargeData.amount),
@@ -138,6 +158,7 @@ const TradeAccountPage = () => {
       if (data.success) {
         showMessage('Recharge successful!', 'success');
         setRechargeData({ recipientUserId: '', amount: '', sellingPrice: '', notes: '' });
+        // Refresh all data after successful recharge
         await Promise.all([
           fetchDashboardData(),
           fetchTransferHistory(currentPage),
@@ -162,10 +183,7 @@ const TradeAccountPage = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/withdraw`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getHeaders(true),
         body: JSON.stringify({ transactionId })
       });
 
