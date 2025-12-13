@@ -381,9 +381,9 @@ const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
   const user = await User.findById(userId);
 
   // Check if user is a host
-  if (user.role !== 'host') {
-    throw new ApiError(403, 'Only hosts can toggle online status');
-  }
+  // if (user.role !== 'host' || user.role !== 'coinseller') {
+  //   throw new ApiError(403, 'Only hosts can toggle online status');
+  // }
 
   // Find host profile
   const host = await Host.findOne({ userId });

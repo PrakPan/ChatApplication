@@ -28,7 +28,7 @@ const assignCoinSeller = async (req, res) => {
     }
 
     user.isCoinSeller = true;
-    user.role = 'coinSeller';
+    // user.role = 'coinSeller';
     await user.save({ session });
 
     const coinSeller = new CoinSeller({

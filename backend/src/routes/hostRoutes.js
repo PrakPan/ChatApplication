@@ -30,14 +30,14 @@ router.use(authenticate);
 
 // Host-specific routes
 router.post('/profile', validate(validators.createHostProfile), createHostProfile);
-router.put('/profile', authorize('host', 'admin'), validate(validators.createHostProfile), updateHostProfile);
-router.post('/photos', authorize('host', 'admin'), upload.array('photos', 5), uploadHostPhotos);
-router.put('/status', authorize('host', 'admin'), updateOnlineStatus);
-router.get('/me/earnings', authorize('host', 'admin'), getHostEarnings);
-router.get('/me/calls', authorize('host', 'admin'), getHostCallHistory);
-router.put('/toggle-online', authorize('host', 'admin'), toggleHostOnlineStatus);
+router.put('/profile', authorize('host', 'admin','coinSeller'), validate(validators.createHostProfile), updateHostProfile);
+router.post('/photos', authorize('host', 'admin','coinSeller'), upload.array('photos', 5), uploadHostPhotos);
+router.put('/status', authorize('host', 'admin','coinSeller'), updateOnlineStatus);
+router.get('/me/earnings', authorize('host', 'admin','coinSeller'), getHostEarnings);
+router.get('/me/calls', authorize('host', 'admin','coinSeller'), getHostCallHistory);
+router.put('/toggle-online', authorize('host', 'admin','coinSeller'), toggleHostOnlineStatus);
 
-router.post('/photos/save', authorize('host', 'admin'), saveHostPhotos);
-router.get('/level-info', authorize('host'), getHostLevelInfo);
+router.post('/photos/save', authorize('host', 'admin','coinSeller'), saveHostPhotos);
+router.get('/level-info', authorize('host','coinSeller'), getHostLevelInfo);
 
 module.exports = router;
