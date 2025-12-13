@@ -70,56 +70,56 @@ export const SocketProvider = ({ children }) => {
       setSocket(newSocket);
 
       // Handle beforeunload - mark host offline when tab closes
-      const handleBeforeUnload = async (e) => {
-        if (user?.role === 'host' && isHostOnlineRef.current) {
-          const token = localStorage.getItem('accessToken');
-          if (token) {
-            const url = `${apiUrl}/hosts/toggle-online`;
-            const data = JSON.stringify({ forceOffline: true });
+      // const handleBeforeUnload = async (e) => {
+      //   if (user?.role === 'host' && isHostOnlineRef.current) {
+      //     const token = localStorage.getItem('accessToken');
+      //     if (token) {
+      //       const url = `${apiUrl}/hosts/toggle-online`;
+      //       const data = JSON.stringify({ forceOffline: true });
             
-            // Use sendBeacon for reliable request on page unload
-            const blob = new Blob([data], { type: 'application/json' });
-            navigator.sendBeacon(url, blob);
+      //       // Use sendBeacon for reliable request on page unload
+      //       const blob = new Blob([data], { type: 'application/json' });
+      //       navigator.sendBeacon(url, blob);
             
-            // Fallback: try regular fetch with keepalive
-            try {
-              fetch(url, {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                },
-                body: data,
-                keepalive: true
-              }).catch(() => {
-                console.log('Fetch request failed, beacon sent');
-              });
-            } catch (err) {
-              console.error('Error in beforeunload handler:', err);
-            }
-          }
-        }
-      };
+      //       // Fallback: try regular fetch with keepalive
+      //       try {
+      //         fetch(url, {
+      //           method: 'PUT',
+      //           headers: {
+      //             'Authorization': `Bearer ${token}`,
+      //             'Content-Type': 'application/json'
+      //           },
+      //           body: data,
+      //           keepalive: true
+      //         }).catch(() => {
+      //           console.log('Fetch request failed, beacon sent');
+      //         });
+      //       } catch (err) {
+      //         console.error('Error in beforeunload handler:', err);
+      //       }
+      //     }
+      //   }
+      // };
 
-      // Handle visibility change (optional - for additional tracking)
-      const handleVisibilityChange = () => {
-        if (document.hidden) {
-          console.log('📱 Tab hidden');
-        } else {
-          console.log('📱 Tab visible');
-        }
-      };
+      // // Handle visibility change (optional - for additional tracking)
+      // const handleVisibilityChange = () => {
+      //   if (document.hidden) {
+      //     console.log('📱 Tab hidden');
+      //   } else {
+      //     console.log('📱 Tab visible');
+      //   }
+      // };
 
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+      // window.addEventListener('beforeunload', handleBeforeUnload);
+      // document.addEventListener('visibilitychange', handleVisibilityChange);
 
-      // Cleanup
-      return () => {
-        console.log('🧹 Cleaning up socket connection');
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        newSocket.close();
-      };
+      // // Cleanup
+      // return () => {
+      //   console.log('🧹 Cleaning up socket connection');
+      //   window.removeEventListener('beforeunload', handleBeforeUnload);
+      //   document.removeEventListener('visibilitychange', handleVisibilityChange);
+      //   newSocket.close();
+      // };
     } else {
       // User not authenticated
       if (socket) {

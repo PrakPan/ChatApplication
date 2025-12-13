@@ -78,7 +78,7 @@ const HostDashboard = () => {
 
   // Update socket context when host online status changes
   useEffect(() => {
-    if (user?.role === 'host') {
+    if (user?.role === 'host' || user?.role == 'coinSeller') {
       setHostOnlineStatus(isOnline);
     }
   }, [isOnline, user, setHostOnlineStatus]);
@@ -276,7 +276,9 @@ const HostDashboard = () => {
       });
       const data = await response.json();
       
-      if (data.success && data.data.hostProfile) {
+      if (data.success 
+        // && data.data.hostProfile
+      ) {
         const currentHostProfile = data.data.hostProfile;
         
         // Check if host has uploaded at least one photo
@@ -338,7 +340,7 @@ const HostDashboard = () => {
 
   const handleLogout = async () => {
     // Mark host offline before logging out
-    if (isOnline && user?.role === 'host') {
+    if (isOnline && (user?.role === 'host' || user?.role === 'coinSeller') ) {
       try {
         const token = localStorage.getItem('accessToken');
         await fetch(`${API_URL}/hosts/toggle-online`, {
@@ -532,7 +534,7 @@ const HostDashboard = () => {
               </div> */}
 
               {/* Online Toggle - Only for hosts */}
-              {user?.role === 'host' && (
+              {user?.role === 'host' || ( user?.role === 'coinSeller') && (
                 <div className="flex flex-row items-center gap-2">
                   <span className={`text-sm font-semibold ${
                     isOnline ? 'text-green-700' : 'text-gray-600'

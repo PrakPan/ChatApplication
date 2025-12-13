@@ -68,6 +68,7 @@ function AppRoutes() {
   return (
      <Routes>
             {/* Public Routes */}
+            {console.log("User",user)}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             
@@ -76,7 +77,7 @@ function AppRoutes() {
               path="/"
               element={
                 <ProtectedRoute>
-                 { user?.role == 'host'? <HostDashboard/> : user?.role == 'user' ? <Home /> : <Login/>}
+                 { (user?.role == 'host' || user?.role == 'coinSeller') ? <HostDashboard/> : user?.role == 'user' ? <Home /> : <Login/>}
                 </ProtectedRoute>
               }
             />
