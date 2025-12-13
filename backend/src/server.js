@@ -134,13 +134,15 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/coin_sellers', coinSellerRoutes);
 app.use('/api/v1/hosts', hostRoutes);
 app.use('/api/v1/coins', coinRoutes);
 app.use('/api/v1/calls', callRoutes);
-app.use('/api/v1/admin', adminRoutes);
+// app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin', photoApprovalRoutes);
 app.use('/api/v1', messageRoutes);
-app.use('/api/v1/coin_sellers', coinSellerRoutes);
+
 app.use('/api/v1/leaderboard', leaderboardRoutes);
 app.use('/api/v1/follow', followRoutes);
 app.use('/api/v1/agents', agentRoutes);

@@ -26,13 +26,13 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
     req.user = user;
 
-      if (user.isCoinSeller) {
+      // if (user.isCoinSeller) {
         const coinSeller = await CoinSeller.findOne({ userId: user._id });
-        if (coinSeller && coinSeller.isActive) {
+        if (coinSeller) {
           req.user.coinSellerId = coinSeller._id;
           req.user.coinSellerData = coinSeller;
         }
-      }
+      // }
 
       next();
   } catch (error) {
@@ -90,40 +90,30 @@ const restrictTo = (...roles) => {
 };
 
 
-exports.isCoinSeller = async (req, res, next) => {
+const isCoinSeller = async (req, res, next) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authenticated'
-      });
+      return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    if (!req.user.isCoinSeller) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Coin seller privileges required'
-      });
-    }
+    // if (!req.user.isCoinSeller) {
+    //   return res.status(403).json({ success: false, message: 'Access denied. Coin seller privileges required' });
+    // }
 
-    const coinSeller = await CoinSeller.findOne({ userId: req.user._id });
-    
-    if (!coinSeller || !coinSeller.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: 'Coin seller account is not active'
-      });
+    // Ensure coinSeller data is loaded
+    if (!req.coinSeller) {
+      // Find CoinSeller by User's _id (userId field in CoinSeller references User's _id)
+      const coinSeller = await CoinSeller.findOne({ userId: req.user._id });
+      if (!coinSeller) {
+        return res.status(403).json({ success: false, message: 'Coin seller account not found' });
+      }
+      req.coinSeller = coinSeller;
+      req.coinSellerId = coinSeller._id; // CoinSeller document's _id
     }
-
-    req.user.coinSellerId = coinSeller._id;
-    req.user.coinSellerData = coinSeller;
 
     next();
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Server error checking coin seller status'
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -131,4 +121,5 @@ exports.isCoinSeller = async (req, res, next) => {
 
 
 
-module.exports = { authenticate, authorize, protect, restrictTo };
+
+module.exports = { authenticate, authorize, protect, restrictTo, isCoinSeller };
