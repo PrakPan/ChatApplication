@@ -2,24 +2,22 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useSocket } from './useSocket';
 
 const ICE_SERVERS = [
-    {
-      urls: 'stun:stun.l.google.com:19302'
-    },
-    {
-      urls: 'turn:a.relay.metered.ca:80',
-      username: 'Tjg_puqMFIT8F0RvHBFsmysYZ3Fhz01PfchtTki89PhmsgW4',
-      credential: 'Tjg_puqMFIT8F0RvHBFsmysYZ3Fhz01PfchtTki89PhmsgW4'
-    },
-    {
-      urls: 'turn:a.relay.metered.ca:443',
-      username: 'Tjg_puqMFIT8F0RvHBFsmysYZ3Fhz01PfchtTki89PhmsgW4',
-      credential: 'Tjg_puqMFIT8F0RvHBFsmysYZ3Fhz01PfchtTki89PhmsgW4'
-    },
-    {
-      urls: 'turn:a.relay.metered.ca:443?transport=tcp',
-      username: 'Tjg_puqMFIT8F0RvHBFsmysYZ3Fhz01PfchtTki89PhmsgW4',
-      credential: 'Tjg_puqMFIT8F0RvHBFsmysYZ3Fhz01PfchtTki89PhmsgW4'
-    }
+  {
+    urls: 'stun:stun.l.google.com:19302'
+  },
+  {
+    urls: 'stun:13.203.182.183:3478'
+  },
+  {
+    urls: 'turn:13.203.182.183:3478',
+    username: '557980386236',
+    credential: '4Star@4911'
+  },
+  {
+    urls: 'turn:13.203.182.183:3478?transport=tcp',
+    username: '557980386236',
+    credential: '4Star@4911'
+  }
 ];
 
 export const useWebRTC = () => {
