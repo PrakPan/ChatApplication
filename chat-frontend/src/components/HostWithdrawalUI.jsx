@@ -74,7 +74,7 @@ const HostWithdrawalUI = ({ onBack }) => {
     try {
       const response = await api.get('/profile');
       if (response.success) {
-        setBalance(response.data.hostInfo?.totalEarnings || response.data.user?.coinBalance || 0);
+        setBalance(response.data.hostInfo?.totalEarnings || 0);
       }
     } catch (error) {
       console.error('Error fetching balance:', error);
