@@ -136,7 +136,7 @@ const TradeAccountPage = () => {
     }
 
     if (dashboardData && parseInt(rechargeData.amount) > dashboardData.inventoryAmount) {
-      showMessage('Insufficient diamond balance', 'error');
+      showMessage('Insufficient coin balance', 'error');
       return;
     }
 
@@ -149,7 +149,7 @@ const TradeAccountPage = () => {
           recipientUserId: rechargeData.recipientUserId,
           amount: parseInt(rechargeData.amount),
           sellingPrice: parseInt(rechargeData.sellingPrice) || 0,
-          notes: rechargeData.notes || 'Diamond recharge'
+          notes: rechargeData.notes || 'Coin recharge'
         })
       });
 
@@ -322,7 +322,7 @@ const TradeAccountPage = () => {
                       onClick={() => handleWithdraw(transaction._id)}
                       className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium transition-colors"
                     >
-                      Recall Diamonds
+                      Recall Coins
                     </button>
                   </div>
                 )}
@@ -449,7 +449,7 @@ const TradeAccountPage = () => {
             <div className="relative">
               <input
                 type="text"
-                value="Diamond Distribution"
+                value="Coin Distribution"
                 readOnly
                 className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50"
               />
@@ -472,12 +472,12 @@ const TradeAccountPage = () => {
           </div>
 
           <div className="mb-6">
-            <label className="text-gray-600 text-sm mb-2 block">Enter Diamonds *</label>
+            <label className="text-gray-600 text-sm mb-2 block">Enter Coins *</label>
             <div className="relative">
               <span className="absolute left-3 top-3 text-gray-400">💎</span>
               <input
                 type="number"
-                placeholder="Diamond Amount"
+                placeholder="Coin Amount"
                 value={rechargeData.amount}
                 onChange={(e) => setRechargeData({...rechargeData, amount: e.target.value})}
                 className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -542,7 +542,7 @@ const TradeAccountPage = () => {
                 Processing...
               </>
             ) : (
-              'Transfer Diamonds'
+              'Transfer Coins'
             )}
           </button>
         </div>
