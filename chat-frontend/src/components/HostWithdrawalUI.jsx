@@ -121,7 +121,7 @@ const HostWithdrawalUI = ({ onBack }) => {
   };
 
   const handleWithdraw = async () => {
-    const amount = parseInt(withdrawAmount);
+    const amount = parseInt(balance);
     
     if (amount < 1000) {
       toast.error('Minimum withdrawal amount is 1000 diamonds');
@@ -440,8 +440,8 @@ const HostWithdrawalUI = ({ onBack }) => {
               </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Amount (Min: 1000)</label>
-                <input type="number" min="1000" max={balance} value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Enter amount" />
-                <p className="text-xs text-gray-500 mt-1">≈ ₹{(withdrawAmount || 0).toLocaleString()}</p>
+                <input type="number" min={balance} max={balance} value={balance} className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500" />
+                <p className="text-xs text-gray-500 mt-1">≈ ₹{(balance || 0).toLocaleString()}</p>
               </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Withdraw To</label>
@@ -458,7 +458,7 @@ const HostWithdrawalUI = ({ onBack }) => {
                   : <p className="text-sm text-gray-600">No bank account</p>}
                 </div>
               </div>
-              <button onClick={handleWithdraw} disabled={!withdrawAmount || parseInt(withdrawAmount) < 1000 || parseInt(withdrawAmount) > balance} className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 font-semibold">Confirm</button>
+              <button onClick={handleWithdraw} disabled={!balance || parseInt(balance) < 1000  } className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 font-semibold">Confirm</button>
             </div>
           </div>
         )}
