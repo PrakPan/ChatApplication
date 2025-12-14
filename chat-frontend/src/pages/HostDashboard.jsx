@@ -76,7 +76,6 @@ const HostDashboard = () => {
     };
   }, [socket, connected, isOnline]);
 
-  // Update socket context when host online status changes
   useEffect(() => {
     if (user?.role === 'host' || user?.role == 'coinSeller') {
       setHostOnlineStatus(isOnline);
@@ -525,13 +524,7 @@ const HostDashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Live Hosts</h1>
             <div className="flex items-center gap-3">
-              {/* Socket Connection Indicator */}
-              {/* <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-xs text-gray-500">
-                  {connected ? 'Connected' : 'Disconnected'}
-                </span>
-              </div> */}
+            
 
               {/* Online Toggle - Only for hosts */}
               {user?.role === 'host'  && (
@@ -570,8 +563,17 @@ const HostDashboard = () => {
                 onNavigateToProfile={() => navigate('/profile')}
               />
 
+
+              <button 
+                            onClick={() => navigate('/coins')}
+                            className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
+                          >
+                            <Coins className="h-5 w-5 text-yellow-600" />
+                            <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
+                          </button>
+
               {/* Coin Balance */}
-              <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200 cursor-pointer" onClick={() => navigate("/coins")}>
+              <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200 cursor-pointer" onClick={() => navigate("/withdraw")}>
                 <p className="text-lg text-purple-600">💎</p>
                 <span className="font-semibold text-gray-900">
                   {host || 0}

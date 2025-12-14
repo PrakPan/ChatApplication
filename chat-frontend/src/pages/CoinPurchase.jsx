@@ -147,7 +147,7 @@ export const CoinPurchase = () => {
                 {/* Left Side - Coin Info */}
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center shadow-md">
-                   {user?.role == 'host' ? <p className="text-lg text-purple-600">💎</p> :<Coins className="w-8 h-8" />}
+                   <Coins className="w-8 h-8" />
                   </div>
                   <div>
                     <p className="text-lg font-bold text-gray-900">

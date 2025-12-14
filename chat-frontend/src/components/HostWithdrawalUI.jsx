@@ -19,10 +19,12 @@ import { MdAccountBalance, MdOutlineAttachMoney } from 'react-icons/md';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { BanknoteIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HostWithdrawalUI = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
   // Data from API
   const [balance, setBalance] = useState(0);
@@ -399,12 +401,14 @@ const HostWithdrawalUI = ({ onBack }) => {
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div></div>;
 
+  
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white/80 backdrop-blur-lg border-b border-purple-100 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <button onClick={onBack} className="p-2 -ml-2 hover:bg-purple-100 rounded-full"><FiChevronLeft className="w-6 h-6 text-purple-700" /></button>
+            <button onClick={onBack} className="p-2 -ml-2 hover:bg-purple-100 rounded-full"><FiChevronLeft className="w-6 h-6 text-purple-700" onClick={()=>navigate('-1')} /></button>
             <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Withdrawals</h1>
             <div className="w-10" />
           </div>
