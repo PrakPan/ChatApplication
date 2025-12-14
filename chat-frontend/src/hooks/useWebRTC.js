@@ -39,7 +39,7 @@ export const useWebRTC = () => {
 
   const initializePeerConnection = useCallback(() => {
     console.log('🔧 Initializing peer connection');
-    peerConnection.current = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    peerConnection.current = new RTCPeerConnection({ iceServers: ICE_SERVERS,iceTransportPolicy: 'relay'  });
 
     peerConnection.current.onicecandidate = (event) => {
       if (event.candidate && remoteUserId.current) {
