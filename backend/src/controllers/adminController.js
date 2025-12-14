@@ -53,9 +53,9 @@ const toggleUserStatus = asyncHandler(async (req, res) => {
 });
 
 const getPendingWithdrawals = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20 } = req.query;
+  const { page = 1, limit = 20,status } = req.query;
 
-  const withdrawals = await Withdrawal.find({ status: 'pending' })
+  const withdrawals = await Withdrawal.find({ status: status || 'pending' })
     .populate({
       path: 'hostId',
       populate: {
@@ -67,7 +67,7 @@ const getPendingWithdrawals = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
 
-  const total = await Withdrawal.countDocuments({ status: 'pending' });
+  const total = await Withdrawal.countDocuments({ status: status || 'pending' });
 
   ApiResponse.success(res, 200, 'Pending withdrawals retrieved', {
     withdrawals,
