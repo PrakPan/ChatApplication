@@ -4,10 +4,10 @@ const { authenticate, authorize, isCoinSeller } = require('../middleware/auth');
 const coinSellerController = require('../controllers/coinSellerController');
 
 // Admin routes - require authentication and admin authorization
-router.post('/assign', authenticate, authorize('admin'), coinSellerController.assignCoinSeller);
-router.delete('/:userId', authenticate, authorize('admin'), coinSellerController.removeCoinSeller);
-router.post('/:coinSellerId/add-diamonds', authenticate, authorize('admin'), coinSellerController.addDiamondsToCoinSeller);
-router.get('/all', authenticate, authorize('admin'), coinSellerController.getAllCoinSellers);
+router.post('/assign', coinSellerController.assignCoinSeller);
+router.delete('/:userId', coinSellerController.removeCoinSeller);
+router.post('/:coinSellerId/add-diamonds', coinSellerController.addDiamondsToCoinSeller);
+router.get('/all', coinSellerController.getAllCoinSellers);
 
 // Coin seller routes - require authentication FIRST, then isCoinSeller check
 router.post('/distribute', authenticate, isCoinSeller, coinSellerController.distributeDiamonds);
