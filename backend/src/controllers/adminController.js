@@ -347,30 +347,61 @@ const getAllHosts = asyncHandler(async (req, res) => {
   // Filter by search if provided
   let filteredHosts = hosts;
   if (search) {
-    filteredHosts = hosts.filter(h => 
-      h.userId?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      h.userId?.email?.toLowerCase().includes(search.toLowerCase()) ||
+    const searchLower = search.toLowerCase();
+    filteredHosts = hosts.filter(h =>
+      h.userId?.name?.toLowerCase().includes(searchLower) ||
+      h.userId?.email?.toLowerCase().includes(searchLower) ||
       h._id.toString().includes(search)
     );
   }
 
-  // Populate with level information
-  const userIds = filteredHosts.map(h => h.userId?._id).filter(Boolean);
-  const levels = await Level.find({ userId: { $in: userIds } });
+  /**
+   * -----------------------------
+   * LEVELS
+   * -----------------------------
+   */
+  const userIds = filteredHosts
+    .map(h => h.userId?._id)
+    .filter(Boolean);
+
+  const levels = await Level.find({ userId: { $in: userIds } }).lean();
   const levelMap = {};
   levels.forEach(l => {
     levelMap[l.userId.toString()] = l.currentLevel;
   });
 
-  const hostsWithLevel = filteredHosts.map(h => ({
+  /**
+   * -----------------------------
+   * FREE TARGETS
+   * -----------------------------
+   */
+  const FreeTarget = require('../models/FreeTarget');
+
+  const hostIds = filteredHosts.map(h => h._id);
+  const freeTargets = await FreeTarget.find({
+    hostId: { $in: hostIds }
+  }).lean();
+
+  const freeTargetMap = {};
+  freeTargets.forEach(ft => {
+    freeTargetMap[ft.hostId.toString()] = ft.isEnabled;
+  });
+
+  /**
+   * -----------------------------
+   * FINAL RESPONSE MAPPING
+   * -----------------------------
+   */
+  const hostsWithExtras = filteredHosts.map(h => ({
     ...h,
-    level: levelMap[h.userId?._id?.toString()] || 1
+    level: levelMap[h.userId?._id?.toString()] || 1,
+    freeTargetEnabled: freeTargetMap[h._id.toString()] || false
   }));
 
   const total = await Host.countDocuments(query);
 
   ApiResponse.success(res, 200, 'Hosts retrieved', {
-    hosts: hostsWithLevel,
+    hosts: hostsWithExtras,
     pagination: {
       total,
       page: Number(page),
@@ -378,6 +409,7 @@ const getAllHosts = asyncHandler(async (req, res) => {
     }
   });
 });
+
 
 const createHost = asyncHandler(async (req, res) => {
   const { 

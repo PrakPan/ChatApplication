@@ -39,6 +39,9 @@ const agentRoutes = require('./routes/agentRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const levelRoutes = require('./routes/levelRoutes');
 const withdrawalRoutes = require('./routes/withdrawalRoutes');
+const freeTargetRoutes = require('./routes/freeTargetRoutes');
+const passwordResetRoutes = require('./routes/passwordResetRoutes');
+const FreeTarget = require('./models/FreeTarget');
 
 // Initialize express
 const app = express();
@@ -135,6 +138,8 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/free-target', freeTargetRoutes);
+app.use('/api/v1/password-reset', passwordResetRoutes);
 app.use('/api/v1/coin_sellers', coinSellerRoutes);
 app.use('/api/v1/hosts', hostRoutes);
 app.use('/api/v1/coins', coinRoutes);
@@ -149,6 +154,7 @@ app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/withdrawals',withdrawalRoutes);
 app.use('/api/v1/levels', levelRoutes);
+
 
 // Socket.io handler
 socketHandler(io);
@@ -193,6 +199,33 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
+
+// async function initializeFreeTargets() {
+//   await mongoose.connect(process.env.MONGODB_URI);
+
+//   const hosts = await Host.find({});
+  
+//   for (const host of hosts) {
+//     const existing = await FreeTarget.findOne({ hostId: host._id });
+    
+//     if (!existing) {
+//       const currentWeek = await FreeTarget.initializeWeek(host._id);
+      
+//       await FreeTarget.create({
+//         hostId: host._id,
+//         isEnabled: false, // Disabled by default
+//         currentWeek
+//       });
+      
+//       console.log(`Initialized free target for host: ${host._id}`);
+//     }
+//   }
+
+//   console.log('Done!');
+//   process.exit(0);
+// }
+
+// initializeFreeTargets().catch(console.error);
 // const names = [
 //   'Priya Sharma', 'Rahul Kumar', 'Anjali Patel', 'Arjun Singh', 'Sneha Gupta',
 //   'Vikram Reddy', 'Pooja Mehta', 'Rohan Joshi', 'Neha Kapoor', 'Aditya Verma',

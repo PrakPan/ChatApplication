@@ -80,6 +80,38 @@ const endCall = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Call not found');
   }
 
+  const duration = Math.floor((endTime - startTime) / 1000);
+
+
+  const FreeTarget = require('../models/FreeTarget');
+  const freeTarget = await FreeTarget.findOne({ 
+    hostId: call.hostId._id,
+    isEnabled: true 
+  });
+
+  if (freeTarget) {
+    const todayTarget = freeTarget.getCurrentDayTarget();
+    
+    if (todayTarget && todayTarget.status === 'pending') {
+      // Handle disconnected call
+      if (wasDisconnected) {
+        const dayFailed = freeTarget.recordDisconnect(callId);
+        if (dayFailed) {
+          logger.warn(`Free target day failed due to disconnects for host ${call.hostId._id}`);
+        }
+      }
+
+      // Add call duration
+      if (duration > 0) {
+        freeTarget.addCallDuration(duration);
+        freeTarget.stats.totalCallsCompleted += 1;
+        freeTarget.stats.totalCallDuration += duration;
+      }
+
+      await freeTarget.save();
+    }
+  }
+
   // Verify user is part of this call
   const isUser = call.userId.toString() === req.user._id.toString();
   const host = await Host.findOne({ userId: req.user._id });

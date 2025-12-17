@@ -11,7 +11,10 @@ const logger = require('../utils/logger');
 // Get user profile with all details
 const getProfile = asyncHandler(async (req, res) => {
   console.log("Here");
-  const user = await User.findById(req.user._id).select('-password -refreshToken').lean();
+
+  const user = await User.findById(req.user._id)
+    .select('-password -refreshToken')
+    .lean();
   
   if (!user) {
     throw new ApiError(404, 'User not found');
@@ -30,6 +33,13 @@ const getProfile = asyncHandler(async (req, res) => {
   let hostInfo = null;
   if (user.role === 'host') {
     hostInfo = await Host.findOne({ userId: user._id }).lean();
+
+    if (hostInfo) {
+      const FreeTarget = require('../models/FreeTarget');
+      const freeTarget = await FreeTarget.findOne({ hostId: hostInfo._id }).lean();
+
+      hostInfo.freeTargetEnabled = freeTarget?.isEnabled || false;
+    }
   }
 
   // Get agent info if user is an agent
@@ -37,7 +47,9 @@ const getProfile = asyncHandler(async (req, res) => {
   if (user.isAgent) {
     const agent = await Agent.findOne({ userId: user._id }).lean();
     if (agent) {
-      const stats = await Agent.findById(agent._id).then(a => a.calculateTotalEarnings());
+      const stats = await Agent.findById(agent._id)
+        .then(a => a.calculateTotalEarnings());
+
       agentInfo = { ...agent, ...stats };
     }
   }
@@ -58,6 +70,7 @@ const getProfile = asyncHandler(async (req, res) => {
     agentInfo
   });
 });
+
 
 // Update avatar
 const updateAvatar = asyncHandler(async (req, res) => {

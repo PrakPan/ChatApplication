@@ -98,6 +98,13 @@ hostSchema.virtual('approvedPhotosCount').get(function() {
   return this.photos.filter(photo => photo.approvalStatus === 'approved').length;
 });
 
+
+hostSchema.virtual('freeTargetEnabled').get(async function() {
+  const FreeTarget = require('./FreeTarget');
+  const freeTarget = await FreeTarget.findOne({ hostId: this._id });
+  return freeTarget?.isEnabled || false;
+});
+
 // Method to check if host can go online
 hostSchema.methods.canGoOnline = function() {
   return this.status === 'approved' && this.approvedPhotosCount >= 3;

@@ -247,9 +247,16 @@ const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   
   let hostProfile = null;
+  let freeTargetEnabled = false;
+  
   if (user.role === 'host') {
     hostProfile = await Host.findOne({ userId: user._id });
-    console.log("Host profile",hostProfile);
+    
+    const FreeTarget = require('../models/FreeTarget');
+    const freeTarget = await FreeTarget.findOne({ hostId: hostProfile._id });
+
+    console.log("Free Target",freeTarget)
+    freeTargetEnabled = freeTarget?.isEnabled || false;
   }
 
   ApiResponse.success(res, 200, 'Profile retrieved successfully', {
@@ -257,7 +264,10 @@ const getProfile = asyncHandler(async (req, res) => {
       ...user.toJSON(),
       userId: user.userId
     },
-    hostProfile
+    hostProfile: hostProfile ? {
+      ...hostProfile.toJSON(),
+      freeTargetEnabled
+    } : null
   });
 });
 
