@@ -16,6 +16,9 @@ import Register from './pages/Register';
 import HostDashboard from './pages/HostDashboard';
 import TradeAccountPage from './pages/TradeAccountPage';
 import HostWithdrawalUI from './components/HostWithdrawalUI';
+import { ForgotPassword } from './components/ForgotPassword';
+import FreeTarget from './components/FreeTarget';
+
 
 function App() {
   return (
@@ -71,6 +74,7 @@ function AppRoutes() {
             {console.log("User",user)}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             {/* Protected Routes */}
             <Route
@@ -98,6 +102,15 @@ function AppRoutes() {
                   <Profile />
                 </ProtectedRoute>
               } 
+            />
+
+            <Route
+              path="/free-target"
+              element={
+                <ProtectedRoute>
+                 <FreeTarget/>
+                </ProtectedRoute>
+              }
             />
             
             <Route

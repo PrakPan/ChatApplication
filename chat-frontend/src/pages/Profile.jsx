@@ -11,6 +11,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { HostPhotoUploadModal } from '../components/HostPhotoUploadModal';
 import api from '../services/api';
+import { IoTrophyOutline } from 'react-icons/io5';
 
 export const Profile = () => {
   const { user, logout, updateUser } = useAuth();
@@ -444,6 +445,8 @@ export const Profile = () => {
             </button> </>: null} 
 
 
+
+
             <button 
               onClick={() => openDrawer('levels')}
               className="w-full flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 rounded-2xl transition-all duration-300 group"
@@ -460,6 +463,21 @@ export const Profile = () => {
                 </span>
               </div>
             </button>
+
+            {user?.role === 'host' && profileData?.hostInfo?.freeTargetEnabled && (
+  <button 
+    onClick={() => navigate('/free-target')}
+    className="w-full flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-orange-50 rounded-2xl transition-all duration-300 group"
+  >
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-xl">
+        <IoTrophyOutline className="w-5 h-5 text-white" />
+      </div>
+      <span className="text-base font-semibold text-gray-700">Free Target</span>
+    </div>
+    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+  </button>
+)}
 
             {/* Get More Coins */}
             <button 
