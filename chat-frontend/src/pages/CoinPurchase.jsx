@@ -147,7 +147,8 @@ export const CoinPurchase = () => {
                 {/* Left Side - Coin Info */}
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center shadow-md">
-                   <Coins className="w-8 h-8" />
+                   {/* <Coins className="w-8 h-8" /> */}
+                   <img src='/coin.png' alt="Coin"/>
                   </div>
                   <div>
                     <p className="text-lg font-bold text-gray-900">
@@ -236,7 +237,7 @@ export const CoinPurchase = () => {
         {callHistory.length === 0 && !loading && (
           <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Coins className="w-8 h-8 text-gray-400" />
+              <img src='/coin.png' alt="Coin"/>
             </div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">No Call History</h3>
             <p className="text-gray-500 text-sm">

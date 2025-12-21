@@ -518,7 +518,7 @@ const HostDashboard = () => {
                 onClick={() => navigate('/coins')}
                 className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
               >
-                <Coins className="h-5 w-5 text-yellow-600" />
+                <img src='/coin.png' alt="Coin"/>
                 <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
               </button>
 
@@ -600,7 +600,7 @@ const HostDashboard = () => {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <Coins className="w-4 h-4 text-yellow-600" />
+                      <img src='/coin.png' alt="Coin"/>
                       <span className="text-sm font-semibold text-gray-900">
                         {hostItem.ratePerMinute}
                       </span>
@@ -624,7 +624,7 @@ const HostDashboard = () => {
         {!loading && hosts.length === 0 && (
           <div className="text-center py-16">
             <div className="text-gray-400 mb-2">
-              <Coins className="w-16 h-16 mx-auto" />
+              <img src='/coin.png' alt="Coin"/>
             </div>
             <h3 className="text-lg font-semibold text-gray-700 mb-1">
               {searchQuery ? 'No hosts found' : 'No hosts online'}

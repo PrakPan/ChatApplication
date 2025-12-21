@@ -486,7 +486,7 @@ export const Profile = () => {
             >
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl">
-                  <Coins className="w-5 h-5 text-white" />
+                  <img src='/coin.png' alt="Coin"/>
                 </div>
                 <span className="text-base font-semibold text-gray-700">Get More Coins</span>
               </div>

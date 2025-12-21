@@ -228,7 +228,7 @@ export const Home = () => {
               onClick={() => navigate('/coins')}
               className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
             >
-              <Coins className="h-5 w-5 text-yellow-600" />
+              <img src='/coin.png' alt="Coin"/>
               <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
             </button>
 
