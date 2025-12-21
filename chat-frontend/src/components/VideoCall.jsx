@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { 
   Mic, MicOff, Video, VideoOff, Phone, SwitchCamera, 
-  Sparkles, X, MessageCircle, Send, Image as ImageIcon, 
-  Smile, MoreVertical
+  Sparkles, X, MessageCircle, Send
 } from 'lucide-react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useChat } from '../hooks/useChat';
@@ -63,6 +62,10 @@ export const VideoCallComponent = ({
   const [messageText, setMessageText] = useState('');
   const [unreadMessages, setUnreadMessages] = useState(0);
 
+  // CRITICAL: Track if call has been initialized
+  const callInitializedRef = useRef(false);
+  const isMountedRef = useRef(true);
+
   // Track unread messages when chat is closed
   useEffect(() => {
     if (!showChat && messages.length > 0) {
@@ -96,23 +99,53 @@ export const VideoCallComponent = ({
     getCameras();
   }, []);
 
-  // Initialize call
+  // FIXED: Initialize call only once
   useEffect(() => {
+    isMountedRef.current = true;
+
     const initCall = async () => {
+      // Prevent duplicate initialization
+      if (callInitializedRef.current) {
+        console.log('⚠️ Call already initialized, skipping');
+        return;
+      }
+
+      console.log('🎬 Initializing video call component');
+      console.log('📞 Call ID:', callId);
+      console.log('👤 Remote User ID:', remoteUserId);
+      console.log('🎭 Is Host:', isHost);
+      console.log('📨 Has Incoming Offer:', !!incomingOffer);
+
       try {
+        callInitializedRef.current = true;
+
         if (incomingOffer && remoteUserId) {
+          console.log('📲 Accepting incoming call...');
           await acceptCall(remoteUserId, incomingOffer, callId);
         } else if (!isHost && callId && remoteUserId) {
+          console.log('📞 Starting outgoing call...');
           await startCall(remoteUserId, callId);
+        } else {
+          console.error('❌ Invalid call parameters');
+          toast.error('Invalid call parameters');
+          onEnd();
         }
       } catch (error) {
-        console.error('Failed to initialize call:', error);
+        console.error('❌ Failed to initialize call:', error);
         toast.error('Failed to initialize call');
+        callInitializedRef.current = false; // Reset on error
         onEnd();
       }
     };
+
     initCall();
-  }, []);
+
+    // Cleanup on unmount
+    return () => {
+      console.log('🧹 VideoCallComponent unmounting');
+      isMountedRef.current = false;
+    };
+  }, []); // Empty dependency array - initialize only once
 
   // Update local video
   useEffect(() => {
@@ -156,6 +189,7 @@ export const VideoCallComponent = ({
   };
 
   const handleEndCall = async () => {
+    console.log('📞 User ending call');
     endCall();
     await onEnd();
   };
@@ -267,7 +301,9 @@ export const VideoCallComponent = ({
               <p className="text-sm font-medium capitalize">
                 {callStatus === 'connected' ? 'Connected' : 
                  callStatus === 'connecting' ? 'Connecting...' : 
-                 callStatus === 'calling' ? 'Calling...' : 'Loading...'}
+                 callStatus === 'calling' ? 'Calling...' : 
+                 callStatus === 'reconnecting' ? 'Reconnecting...' :
+                 'Loading...'}
               </p>
               {callStatus === 'connected' && (
                 <p className="text-2xl font-bold">{formatDuration(callDuration)}</p>
@@ -304,7 +340,18 @@ export const VideoCallComponent = ({
                   <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
                     <Video className="h-12 w-12 text-white" />
                   </div>
-                  <p className="text-white text-lg font-semibold">Waiting for video...</p>
+                  <p className="text-white text-lg font-semibold mb-2">
+                    {callStatus === 'calling' ? 'Calling...' : 
+                     callStatus === 'connecting' ? 'Connecting...' :
+                     callStatus === 'reconnecting' ? 'Reconnecting...' :
+                     'Waiting for video...'}
+                  </p>
+                  <p className="text-white/60 text-sm">
+                    {callStatus === 'calling' ? 'Waiting for host to answer' :
+                     callStatus === 'connecting' ? 'Establishing connection' :
+                     callStatus === 'reconnecting' ? 'Connection interrupted' :
+                     'Setting up video stream'}
+                  </p>
                 </div>
               </div>
             )}
