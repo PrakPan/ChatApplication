@@ -80,7 +80,7 @@ const endCall = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Call not found');
   }
 
-  const duration = Math.floor((endTime - startTime) / 1000);
+  const duration = Math.floor((call?.endTime - call?.startTime) / 1000);
 
 
   const FreeTarget = require('../models/FreeTarget');
