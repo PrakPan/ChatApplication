@@ -13,7 +13,8 @@ const {
   getHostById,
   getAllHosts,
   saveHostPhotos,
-  getHostLevelInfo
+  getHostLevelInfo,
+  getTodayOnlineTime
 } = require('../controllers/hostController');
 const { authenticate, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validation');
@@ -36,6 +37,9 @@ router.put('/status', authorize('host', 'admin','coinSeller'), updateOnlineStatu
 router.get('/me/earnings', authorize('host', 'admin','coinSeller'), getHostEarnings);
 router.get('/me/calls', authorize('host', 'admin','coinSeller'), getHostCallHistory);
 router.put('/toggle-online', authorize('host', 'admin','coinSeller'), toggleHostOnlineStatus);
+
+router.get('/today-online-time',authorize('host'), getTodayOnlineTime); // NEW
+
 
 router.post('/photos/save', authorize('host', 'admin','coinSeller'), saveHostPhotos);
 router.get('/level-info', authorize('host','coinSeller'), getHostLevelInfo);

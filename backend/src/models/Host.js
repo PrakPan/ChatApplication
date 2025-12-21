@@ -18,6 +18,19 @@ const hostSchema = new mongoose.Schema({
     default: 50,
     min: [10, 'Rate must be at least 10 coins per minute']
   },
+  onlineTimeLogs: [{
+    startTime: {
+      type: Date,
+      required: true
+    },
+    endTime: {
+      type: Date
+    },
+    duration: {
+      type: Number, 
+      default: 0
+    }
+  }],
   isOnline: {
     type: Boolean,
     default: false
@@ -108,6 +121,84 @@ hostSchema.virtual('freeTargetEnabled').get(async function() {
 // Method to check if host can go online
 hostSchema.methods.canGoOnline = function() {
   return this.status === 'approved' && this.approvedPhotosCount >= 3;
+};
+
+hostSchema.methods.startOnlineSession = async function() {
+  if (this.isOnline) {
+    return; // Already online
+  }
+  
+  this.isOnline = true;
+  this.onlineTimeLogs.push({
+    startTime: new Date(),
+    endTime: null,
+    duration: 0
+  });
+  
+  await this.save();
+  console.log(`Host ${this._id} went online at ${new Date()}`);
+};
+
+// Method to end online session
+hostSchema.methods.endOnlineSession = async function() {
+  if (!this.isOnline) {
+    return; // Already offline
+  }
+  
+  this.isOnline = false;
+  
+  // Find the active session (last log without endTime)
+  const activeSession = this.onlineTimeLogs[this.onlineTimeLogs.length - 1];
+  
+  if (activeSession && !activeSession.endTime) {
+    activeSession.endTime = new Date();
+    activeSession.duration = Math.floor((activeSession.endTime - activeSession.startTime) / 1000);
+    
+    await this.save();
+    console.log(`Host ${this._id} went offline. Session duration: ${activeSession.duration}s`);
+    
+    return activeSession.duration;
+  }
+  
+  await this.save();
+};
+
+// Method to get today's total online time
+hostSchema.methods.getTodayOnlineTime = function() {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  
+  let totalTime = 0;
+  
+  for (const log of this.onlineTimeLogs) {
+    if (!log.startTime) continue;
+    
+    const sessionStart = new Date(log.startTime);
+    
+    // Skip sessions that started before today
+    if (sessionStart < todayStart) continue;
+    
+    // If session is still active
+    if (!log.endTime) {
+      const now = new Date();
+      if (now > todayStart) {
+        totalTime += Math.floor((now - sessionStart) / 1000);
+      }
+    } else {
+      // Completed session
+      const sessionEnd = new Date(log.endTime);
+      if (sessionEnd >= todayStart && sessionStart <= todayEnd) {
+        const start = sessionStart > todayStart ? sessionStart : todayStart;
+        const end = sessionEnd < todayEnd ? sessionEnd : todayEnd;
+        totalTime += Math.floor((end - start) / 1000);
+      }
+    }
+  }
+  
+  return totalTime;
 };
 
 // Pre-save hook to update lastSeen when going offline

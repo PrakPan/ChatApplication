@@ -9,9 +9,9 @@ const {
 } = require('../controllers/passwordResetController');
 const { authLimiter } = require('../middleware/rateLimiter');
 
-router.post('/request-reset', authLimiter, requestPasswordReset);
-router.post('/verify-otp', authLimiter, verifyOTP);
-router.post('/reset-password', authLimiter, resetPassword);
-router.post('/resend-otp', authLimiter, resendOTP);
+router.post('/request-reset', requestPasswordReset);
+router.post('/verify-otp', verifyOTP);
+router.post('/reset-password', resetPassword);
+router.post('/resend-otp', resendOTP);
 
 module.exports = router;

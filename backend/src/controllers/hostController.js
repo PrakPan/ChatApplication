@@ -373,17 +373,11 @@ const getAllHosts = asyncHandler(async (req, res) => {
   });
 });
 
-// Toggle host online/offline status
 const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { forceOffline } = req.body;
   
   const user = await User.findById(userId);
-
-  // Check if user is a host
-  // if (user.role !== 'host' || user.role !== 'coinseller') {
-  //   throw new ApiError(403, 'Only hosts can toggle online status');
-  // }
 
   // Find host profile
   const host = await Host.findOne({ userId });
@@ -392,14 +386,17 @@ const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Host profile not found');
   }
 
-  // If forceOffline is true, set to offline regardless of current state
+  // ============ NEW: Handle forceOffline (tab close/logout) ============
   if (forceOffline === true) {
     if (host.isOnline) {
+      // End the current online session
+      const sessionDuration = await endHostOnlineSession(host);
+      
       host.isOnline = false;
       host.lastSeen = new Date();
       await host.save();
       
-      // Emit socket event if socket.io is available
+      // Emit socket event
       if (req.io) {
         req.io.emit('host:offline', { 
           hostId: host._id,
@@ -407,7 +404,7 @@ const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
         });
       }
       
-      logger.info(`Host force offline: ${req.user.email}`);
+      logger.info(`Host force offline: ${req.user.email} - Session duration: ${sessionDuration}s`);
     }
     
     return ApiResponse.success(res, 200, 'Host is now offline', {
@@ -429,39 +426,174 @@ const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
     throw new ApiError(403, 'Please upload at least one photo before going online');
   }
 
-  // Toggle the online status normally
-  host.isOnline = !host.isOnline;
-  
-  // Update lastSeen when going offline
-  if (!host.isOnline) {
+  // ============ NEW: Start/End online session ============
+  if (host.isOnline) {
+    // Going offline
+    const sessionDuration = await endHostOnlineSession(host);
+    
+    host.isOnline = false;
     host.lastSeen = new Date();
-  }
-  
-  await host.save();
+    await host.save();
 
-  // Emit socket event
-  if (req.io) {
-    if (host.isOnline) {
-      req.io.emit('host:online', { 
-        hostId: host._id,
-        userId: host.userId 
-      });
-    } else {
+    // Emit socket event
+    if (req.io) {
       req.io.emit('host:offline', { 
         hostId: host._id,
         userId: host.userId 
       });
     }
+
+    logger.info(`Host went offline: ${req.user.email} - Session: ${sessionDuration}s`);
+
+    return ApiResponse.success(res, 200, 'Host is now offline', {
+      isOnline: false,
+      sessionDuration,
+      host: {
+        ...host.toObject(),
+        userId: host.userId
+      }
+    });
+  } else {
+    // Going online
+    await startHostOnlineSession(host);
+    
+    host.isOnline = true;
+    await host.save();
+
+    // Emit socket event
+    if (req.io) {
+      req.io.emit('host:online', { 
+        hostId: host._id,
+        userId: host.userId 
+      });
+    }
+
+    logger.info(`Host went online: ${req.user.email}`);
+
+    return ApiResponse.success(res, 200, 'Host is now online', {
+      isOnline: true,
+      host: {
+        ...host.toObject(),
+        userId: host.userId
+      }
+    });
+  }
+});
+
+// ============================================
+// ADD these helper functions to hostController.js
+// ============================================
+
+/**
+ * Start online session for host
+ */
+const startHostOnlineSession = async (host) => {
+  if (!host.onlineTimeLogs) {
+    host.onlineTimeLogs = [];
+  }
+  
+  host.onlineTimeLogs.push({
+    startTime: new Date(),
+    endTime: null,
+    duration: 0
+  });
+  
+  await host.save();
+  
+  logger.info(`Online session started for host ${host._id}`);
+  return true;
+};
+
+/**
+ * End online session for host and return duration
+ */
+const endHostOnlineSession = async (host) => {
+  if (!host.onlineTimeLogs || host.onlineTimeLogs.length === 0) {
+    return 0;
+  }
+  
+  // Find the last active session (without endTime)
+  const activeSession = host.onlineTimeLogs[host.onlineTimeLogs.length - 1];
+  
+  if (activeSession && !activeSession.endTime) {
+    activeSession.endTime = new Date();
+    activeSession.duration = Math.floor((activeSession.endTime - activeSession.startTime) / 1000);
+    
+    await host.save();
+    
+    logger.info(`Online session ended for host ${host._id}. Duration: ${activeSession.duration}s`);
+    
+    return activeSession.duration;
+  }
+  
+  return 0;
+};
+
+/**
+ * Calculate total online time for today
+ */
+const calculateTodayOnlineTime = async (hostId) => {
+  const host = await Host.findById(hostId).select('onlineTimeLogs');
+  
+  if (!host || !host.onlineTimeLogs || host.onlineTimeLogs.length === 0) {
+    return 0;
   }
 
-  logger.info(`Host online status updated: ${req.user.email} - ${host.isOnline ? 'online' : 'offline'}`);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
 
-  ApiResponse.success(res, 200, `Host is now ${host.isOnline ? 'online' : 'offline'}`, {
-    isOnline: host.isOnline,
-    host: {
-      ...host.toObject(),
-      userId: host.userId
+  let totalOnlineTime = 0;
+
+  for (const log of host.onlineTimeLogs) {
+    if (!log.startTime) continue;
+
+    const sessionStart = new Date(log.startTime);
+    
+    // Skip sessions that started before today
+    if (sessionStart < todayStart) continue;
+    
+    // If session is still active (no end time)
+    if (!log.endTime) {
+      const now = new Date();
+      if (now > todayStart) {
+        totalOnlineTime += Math.floor((now - sessionStart) / 1000);
+      }
+    } else {
+      // Completed session
+      const sessionEnd = new Date(log.endTime);
+      if (sessionEnd >= todayStart && sessionStart <= todayEnd) {
+        const start = sessionStart > todayStart ? sessionStart : todayStart;
+        const end = sessionEnd < todayEnd ? sessionEnd : todayEnd;
+        totalOnlineTime += Math.floor((end - start) / 1000);
+      }
     }
+  }
+
+  return totalOnlineTime;
+};
+
+
+const getTodayOnlineTime = asyncHandler(async (req, res) => {
+  const host = await Host.findOne({ userId: req.user._id });
+  
+  if (!host) {
+    throw new ApiError(404, 'Host profile not found');
+  }
+
+  const todayOnlineTime = await calculateTodayOnlineTime(host._id);
+  
+  // Format time for display
+  const hours = Math.floor(todayOnlineTime / 3600);
+  const minutes = Math.floor((todayOnlineTime % 3600) / 60);
+  const seconds = todayOnlineTime % 60;
+  
+  ApiResponse.success(res, 200, 'Today online time retrieved', {
+    todayOnlineTime,
+    isOnline: host.isOnline,
+    formattedTime: `${hours}h ${minutes}m ${seconds}s`
   });
 });
 
@@ -537,5 +669,7 @@ module.exports = {
   getHostById,
   getAllHosts,
   saveHostPhotos,
-  getHostLevelInfo
+  getHostLevelInfo,
+   getTodayOnlineTime, // NEW
+  calculateTodayOnlineTime //
 };

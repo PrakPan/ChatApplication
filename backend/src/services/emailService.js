@@ -1,15 +1,16 @@
 const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
+const { MailtrapTransport } = require("mailtrap");
+require('dotenv').config();
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
-  }
-});
+
+const transporter = nodemailer.createTransport(
+  MailtrapTransport({
+    token: process.env.TOKEN,
+  })
+);
+
+
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
@@ -17,8 +18,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       from: `"VideoCall Platform" <${process.env.SMTP_USER}>`,
       to,
       subject,
-      html,
-      text
+      html
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -39,6 +39,7 @@ const sendWelcomeEmail = async (user) => {
   `;
 
   await sendEmail({
+    
     to: user.email,
     subject: 'Welcome to VideoCall Platform',
     html,
