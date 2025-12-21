@@ -72,7 +72,7 @@ export const CoinPurchase = () => {
         amount: order.amount,
         currency: order.currency,
         name: 'VideoCall Platform',
-        description: `${packageData.coins} Coins`,
+        description: `₹{packageData.coins} Coins`,
         order_id: order.id,
         handler: async (response) => {
           try {
@@ -82,7 +82,7 @@ export const CoinPurchase = () => {
               razorpay_signature: response.razorpay_signature,
             });
 
-            toast.success(`Successfully purchased ${packageData.coins} coins!`);
+            toast.success(`Successfully purchased ₹{packageData.coins} coins!`);
             updateUser({ coinBalance: user.coinBalance + packageData.coins });
             setProcessing(false);
           } catch (error) {
@@ -164,7 +164,7 @@ export const CoinPurchase = () => {
                 {/* Right Side - Price */}
                 <div className="text-right">
                   <p className="text-xl font-bold text-gray-900">
-                    ${(pkg.price / 100).toFixed(2)}
+                    ₹{(pkg.price).toFixed(2)}
                   </p>
                 </div>
               </div>

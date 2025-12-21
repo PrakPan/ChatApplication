@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Coins, Search, Power, PowerOff, Camera, Phone, PhoneOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
@@ -30,54 +30,152 @@ const HostDashboard = () => {
 
   const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5500/api/v1';
 
+  // FIXED: Memoized fetch functions
+  const fetchUser = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUser(data.data.user);
+        if (data.data.hostProfile) {
+          setIsOnline(data.data.hostProfile.isOnline);
+          setHostProfile(data.data.hostProfile);
+          if (data.data.hostProfile.photos && data.data.hostProfile.photos.length === 0) {
+            setShowPhotoModal(true);
+          }
+        }
+        setHost(data.data.hostProfile?.totalEarnings || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+    }
+  }, [API_URL]);
+
+  const fetchHosts = useCallback(async (search = '') => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      const queryParams = new URLSearchParams({
+        status: 'approved',
+        isOnline: 'true',
+        ...(search && { search })
+      });
+      
+      const response = await fetch(`${API_URL}/hosts?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setHosts(data.data.hosts);
+      }
+    } catch (error) {
+      console.error('Failed to load hosts:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL]);
+
   // Fetch user and hosts on mount
   useEffect(() => {
     fetchUser();
     fetchHosts();
-  }, []);
+  }, [fetchUser, fetchHosts]);
 
-  // Socket event listeners
+  // FIXED: Proper socket event listener cleanup
   useEffect(() => {
     if (!socket || !connected) {
       console.log('⚠️ Socket not available or not connected');
       return;
     }
 
-    console.log('👂 Setting up socket listeners for host');
+    console.log('👂 Setting up socket listeners for host dashboard');
     console.log('🆔 Host socket ID:', socket.id);
 
-    // Listen for incoming calls
+    // Define all handler functions
+    const handleIncomingCall = ({ from, offer, callId, caller }) => {
+      console.log('📞 HOST: Incoming call from:', from, 'caller:', caller);
+      
+      if (!isOnline) {
+        console.log('❌ Host is offline, rejecting call');
+        socket.emit('call:reject', { 
+          to: from, 
+          callId, 
+          reason: 'Host is offline' 
+        });
+        return;
+      }
+
+      setIncomingCall({
+        from,
+        offer,
+        callId,
+        caller: caller || { name: 'User' }
+      });
+    };
+
+    const handleCallRejected = ({ callId, reason }) => {
+      console.log('📞 HOST: Call rejected:', reason);
+      toast.error(`Call rejected: ${reason}`);
+      setInCall(false);
+      setCurrentCall(null);
+      setIncomingCall(null);
+    };
+
+    const handleCallEnded = ({ callId, reason }) => {
+      console.log('📞 HOST: Call ended:', reason);
+      setInCall(false);
+      setCurrentCall(null);
+      setIncomingCall(null);
+      toast.success('Call ended');
+      fetchHosts();
+    };
+
+    const handleCallCancelled = ({ callId, reason }) => {
+      console.log('📞 HOST: Call cancelled:', reason);
+      setIncomingCall(null);
+      toast.info(`Call cancelled: ${reason}`);
+    };
+
+    const handleHostOffline = (data) => {
+      console.log('📡 Host went offline:', data);
+      fetchHosts();
+    };
+
+    const handleHostOnline = (data) => {
+      console.log('📡 Host came online:', data);
+      fetchHosts();
+    };
+
+    // Register all listeners
     socket.on('call:offer', handleIncomingCall);
     socket.on('call:rejected', handleCallRejected);
     socket.on('call:ended', handleCallEnded);
     socket.on('call:cancelled', handleCallCancelled);
-    socket.on('call:answer', handleCallAnswer);
+    socket.on('host:offline', handleHostOffline);
+    socket.on('host:online', handleHostOnline);
 
-    // Listen for host status changes
-    socket.on('host:offline', (data) => {
-      console.log('📡 Host went offline:', data);
-      fetchHosts(); // Refresh host list
-    });
-
-    socket.on('host:online', (data) => {
-      console.log('📡 Host came online:', data);
-      fetchHosts(); // Refresh host list
-    });
-
+    // IMPORTANT: Cleanup function removes all listeners
     return () => {
-      console.log('🧹 Cleaning up host socket listeners');
-      socket.off('call:offer');
-      socket.off('call:rejected');
-      socket.off('call:ended');
-      socket.off('call:cancelled');
-      socket.off('call:answer');
-      socket.off('host:offline');
-      socket.off('host:online');
+      console.log('🧹 Cleaning up host dashboard socket listeners');
+      socket.off('call:offer', handleIncomingCall);
+      socket.off('call:rejected', handleCallRejected);
+      socket.off('call:ended', handleCallEnded);
+      socket.off('call:cancelled', handleCallCancelled);
+      socket.off('host:offline', handleHostOffline);
+      socket.off('host:online', handleHostOnline);
     };
-  }, [socket, connected, isOnline]);
+  }, [socket, connected, isOnline, fetchHosts]);
 
+  // Update socket with online status
   useEffect(() => {
-    if (user?.role === 'host' || user?.role == 'coinSeller') {
+    if (user?.role === 'host' || user?.role === 'coinSeller') {
       setHostOnlineStatus(isOnline);
     }
   }, [isOnline, user, setHostOnlineStatus]);
@@ -89,70 +187,20 @@ const HostDashboard = () => {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, fetchHosts]);
 
-  // ============= CALL HANDLERS =============
-  const handleIncomingCall = ({ from, offer, callId, caller }) => {
-    console.log('📞 HOST: Incoming call from:', from, 'caller:', caller);
-    
-    // Only accept calls if host is online
-    if (!isOnline) {
-      console.log('❌ Host is offline, rejecting call');
-      socket.emit('call:reject', { 
-        to: from, 
-        callId, 
-        reason: 'Host is offline' 
-      });
-      return;
-    }
+  // FIXED: Cleanup on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      console.log('🧹 HostDashboard unmounting');
+      // Clear any incoming call state
+      if (incomingCall) {
+        setIncomingCall(null);
+      }
+    };
+  }, [incomingCall]);
 
-    // Show incoming call notification
-    setIncomingCall({
-      from,
-      offer,
-      callId,
-      caller: caller || { name: 'User' }
-    });
-
-    // Show toast notification
-    // toast((t) => (
-    //   <div className="flex flex-col bg-white p-4 rounded-lg shadow-lg border">
-    //     <p className="font-semibold text-lg mb-2 text-gray-900">
-    //       📞 Incoming Call
-    //     </p>
-    //     <p className="text-gray-700 mb-3">
-    //       From: <strong>{caller?.name || 'User'}</strong>
-    //     </p>
-    //     <div className="flex space-x-2">
-    //       <button
-    //         onClick={() => {
-    //           acceptIncomingCall(from, offer, callId);
-    //           toast.dismiss(t.id);
-    //         }}
-    //         className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
-    //       >
-    //         <Phone className="w-4 h-4 inline mr-1" />
-    //         Accept
-    //       </button>
-    //       <button
-    //         onClick={() => {
-    //           rejectIncomingCall(from, callId);
-    //           toast.dismiss(t.id);
-    //         }}
-    //         className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
-    //       >
-    //         <PhoneOff className="w-4 h-4 inline mr-1" />
-    //         Reject
-    //       </button>
-    //     </div>
-    //   </div>
-    // ), { 
-    //   duration: 30000,
-    //   position: 'top-center'
-    // });
-  };
-
-  const acceptIncomingCall = (from, offer, callId) => {
+  const acceptIncomingCall = useCallback((from, offer, callId) => {
     console.log('✅ HOST: Accepting call from:', from);
     setCurrentCall({ 
       from, 
@@ -163,9 +211,9 @@ const HostDashboard = () => {
     });
     setIncomingCall(null);
     setInCall(true);
-  };
+  }, []);
 
-  const rejectIncomingCall = (from, callId) => {
+  const rejectIncomingCall = useCallback((from, callId) => {
     console.log('❌ HOST: Rejecting call from:', from);
     if (socket) {
       socket.emit('call:reject', { 
@@ -176,37 +224,9 @@ const HostDashboard = () => {
     }
     setIncomingCall(null);
     toast.success('Call rejected');
-  };
+  }, [socket]);
 
-  const handleCallRejected = ({ callId, reason }) => {
-    console.log('📞 HOST: Call rejected:', reason);
-    toast.error(`Call rejected: ${reason}`);
-    setInCall(false);
-    setCurrentCall(null);
-    setIncomingCall(null);
-  };
-
-  const handleCallEnded = ({ callId, reason }) => {
-    console.log('📞 HOST: Call ended:', reason);
-    setInCall(false);
-    setCurrentCall(null);
-    setIncomingCall(null);
-    toast.success('Call ended');
-    fetchHosts();
-  };
-
-  const handleCallCancelled = ({ callId, reason }) => {
-    console.log('📞 HOST: Call cancelled:', reason);
-    setIncomingCall(null);
-    toast.info(`Call cancelled: ${reason}`);
-  };
-
-  const handleCallAnswer = ({ from, answer }) => {
-    console.log('📞 HOST: Received answer from:', from);
-    // This will be handled by the VideoCallComponent
-  };
-
-  const handleEndCall = async () => {
+  const handleEndCall = useCallback(async () => {
     console.log('☎️ HOST: Ending call:', currentCall);
     
     if (currentCall?.callId) {
@@ -229,9 +249,9 @@ const HostDashboard = () => {
     setInCall(false);
     setCurrentCall(null);
     fetchHosts();
-  };
+  }, [currentCall, socket, fetchHosts]);
 
-  const handleCallHost = async (host) => {
+  const handleCallHost = useCallback(async (host) => {
     console.log('📞 HOST: Calling another host:', host);
     
     if (!user) {
@@ -243,8 +263,6 @@ const HostDashboard = () => {
     try {
       const response = await callService.initiateCall(host._id);
       const callData = response.data.call;
-      
-      console.log('📞 HOST: Call data:', callData);
       
       const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
       
@@ -262,9 +280,8 @@ const HostDashboard = () => {
       console.error('❌ HOST: Error initiating call:', error);
       toast.error(error.response?.data?.message || 'Failed to initiate call');
     }
-  };
+  }, [user, navigate]);
 
-  // ============= ONLINE STATUS HANDLERS =============
   const checkPhotosAndToggle = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -275,18 +292,14 @@ const HostDashboard = () => {
       });
       const data = await response.json();
       
-      if (data.success 
-        // && data.data.hostProfile
-      ) {
+      if (data.success) {
         const currentHostProfile = data.data.hostProfile;
         
-        // Check if host has uploaded at least one photo
         if (!currentHostProfile.photos || currentHostProfile.photos.length === 0) {
           setShowPhotoModal(true);
           return false;
         }
         
-        // If photos exist, proceed with toggle
         return await toggleOnlineStatus();
       }
     } catch (error) {
@@ -314,7 +327,6 @@ const HostDashboard = () => {
         setIsOnline(newOnlineStatus);
         toast.success(`You are now ${newOnlineStatus ? 'online' : 'offline'}`);
         
-        // If going offline and there's an incoming call, reject it
         if (!newOnlineStatus && incomingCall) {
           rejectIncomingCall(incomingCall.from, incomingCall.callId);
         }
@@ -338,8 +350,7 @@ const HostDashboard = () => {
   };
 
   const handleLogout = async () => {
-    // Mark host offline before logging out
-    if (isOnline && (user?.role === 'host' || user?.role === 'coinSeller') ) {
+    if (isOnline && (user?.role === 'host' || user?.role === 'coinSeller')) {
       try {
         const token = localStorage.getItem('accessToken');
         await fetch(`${API_URL}/hosts/toggle-online`, {
@@ -365,60 +376,6 @@ const HostDashboard = () => {
     navigate('/profile?tab=photos');
   };
 
-  // ============= USER DATA FETCHING =============
-  const fetchUser = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/auth/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setUser(data.data.user);
-        if (data.data.hostProfile) {
-          setIsOnline(data.data.hostProfile.isOnline);
-          setHostProfile(data.data.hostProfile);
-          // Check if host has uploaded photos
-          if (data.data.hostProfile.photos && data.data.hostProfile.photos.length === 0) {
-            setShowPhotoModal(true);
-          }
-        }
-        setHost(data.data.hostProfile?.totalEarnings || 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-    }
-  };
-
-  const fetchHosts = async (search = '') => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const queryParams = new URLSearchParams({
-        status: 'approved',
-        isOnline: 'true',
-        ...(search && { search })
-      });
-      
-      const response = await fetch(`${API_URL}/hosts?${queryParams}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setHosts(data.data.hosts);
-      }
-    } catch (error) {
-      console.error('Failed to load hosts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============= RENDER VIDEO CALL =============
   if (inCall && currentCall) {
     const remoteUserId = currentCall.hostId || currentCall.from;
     console.log('🎥 HOST: Rendering video call with remote user:', remoteUserId);
@@ -434,7 +391,6 @@ const HostDashboard = () => {
     );
   }
 
-  // ============= INCOMING CALL MODAL =============
   const IncomingCallModal = () => {
     if (!incomingCall) return null;
 
@@ -480,7 +436,6 @@ const HostDashboard = () => {
     );
   };
 
-  // Photo Upload Modal Component
   const PhotoUploadModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -518,16 +473,12 @@ const HostDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Live Hosts</h1>
             <div className="flex items-center gap-3">
-            
-
-              {/* Online Toggle - Only for hosts */}
-              {user?.role === 'host'  && (
+              {user?.role === 'host' && (
                 <div className="flex flex-row items-center gap-2">
                   <span className={`text-sm font-semibold ${
                     isOnline ? 'text-green-700' : 'text-gray-600'
@@ -563,16 +514,14 @@ const HostDashboard = () => {
                 onNavigateToProfile={() => navigate('/profile')}
               />
 
-
               <button 
-                            onClick={() => navigate('/coins')}
-                            className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
-                          >
-                            <Coins className="h-5 w-5 text-yellow-600" />
-                            <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
-                          </button>
+                onClick={() => navigate('/coins')}
+                className="flex items-center space-x-1.5 bg-yellow-50 px-3 py-1.5 rounded-full hover:bg-yellow-100 transition-colors"
+              >
+                <Coins className="h-5 w-5 text-yellow-600" />
+                <span className="font-semibold text-gray-900">{user?.coinBalance || 0}</span>
+              </button>
 
-              {/* Coin Balance */}
               <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full border border-yellow-200 cursor-pointer" onClick={() => navigate("/withdraw")}>
                 <p className="text-lg text-purple-600">💎</p>
                 <span className="font-semibold text-gray-900">
@@ -582,7 +531,6 @@ const HostDashboard = () => {
             </div>
           </div>
           
-          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -596,7 +544,6 @@ const HostDashboard = () => {
         </div>
       </div>
 
-      {/* Hosts Grid */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -610,7 +557,6 @@ const HostDashboard = () => {
                 onClick={() => setSelectedHost(hostItem)}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
               >
-                {/* Host Image */}
                 <div className="relative aspect-[3/4] bg-gradient-to-br from-purple-100 to-pink-100">
                   {hostItem.userId?.avatar ? (
                     <img
@@ -630,7 +576,6 @@ const HostDashboard = () => {
                     </div>
                   )}
                   
-                  {/* Online Status Badge */}
                   {hostItem.isOnline ? (
                     <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-full shadow-sm">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -644,18 +589,15 @@ const HostDashboard = () => {
                   )}
                 </div>
 
-                {/* Host Info */}
                 <div className="p-3">
                   <h3 className="font-semibold text-gray-900 text-base mb-1 truncate">
                     {hostItem.userId?.name || 'Host'}
                   </h3>
                   
-                  {/* Bio or Status */}
                   <p className="text-xs text-gray-500 mb-2 line-clamp-2 min-h-[2rem]">
                     {hostItem.bio || 'Available for call'}
                   </p>
 
-                  {/* Rate */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <Coins className="w-4 h-4 text-yellow-600" />
@@ -694,16 +636,10 @@ const HostDashboard = () => {
         )}
       </div>
 
-      {/* Bottom Navigation Spacer */}
       <div className="h-20" />
 
-      {/* Incoming Call Modal */}
       <IncomingCallModal />
-
-      {/* Photo Upload Modal */}
       {showPhotoModal && <PhotoUploadModal />}
-
-     
       {selectedHost && (
         <HostProfileModal
           host={selectedHost}
