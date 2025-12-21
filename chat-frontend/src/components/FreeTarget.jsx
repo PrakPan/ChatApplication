@@ -1,44 +1,100 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, Play, Square, Clock, Target, Award, TrendingUp, Calendar } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronLeft, Clock, Target, Award, TrendingUp, Calendar, Gift, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
 export default function FreeTarget() {
   const [freeTarget, setFreeTarget] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [timerActive, setTimerActive] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [showReward, setShowReward] = useState(false);
+  const [isHostOnline, setIsHostOnline] = useState(false);
+  const lastCompletionCheck = useRef(null);
 
-  useEffect(() => {
-    loadFreeTarget();
-    const interval = setInterval(loadFreeTarget, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Auto-running timer
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, []);
-
-  const loadFreeTarget = async () => {
+  // Load target data
+  const loadFreeTarget = useCallback(async () => {
     try {
       const response = await api.get('/free-target/my-target');
-      const data = await response;
-      if (data.success) {
-        setFreeTarget(data.data.freeTarget);
-        const todayTarget = getTodayTargetFromData(data.data.freeTarget);
-        setTimerActive(todayTarget?.isTimerActive || false);
-        setCurrentTime(todayTarget?.totalCallDuration || 0);
-        setElapsedTime(0); // Reset elapsed time on data refresh
+      if (response.success) {
+        const data = response.data.freeTarget;
+        setFreeTarget(data);
+        
+        // Initialize times from API
+        setCurrentTime(data.timeCompleted || 0);
+        setTimeRemaining(data.timeRemaining || 0);
+        
+        // Check if just completed
+        const todayTarget = getTodayTargetFromData(data);
+        if (todayTarget?.status === 'completed' && 
+            lastCompletionCheck.current !== todayTarget.completedAt) {
+          lastCompletionCheck.current = todayTarget.completedAt;
+          setShowReward(true);
+          setTimeout(() => setShowReward(false), 5000);
+        }
+      }
+      
+      // Also check host online status
+      const profileResponse = await api.get('/auth/profile');
+      if (profileResponse.success && profileResponse.data.hostProfile) {
+        setIsHostOnline(profileResponse.data.hostProfile.isOnline);
       }
     } catch (error) {
       console.error('Failed to load target:', error);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadFreeTarget();
+  }, [loadFreeTarget]);
+
+  // Refresh data every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(loadFreeTarget, 30000);
+    return () => clearInterval(interval);
+  }, [loadFreeTarget]);
+
+  // Auto-increment timer (only when host is online)
+  useEffect(() => {
+    // Only run timer if free target exists
+    if (!freeTarget) return;
+    
+    const timer = setInterval(() => {
+      // Only increment if host is online
+      if (isHostOnline) {
+        setCurrentTime(prev => {
+          const newTime = prev + 1;
+          
+          // Check if target completed
+          const targetDuration = freeTarget?.targetDuration || 28800;
+          if (newTime >= targetDuration && timeRemaining > 0) {
+            checkCompletion();
+          }
+          
+          return newTime;
+        });
+        
+        setTimeRemaining(prev => Math.max(0, prev - 1));
+      } else {
+        // Host is offline, just refresh data without incrementing
+        loadFreeTarget();
+      }
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [freeTarget, isHostOnline, timeRemaining, loadFreeTarget]);
+
+  // Check if target is completed
+  const checkCompletion = async () => {
+    try {
+      const response = await api.post('/free-target/check-completion');
+      if (response.success && response.data.todayTarget?.status === 'completed') {
+        loadFreeTarget(); // Reload to get updated data
+      }
+    } catch (error) {
+      console.error('Failed to check completion:', error);
     }
   };
 
@@ -55,34 +111,6 @@ export default function FreeTarget() {
     });
   };
 
-  const todayTarget = getTodayTargetFromData(freeTarget);
-
-  const handleStartTimer = async () => {
-    try {
-      const response = await fetch('/api/free-target/start-timer', { method: 'POST' });
-      const data = await response.json();
-      if (data.success) {
-        setTimerActive(true);
-        loadFreeTarget();
-      }
-    } catch (error) {
-      console.error('Failed to start timer:', error);
-    }
-  };
-
-  const handleStopTimer = async () => {
-    try {
-      const response = await fetch('/api/free-target/stop-timer', { method: 'POST' });
-      const data = await response.json();
-      if (data.success) {
-        setTimerActive(false);
-        loadFreeTarget();
-      }
-    } catch (error) {
-      console.error('Failed to stop timer:', error);
-    }
-  };
-
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -95,45 +123,25 @@ export default function FreeTarget() {
     return days[new Date(date).getDay()];
   };
 
-  const getStatusIcon = (day, daysLeftInWeek, targetDuration) => {
-    // Check if this day should be marked as failed due to insufficient time
+  const getStatusIcon = (day) => {
     const dayDate = new Date(day.date);
     dayDate.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Only apply auto-fail logic for future days
-    if (dayDate > today && day.status === 'pending') {
-      const dayIndex = freeTarget.currentWeek.days.findIndex(d => d.date === day.date);
-      const todayIndex = freeTarget.currentWeek.days.findIndex(d => {
-        const dDate = new Date(d.date);
-        dDate.setHours(0, 0, 0, 0);
-        return dDate.getTime() === today.getTime();
-      });
-      
-      if (todayIndex !== -1 && dayIndex > todayIndex) {
-        const daysUntilThisDay = dayIndex - todayIndex;
-        const timeRemaining = (freeTarget.timeRemaining || 0);
-        const hoursRemaining = timeRemaining / 3600;
-        const hoursNeeded = daysUntilThisDay * (targetDuration / 3600);
-        
-        if (hoursRemaining < hoursNeeded) {
-          return '❌';
-        }
-      }
-    }
-    
+    // Show admin override status
     if (day.adminOverride) {
       return day.status === 'completed' ? '✅' : '❌';
     }
     
+    // Show actual status
     switch (day.status) {
       case 'completed':
         return '⭐';
       case 'failed':
         return '❌';
       case 'pending':
-        return '⏳';
+        return dayDate.getTime() === today.getTime() ? '⏳' : '○';
       default:
         return '○';
     }
@@ -141,19 +149,49 @@ export default function FreeTarget() {
 
   const calculateProgress = () => {
     if (!freeTarget) return 0;
-    const displayTime = currentTime + elapsedTime;
     const target = freeTarget.targetDuration || 28800;
-    return Math.min((displayTime / target) * 100, 100);
+    return Math.min((currentTime / target) * 100, 100);
   };
 
-  const getDisplayTimeCompleted = () => {
-    return currentTime + elapsedTime;
-  };
+  const todayTarget = getTodayTargetFromData(freeTarget);
+  const progress = calculateProgress();
 
-  const getDisplayTimeRemaining = () => {
-    const target = freeTarget?.targetDuration || 28800;
-    const completed = getDisplayTimeCompleted();
-    return Math.max(target - completed, 0);
+  // Reward Modal
+  const RewardModal = () => {
+    if (!showReward) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="bg-white rounded-3xl p-8 max-w-md mx-4 text-center animate-bounce-in">
+          <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-spin-slow">
+            <Gift className="w-12 h-12 text-white" />
+          </div>
+          
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">
+            🎉 Congratulations! 🎉
+          </h2>
+          
+          <p className="text-xl text-gray-700 mb-4">
+            Daily Target Completed!
+          </p>
+          
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 mb-6">
+            <p className="text-sm text-gray-600 mb-2">You've earned</p>
+            <p className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600">
+              💎 1,00,000
+            </p>
+            <p className="text-sm text-gray-600 mt-2">Diamonds Added!</p>
+          </div>
+          
+          <button
+            onClick={() => setShowReward(false)}
+            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 rounded-xl font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all"
+          >
+            Awesome!
+          </button>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -172,7 +210,7 @@ export default function FreeTarget() {
           <p className="text-gray-600 text-lg">Free target not enabled</p>
           <button
             onClick={() => window.history.back()}
-            className="mt-4 px-6 py-2 bg-yellow-500 text-white rounded-lg"
+            className="mt-4 px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
           >
             Go Back
           </button>
@@ -180,8 +218,6 @@ export default function FreeTarget() {
       </div>
     );
   }
-
-  const progress = calculateProgress();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-pink-50">
@@ -212,11 +248,25 @@ export default function FreeTarget() {
             <h2 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-pink-500 mb-4 animate-pulse">
               Free Target
             </h2>
+            <p className="text-gray-600 text-sm">Complete 8 hours daily to earn 1 Lakh diamonds</p>
           </div>
         </div>
 
         {/* Today's Progress Card */}
         <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-6 border border-yellow-100">
+          {/* Offline Warning Banner */}
+          {!isHostOnline && (
+            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-orange-900">You are offline</p>
+                <p className="text-xs text-orange-700 mt-1">
+                  Timer is paused. Go online to start tracking your progress.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-full font-semibold mb-4">
               <Target className="w-5 h-5" />
@@ -238,76 +288,60 @@ export default function FreeTarget() {
             )}
           </div>
 
-          {/* Time Display */}
+          {/* Real-time Time Display */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200">
+            <div className={`bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 ${!isHostOnline ? 'opacity-60' : ''}`}>
               <div className="text-sm text-gray-600 mb-1 flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                Time Completed
+                Online Time
+                {!isHostOnline && <span className="text-xs text-orange-600 ml-1">(Paused)</span>}
               </div>
-              <div className="text-2xl font-bold text-green-600">
-                {formatTime(getDisplayTimeCompleted())}
+              <div className="text-2xl font-bold text-green-600 tabular-nums">
+                {formatTime(currentTime)}
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-4 border border-orange-200">
+            <div className={`bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-4 border border-orange-200 ${!isHostOnline ? 'opacity-60' : ''}`}>
               <div className="text-sm text-gray-600 mb-1 flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                Time Remaining
+                Remaining
               </div>
-              <div className="text-2xl font-bold text-orange-600">
-                {formatTime(getDisplayTimeRemaining())}
+              <div className="text-2xl font-bold text-orange-600 tabular-nums">
+                {formatTime(timeRemaining)}
               </div>
             </div>
           </div>
 
-          {/* Progress Bar */}
+          {/* Animated Progress Bar */}
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">Progress</span>
-              <span className="font-bold text-yellow-600">{progress.toFixed(0)}%</span>
+              <span className="text-gray-600">
+                Progress {!isHostOnline && <span className="text-orange-600">(Timer Paused)</span>}
+              </span>
+              <span className="font-bold text-yellow-600">{progress.toFixed(1)}%</span>
             </div>
-            <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+            <div className="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                className={`absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 rounded-full transition-all duration-500 ease-out shadow-lg ${!isHostOnline ? 'opacity-50' : ''}`}
                 style={{ width: `${progress}%` }}
               >
-                <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                {isHostOnline && <div className="absolute inset-0 bg-white/20 animate-shimmer"></div>}
               </div>
               
               {/* Milestone markers */}
               {[25, 50, 75].map(milestone => (
                 <div
                   key={milestone}
-                  className="absolute top-0 w-0.5 h-full bg-white/50"
+                  className="absolute top-0 w-0.5 h-full bg-white/60"
                   style={{ left: `${milestone}%` }}
-                />
+                >
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-gray-500 font-medium">
+                    {milestone}%
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-
-          {/* Timer Control */}
-          {/* {todayTarget?.status === 'pending' && (
-            <div className="flex gap-3">
-              {!timerActive ? (
-                <button
-                  onClick={handleStartTimer}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  <Play className="w-6 h-6" />
-                  Start Timer
-                </button>
-              ) : (
-                <button
-                  onClick={handleStopTimer}
-                  className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:from-red-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  <Square className="w-6 h-6" />
-                  Stop Timer
-                </button>
-              )}
-            </div>
-          )} */}
 
           {todayTarget?.adminOverride && (
             <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
@@ -338,6 +372,7 @@ export default function FreeTarget() {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               const isToday = dayDate.getTime() === today.getTime();
+              const isPast = dayDate < today;
               
               return (
                 <div
@@ -349,14 +384,18 @@ export default function FreeTarget() {
                       ? 'bg-gradient-to-br from-green-400 to-emerald-400'
                       : day.status === 'failed'
                       ? 'bg-gradient-to-br from-red-400 to-pink-400'
+                      : isPast
+                      ? 'bg-gradient-to-br from-gray-300 to-gray-400'
                       : 'bg-gray-200'
                   }`}
                 >
-                  <div className={`text-xs font-bold mb-1 ${isToday || day.status !== 'pending' ? 'text-white' : 'text-gray-600'}`}>
+                  <div className={`text-xs font-bold mb-1 ${
+                    isToday || day.status !== 'pending' || isPast ? 'text-white' : 'text-gray-600'
+                  }`}>
                     {getDayLabel(day.date)}
                   </div>
                   <div className="text-2xl">
-                    {getStatusIcon(day, freeTarget.daysLeftInWeek, freeTarget.targetDuration)}
+                    {getStatusIcon(day)}
                   </div>
                 </div>
               );
@@ -397,27 +436,73 @@ export default function FreeTarget() {
           <ul className="space-y-2 text-sm text-blue-800">
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
-              <span>Complete <strong>8 hours</strong> of calls each day to earn a star ⭐</span>
+              <span>Stay online for <strong>8 hours daily</strong> to earn ⭐ and <strong>1 Lakh diamonds</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
-              <span>Maximum <strong>3 disconnects</strong> allowed in 10 minutes</span>
+              <span>Timer auto-runs based on your actual online time</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
-              <span>Timer auto-runs to show real-time progress</span>
+              <span>Past days before joining are auto-marked ❌</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
-              <span>Days auto-marked as failed if insufficient time remains</span>
+              <span>Diamonds credited automatically upon completion</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-0.5">•</span>
-              <span>Admin can override any day's status if needed</span>
+              <span>Complete 7 days in a week to unlock bonus rewards</span>
             </li>
           </ul>
         </div>
       </div>
+
+      {/* Reward Modal */}
+      <RewardModal />
+
+      {/* Custom animations */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes bounce-in {
+          0% { transform: scale(0.3); opacity: 0; }
+          50% { transform: scale(1.05); }
+          70% { transform: scale(0.9); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes shimmer {
+          0% { background-position: -100% 0; }
+          100% { background-position: 100% 0; }
+        }
+        
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-bounce-in {
+          animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .animate-shimmer {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite;
+        }
+        
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
