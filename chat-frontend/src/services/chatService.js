@@ -13,7 +13,7 @@ export const chatService = {
 
   // Get messages for a specific conversation
   getMessages: async (userId, params = {}) => {
-    return api.get(`/${userId}`, { params });
+    return api.get(`/conversation/${userId}`, { params });
   },
 
   // Send a message
