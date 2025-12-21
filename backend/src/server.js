@@ -42,6 +42,7 @@ const withdrawalRoutes = require('./routes/withdrawalRoutes');
 const freeTargetRoutes = require('./routes/freeTargetRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const FreeTarget = require('./models/FreeTarget');
+const { scheduleJob } = require('./utils/cronJobs');
 
 // Initialize express
 const app = express();
@@ -198,6 +199,8 @@ process.on('uncaughtException', (err) => {
   logger.error(`Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
+
+scheduleJob();
 
 
 // async function initializeFreeTargets() {

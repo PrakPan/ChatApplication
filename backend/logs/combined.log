@@ -2458,3 +2458,11 @@
 {"level":"info","message":"User connected: neha@gmail.com (mRbLGyDHaMSr3MnGAAAB)","service":"videocall-backend","timestamp":"2025-12-21 20:45:24"}
 {"level":"info","message":"User 692b02959285146aa7a96250 authenticated with socket mRbLGyDHaMSr3MnGAAAB","service":"videocall-backend","timestamp":"2025-12-21 20:45:24"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-12-21 20:49:55"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-21 20:53:10"}
+{"level":"error","message":"Error connecting to MongoDB: Server selection timed out after 5000 ms","service":"videocall-backend","timestamp":"2025-12-21 20:53:15"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-21 20:55:26"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-21 20:55:26"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-21 20:55:26"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-21 20:55:26"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-01.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-21 20:55:27"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-21 20:55:29"}

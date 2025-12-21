@@ -4,7 +4,6 @@ const logger = require('./logger');
 
 const FreeTarget = require('../models/FreeTarget');
 const Host = require('../models/Host');
-const logger = require('../utils/logger');
 
 const calculateTodayOnlineTime = async (hostId) => {
   const host = await Host.findById(hostId).select('onlineTimeLogs');
