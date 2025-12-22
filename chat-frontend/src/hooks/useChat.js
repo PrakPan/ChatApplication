@@ -87,16 +87,6 @@ export const useChat = (recipientId) => {
 
 
 
-    const formatMessage = (msg) => ({
-  _id: msg._id,
-  sender: msg.sender || { _id: msg.senderId, name: 'User', avatar: null },
-  senderId: msg.senderId || msg.sender?._id,
-  content: msg.content || msg.message,
-  messageType: msg.messageType || 'text',
-  createdAt: msg.createdAt,
-  status: msg.status,
-  mediaUrl: msg.mediaUrl
-});
 
     // Receive new message
     const handleMessageReceive = ({ message, conversation }) => {
@@ -418,7 +408,6 @@ export const useChat = (recipientId) => {
     reactToMessage,
     markAsRead,
     messagesEndRef,
-    scrollToBottom,
-    formatMessage
+    scrollToBottom
   };
 };
