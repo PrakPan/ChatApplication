@@ -111,40 +111,28 @@ exports.getConversation = async (req, res) => {
 
 // Get messages with pagination
 exports.getMessages = async (req, res) => {
-  console.log("Inside get message");
   try {
     const userId = req.user._id;
     const { userId: otherUserId } = req.params;
-    const { page = 1, limit = 50, before } = req.query;
+    const { page = 1, limit = 50 } = req.query;
 
     const conversationId = Message.generateConversationId(userId, otherUserId);
 
+    // Get messages from last 24 hours only
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
     const query = {
       conversationId,
-      deletedFor: { $ne: userId }
+      deletedFor: { $ne: userId },
+      createdAt: { $gte: yesterday } // Only recent messages
     };
-
-    if (before) {
-      query.createdAt = { $lt: new Date(before) };
-    }
 
     const messages = await Message.find(query)
       .populate('sender', 'name avatar userId')
-      .populate({
-        path: 'replyTo',
-        select: 'content messageType sender',
-        populate: {
-          path: 'sender',
-          select: 'name avatar'
-        }
-      })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    const totalMessages = await Message.countDocuments(query);
-
-    // Format messages to match frontend expectations
     const formattedMessages = messages.map(msg => ({
       _id: msg._id,
       senderId: msg.sender._id,
@@ -155,20 +143,15 @@ exports.getMessages = async (req, res) => {
       mediaUrl: msg.mediaUrl,
       createdAt: msg.createdAt,
       status: msg.status,
-      isRead: msg.status === 'read',
-      replyTo: msg.replyTo
+      isRead: msg.status === 'read'
     }));
 
     res.json({
       success: true,
       data: {
-        messages: formattedMessages.reverse(), // Return in chronological order
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(totalMessages / limit),
-          totalMessages,
-          hasMore: messages.length === parseInt(limit)
-        }
+        messages: formattedMessages.reverse(),
+        expiry: '24 hours',
+        note: 'Messages older than 24 hours are automatically deleted'
       }
     });
   } catch (error) {
@@ -494,3 +477,21 @@ exports.getUnreadCount = async (req, res) => {
     });
   }
 };
+
+
+exports.cleanupOldMessages = async () => {
+  try {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    await Message.deleteMany({
+      createdAt: { $lt: yesterday },
+      messageType: 'text' 
+    });
+    
+    console.log('✅ Cleaned up messages older than 24 hours');
+  } catch (error) {
+    console.error('Error cleaning up messages:', error);
+  }
+};
+
+setInterval(exports.cleanupOldMessages, 60 * 60 * 1000);

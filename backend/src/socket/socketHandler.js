@@ -308,6 +308,45 @@ const socketHandler = (io) => {
       }
     });
 
+    // In socketHandler.js, update the message:read event
+socket.on('messages:read', async ({ recipientId, messageIds }) => {
+  try {
+    const conversationId = Message.generateConversationId(userId, recipientId);
+
+    await Message.updateMany(
+      {
+        _id: { $in: messageIds },
+        recipient: userId,
+        status: { $ne: 'read' }
+      },
+      {
+        $set: { status: 'read', readAt: new Date() }
+      }
+    );
+
+    const conversation = await Conversation.findOne({ conversationId });
+    if (conversation) {
+      await conversation.resetUnread(userId);
+    }
+
+    // IMPORTANT: Notify sender with correct event name
+    const recipientIdStr = recipientId?.toString() || recipientId;
+    const recipientSocketId = connectedUsers.get(recipientIdStr);
+    
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('messages:read', {  // Use 'messages:read' not 'chat:read'
+        conversationId,
+        messageIds,
+        readBy: userId
+      });
+    }
+
+    logger.info(`Messages marked as read in conversation ${conversationId}`);
+  } catch (error) {
+    logger.error(`Error marking messages as read: ${error.message}`);
+  }
+});
+
     // React to message
     socket.on('message:react', async ({ messageId, emoji }) => {
       try {
@@ -417,48 +456,7 @@ const socketHandler = (io) => {
   }
 });
 
-    // FIXED: Call offer handler with proper string conversion
-    // socket.on('call:offer', async ({ to, offer, callId }) => {
-    //   try {
-    //     logger.info(`📞 Received call:offer from ${userId} to ${to}`);
-        
-    //     if (!validateSdp(offer)) {
-    //       socket.emit('call:error', { message: 'Invalid offer' });
-    //       return;
-    //     }
-
-    //     // CRITICAL FIX: Ensure 'to' is converted to string
-    //     const toUserId = to?.toString() || to;
-        
-    //     logger.info(`🔍 Looking up recipient socket for userId: ${toUserId}`);
-    //     logger.info(`📋 Connected users: ${Array.from(connectedUsers.keys()).join(', ')}`);
-        
-    //     const recipientSocketId = connectedUsers.get(toUserId);
-        
-    //     if (recipientSocketId) {
-    //       logger.info(`✅ Found recipient socket: ${recipientSocketId}`);
-          
-    //       io.to(recipientSocketId).emit('call:offer', {
-    //         from: userId,
-    //         offer,
-    //         callId,
-    //         caller: {
-    //           id: socket.user._id,
-    //           name: socket.user.name,
-    //           avatar: socket.user.avatar
-    //         }
-    //       });
-          
-    //       logger.info(`📤 Call offer sent from ${userId} to ${toUserId}`);
-    //     } else {
-    //       logger.warn(`❌ Recipient ${toUserId} not found in connectedUsers`);
-    //       socket.emit('call:error', { message: 'Recipient is offline' });
-    //     }
-    //   } catch (error) {
-    //     logger.error(`Error handling call offer: ${error.message}`);
-    //     socket.emit('call:error', { message: 'Failed to send offer' });
-    //   }
-    // });
+   
 
     // FIXED: Call answer handler with proper string conversion
     socket.on('call:answer', async ({ to, answer }) => {

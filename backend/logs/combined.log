@@ -2836,3 +2836,28 @@
 {"level":"info","message":"User 69215f4af572ef73c316a216 left conversation 69215f4af572ef73c316a216_692b02959285146aa7a96250","service":"videocall-backend","timestamp":"2025-12-22 01:15:06"}
 {"ip":"::1","level":"error","message":"endTime is not defined","method":"POST","service":"videocall-backend","stack":"ReferenceError: endTime is not defined\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:83:32\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":500,"timestamp":"2025-12-22 01:15:07","url":"/api/v1/calls/end"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-12-22 01:15:19"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-22 10:43:37"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-22 10:43:37"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-22 10:43:37"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-22 10:43:37"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-22 10:43:39"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-22 10:43:39"}
+{"level":"info","message":"User connected: john@gmail.com (oZTZ4eiydyMRa9CxAAAB) - UserId: 69215f4af572ef73c316a216","service":"videocall-backend","timestamp":"2025-12-22 10:43:58"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 explicit authenticate (already authenticated as 69215f4af572ef73c316a216)","service":"videocall-backend","timestamp":"2025-12-22 10:43:58"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-22 10:45:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-22 10:45:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-22 10:45:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-22 10:45:00"}
+{"level":"info","message":"User connected: john@gmail.com (DEywre040vtkQlbhAAAD) - UserId: 69215f4af572ef73c316a216","service":"videocall-backend","timestamp":"2025-12-22 10:46:18"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 explicit authenticate (already authenticated as 69215f4af572ef73c316a216)","service":"videocall-backend","timestamp":"2025-12-22 10:46:18"}
+{"level":"info","message":"User disconnected: john@gmail.com (DEywre040vtkQlbhAAAD)","service":"videocall-backend","timestamp":"2025-12-22 10:48:39"}
+{"level":"info","message":"User disconnected: john@gmail.com (oZTZ4eiydyMRa9CxAAAB)","service":"videocall-backend","timestamp":"2025-12-22 10:48:39"}
+{"level":"info","message":"User connected: john@gmail.com (cpo6RMz_7aHgx1XAAAAF) - UserId: 69215f4af572ef73c316a216","service":"videocall-backend","timestamp":"2025-12-22 10:48:40"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 explicit authenticate (already authenticated as 69215f4af572ef73c316a216)","service":"videocall-backend","timestamp":"2025-12-22 10:48:40"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-22 10:50:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-22 10:50:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-22 10:50:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-22 10:50:00"}
+{"level":"info","message":"User connected: john@gmail.com (UutbXbaNGJydvQ3NAAAH) - UserId: 69215f4af572ef73c316a216","service":"videocall-backend","timestamp":"2025-12-22 10:51:04"}
+{"level":"info","message":"User 69215f4af572ef73c316a216 explicit authenticate (already authenticated as 69215f4af572ef73c316a216)","service":"videocall-backend","timestamp":"2025-12-22 10:51:04"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-12-22 10:54:14"}
