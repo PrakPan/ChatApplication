@@ -39,7 +39,30 @@ export const useChat = (recipientId) => {
     }
   }, [connected, recipientId, emit]);
 
+
+  useEffect(() => {
+  if (!socket) return;
+
+  const handleMessageRead = ({ messageIds }) => {
+    console.log('📖 Messages marked as read:', messageIds);
+    setMessages(prev =>
+      prev.map(msg => 
+        messageIds.includes(msg._id) 
+          ? { ...msg, status: 'read' }
+          : msg
+      )
+    );
+  };
+
+  socket.on('messages:read', handleMessageRead);
+
+  return () => {
+    socket.off('messages:read', handleMessageRead);
+  };
+}, [socket]);
   // Load initial messages
+
+
   useEffect(() => {
     if (recipientId) {
       loadMessages();
@@ -60,6 +83,20 @@ export const useChat = (recipientId) => {
         )
       );
     };
+
+
+
+
+    const formatMessage = (msg) => ({
+  _id: msg._id,
+  sender: msg.sender || { _id: msg.senderId, name: 'User', avatar: null },
+  senderId: msg.senderId || msg.sender?._id,
+  content: msg.content || msg.message,
+  messageType: msg.messageType || 'text',
+  createdAt: msg.createdAt,
+  status: msg.status,
+  mediaUrl: msg.mediaUrl
+});
 
     // Receive new message
     const handleMessageReceive = ({ message, conversation }) => {
@@ -381,6 +418,7 @@ export const useChat = (recipientId) => {
     reactToMessage,
     markAsRead,
     messagesEndRef,
-    scrollToBottom
+    scrollToBottom,
+    formatMessage
   };
 };

@@ -46,7 +46,16 @@ const MessagesPage = () => {
   const fetchConversations = async () => {
     try {
       const response = await chatService.getConversations();
-      setConversations(response.data.conversations || []);
+      const convs = response.data.conversations || [];
+      
+      // Sort by lastMessageAt (most recent first)
+      const sortedConvs = convs.sort((a, b) => {
+        const dateA = new Date(a.lastMessageAt || 0);
+        const dateB = new Date(b.lastMessageAt || 0);
+        return dateB - dateA;
+      });
+      
+      setConversations(sortedConvs);
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
       toast.error('Failed to load messages');
@@ -59,23 +68,21 @@ const MessagesPage = () => {
     try {
       // Check if this conversation already exists in our list
       const existingConv = conversations.find(
-        conv => conv.userId._id === userId
+        conv => conv.userId?._id === userId
       );
 
       if (existingConv) {
-        // Conversation exists, just select it and fetch messages
         setSelectedChat(existingConv);
         fetchMessages(userId);
         return;
       }
 
-      // New conversation - fetch user details and create empty conversation
+      // New conversation - fetch user details
       const response = await chatService.getOrCreateConversation(userId);
       
       if (response.data.success) {
         const conversationData = response.data.conversation;
         
-        // Create new conversation object
         const newConversation = {
           userId: conversationData.participant,
           conversationId: conversationData.conversationId,
@@ -83,13 +90,8 @@ const MessagesPage = () => {
           unreadCount: 0
         };
         
-        // Add to conversations list at the top
         setConversations(prev => [newConversation, ...prev]);
-        
-        // Select the chat
         setSelectedChat(newConversation);
-        
-        // Set empty messages (new conversation)
         setMessages([]);
       }
     } catch (error) {
@@ -109,7 +111,7 @@ const MessagesPage = () => {
       // Update conversation unread count
       setConversations(prev =>
         prev.map(conv =>
-          conv.userId._id === userId ? { ...conv, unreadCount: 0 } : conv
+          conv.userId?._id === userId ? { ...conv, unreadCount: 0 } : conv
         )
       );
     } catch (error) {
@@ -119,31 +121,32 @@ const MessagesPage = () => {
   };
 
   const handleIncomingMessage = (message) => {
-    if (selectedChat && message.senderId === selectedChat.userId._id) {
+    if (selectedChat && message.senderId === selectedChat.userId?._id) {
       setMessages(prev => [...prev, message]);
       chatService.markAsRead(message.senderId);
     }
     
-    // Always refresh conversations to update the list
     fetchConversations();
   };
 
   const handleMessageRead = ({ userId }) => {
-    if (selectedChat && userId === selectedChat.userId._id) {
+    if (selectedChat && userId === selectedChat.userId?._id) {
       setMessages(prev =>
-        prev.map(msg => ({ ...msg, isRead: true }))
+        prev.map(msg => ({ ...msg, isRead: true, status: 'read' }))
       );
     }
   };
 
   const handleSelectChat = (conversation) => {
     setSelectedChat(conversation);
-    fetchMessages(conversation.userId._id);
+    if (conversation.userId?._id) {
+      fetchMessages(conversation.userId._id);
+    }
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedChat) return;
+    if (!newMessage.trim() || !selectedChat || !selectedChat.userId?._id) return;
 
     try {
       const response = await chatService.sendMessage(
@@ -155,24 +158,25 @@ const MessagesPage = () => {
       setMessages(prev => [...prev, sentMessage]);
       setNewMessage('');
       
-      // Update the conversation's last message in the list
+      // Update conversation
       setConversations(prev => {
         const updatedConvs = prev.map(conv => {
-          if (conv.userId._id === selectedChat.userId._id) {
+          if (conv.userId?._id === selectedChat.userId._id) {
             return {
               ...conv,
               lastMessage: {
                 message: sentMessage.content || sentMessage.message,
                 createdAt: sentMessage.createdAt
-              }
+              },
+              lastMessageAt: sentMessage.createdAt
             };
           }
           return conv;
         });
         
-        // Move this conversation to the top
+        // Move to top
         const selectedConvIndex = updatedConvs.findIndex(
-          conv => conv.userId._id === selectedChat.userId._id
+          conv => conv.userId?._id === selectedChat.userId._id
         );
         if (selectedConvIndex > 0) {
           const [selectedConv] = updatedConvs.splice(selectedConvIndex, 1);
@@ -196,6 +200,8 @@ const MessagesPage = () => {
   };
 
   const formatTime = (date) => {
+    if (!date) return '';
+    
     const now = new Date();
     const msgDate = new Date(date);
     const diffInHours = (now - msgDate) / (1000 * 60 * 60);
@@ -268,58 +274,70 @@ const MessagesPage = () => {
                 </p>
               </div>
             ) : (
-              filteredConversations.map((conversation) => (
-                <button
-                  key={conversation.userId._id}
-                  onClick={() => handleSelectChat(conversation)}
-                  className={`w-full p-4 flex items-center gap-3 hover:bg-gray-100 transition-colors border-b ${
-                    selectedChat?.userId._id === conversation.userId._id
-                      ? 'bg-purple-50'
-                      : ''
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="relative flex-shrink-0">
-                    <img
-                      src={conversation.userId.avatar  || ' https://i.pravatar.cc/150?img=0'}
-                      alt={conversation.userId.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    {conversation.userId.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {conversation.userId.name}
-                      </h3>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        {conversation.lastMessage?.createdAt && formatTime(conversation.lastMessage.createdAt)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600 truncate">
-                        {conversation.lastMessage?.message || 'Start chatting...'}
-                      </p>
-                      {conversation.unreadCount > 0 && (
-                        <span className="flex-shrink-0 ml-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                          {conversation.unreadCount}
-                        </span>
+              filteredConversations.map((conversation) => {
+                // Safe property access
+                if (!conversation.userId) return null;
+                
+                const conversationUser = conversation.userId;
+                const avatarUrl = conversationUser.avatar || 
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(conversationUser.name || 'User')}&background=6366f1&color=fff`;
+                
+                return (
+                  <button
+                    key={conversationUser._id || Math.random()}
+                    onClick={() => handleSelectChat(conversation)}
+                    className={`w-full p-4 flex items-center gap-3 hover:bg-gray-100 transition-colors border-b ${
+                      selectedChat?.userId?._id === conversationUser._id
+                        ? 'bg-purple-50'
+                        : ''
+                    }`}
+                  >
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={avatarUrl}
+                        alt={conversationUser.name || 'User'}
+                        className="w-12 h-12 rounded-full object-cover"
+                        onError={(e) => {
+                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conversationUser.name || 'User')}&background=6366f1&color=fff`;
+                        }}
+                      />
+                      {conversationUser.isOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                       )}
                     </div>
-                  </div>
-                </button>
-              ))
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {conversationUser.name || 'Unknown User'}
+                        </h3>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                          {conversation.lastMessage?.createdAt && formatTime(conversation.lastMessage.createdAt)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600 truncate">
+                          {conversation.lastMessage?.message || 'Start chatting...'}
+                        </p>
+                        {conversation.unreadCount > 0 && (
+                          <span className="flex-shrink-0 ml-2 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {conversation.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
 
         {/* Chat Area */}
         <div className={`${selectedChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-white`}>
-          {selectedChat ? (
+          {selectedChat && selectedChat.userId ? (
             <>
               {/* Chat Header */}
               <div className="p-4 border-b flex items-center justify-between bg-gray-50">
@@ -331,13 +349,16 @@ const MessagesPage = () => {
                     <ArrowLeft className="w-5 h-5" />
                   </button>
                   <img
-                    src={selectedChat.userId.avatar || 'https://via.placeholder.com/40'}
-                    alt={selectedChat.userId.name}
+                    src={selectedChat.userId.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.userId.name || 'User')}&background=6366f1&color=fff`}
+                    alt={selectedChat.userId.name || 'User'}
                     className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.userId.name || 'User')}&background=6366f1&color=fff`;
+                    }}
                   />
                   <div>
                     <h2 className="font-semibold text-gray-900">
-                      {selectedChat.userId.name}
+                      {selectedChat.userId.name || 'Unknown User'}
                     </h2>
                     <p className="text-xs text-gray-500">
                       {selectedChat.userId.isOnline ? 'Online' : 'Offline'}
@@ -355,34 +376,72 @@ const MessagesPage = () => {
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
                     <Send className="w-12 h-12 mb-2 text-gray-300" />
                     <p className="text-sm">No messages yet</p>
-                    <p className="text-xs text-gray-400 mt-1">Start the conversation!</p>
+                    <p className="text-xs text-gray-400 mt-1">Messages expire after 24 hours</p>
                   </div>
                 ) : (
                   messages.map((message, index) => {
-                    const isOwn = message.senderId === user._id || message.sender?._id === user._id;
+                    const isOwn = message.senderId === user?._id || message.sender?._id === user?._id;
+                    
+                    const senderAvatar = isOwn 
+                      ? (user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=9333ea&color=fff`)
+                      : (selectedChat?.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`);
+                    
                     return (
                       <div
                         key={message._id || index}
-                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2`}
                       >
-                        <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                            isOwn
-                              ? 'bg-purple-600 text-white rounded-br-none'
-                              : 'bg-gray-100 text-gray-900 rounded-bl-none'
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap break-words">
-                            {message.message || message.content}
-                          </p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              isOwn ? 'text-purple-200' : 'text-gray-500'
+                        {/* Avatar on left for incoming */}
+                        {!isOwn && (
+                          <img 
+                            src={senderAvatar}
+                            alt={selectedChat?.userId?.name || 'User'}
+                            className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-gray-200"
+                            onError={(e) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`;
+                            }}
+                          />
+                        )}
+                        
+                        <div className="flex flex-col max-w-[70%]">
+                          {/* Sender name for incoming messages */}
+                          {!isOwn && selectedChat?.userId?.name && (
+                            <span className="text-xs font-semibold text-gray-500 mb-1 ml-2">
+                              {selectedChat.userId.name}
+                            </span>
+                          )}
+                          
+                          <div
+                            className={`rounded-2xl px-4 py-2 ${
+                              isOwn
+                                ? 'bg-purple-600 text-white rounded-br-sm'
+                                : 'bg-gray-100 text-gray-900 rounded-bl-sm'
                             }`}
                           >
-                            {formatTime(message.createdAt)}
-                          </p>
+                            <p className="text-sm whitespace-pre-wrap break-words">
+                              {message.message || message.content}
+                            </p>
+                            <p
+                              className={`text-xs mt-1 ${
+                                isOwn ? 'text-purple-200' : 'text-gray-500'
+                              }`}
+                            >
+                              {formatTime(message.createdAt)}
+                            </p>
+                          </div>
                         </div>
+                        
+                        {/* Avatar on right for outgoing */}
+                        {isOwn && (
+                          <img 
+                            src={senderAvatar}
+                            alt="You"
+                            className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-purple-300"
+                            onError={(e) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=9333ea&color=fff`;
+                            }}
+                          />
+                        )}
                       </div>
                     );
                   })

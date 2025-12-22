@@ -204,6 +204,7 @@ const HostDashboard = () => {
   const handleCallAnswer = ({ from, answer }) => {
     console.log('📞 HOST: Received answer from:', from);
     // This will be handled by the VideoCallComponent
+    
   };
 
   const handleEndCall = async () => {

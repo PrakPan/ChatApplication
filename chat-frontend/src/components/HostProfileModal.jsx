@@ -21,15 +21,24 @@ export const HostProfileModal = ({ host, onClose, onCall, onMessage }) => {
   
   const displayPhoto = getPhotoUrl(approvedPhotos[selectedPhotoIndex]) || user?.avatar || 'https://via.placeholder.com/400x500?text=No+Photo';
 
-  const handleMessage = () => {
-    if (onMessage) {
-      onMessage(host);
-    } else {
-      // Navigate to messages page with this host
-      navigate('/messages', { state: { hostId: user._id || host._id } });
-    }
+ const handleMessage = async () => {
+  try {
+    const hostUserId = user._id || host.userId?._id || host._id;
+    
+    // Navigate to messages page with the host's user ID
+    navigate('/messages', { 
+      state: { 
+        openChatWithUserId: hostUserId,
+        hostName: user.name || host.name
+      } 
+    });
+    
     onClose();
-  };
+  } catch (error) {
+    console.error('Error opening chat:', error);
+    toast.error('Failed to open chat');
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">

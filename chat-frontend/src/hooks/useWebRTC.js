@@ -500,6 +500,7 @@ export const useWebRTC = () => {
   const handleAnswer = async (answer) => {
     try {
       console.log('📥 Received answer');
+      setCallStatus('accepted');
       
       if (!peerConnection.current) {
         console.warn('⚠️ No peer connection to handle answer');

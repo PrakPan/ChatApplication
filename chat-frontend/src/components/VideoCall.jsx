@@ -340,18 +340,22 @@ export const VideoCallComponent = ({
                   <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
                     <Video className="h-12 w-12 text-white" />
                   </div>
-                  <p className="text-white text-lg font-semibold mb-2">
-                    {callStatus === 'calling' ? 'Calling...' : 
-                     callStatus === 'connecting' ? 'Connecting...' :
-                     callStatus === 'reconnecting' ? 'Reconnecting...' :
-                     'Waiting for video...'}
-                  </p>
-                  <p className="text-white/60 text-sm">
-                    {callStatus === 'calling' ? 'Waiting for host to answer' :
-                     callStatus === 'connecting' ? 'Establishing connection' :
-                     callStatus === 'reconnecting' ? 'Connection interrupted' :
-                     'Setting up video stream'}
-                  </p>
+                 <p className="text-white text-lg font-semibold mb-2">
+  {callStatus === 'calling' ? 'Calling...' : 
+   callStatus === 'accepted' ? 'Host Accepted!' :  // NEW
+   callStatus === 'connecting' ? 'Connecting video...' :
+   callStatus === 'connected' ? 'Connected' :
+   callStatus === 'reconnecting' ? 'Reconnecting...' :
+   'Waiting for video...'}
+</p>
+<p className="text-white/60 text-sm">
+  {callStatus === 'calling' ? 'Waiting for host to answer' :
+   callStatus === 'accepted' ? 'Setting up video connection...' :  // NEW
+   callStatus === 'connecting' ? 'Establishing video stream' :
+   callStatus === 'connected' ? 'Enjoy your call' :
+   callStatus === 'reconnecting' ? 'Connection interrupted' :
+   'Please wait...'}
+</p>
                 </div>
               </div>
             )}
@@ -523,45 +527,71 @@ export const VideoCallComponent = ({
             )}
 
             {messages.map((message) => {
-              const isOwn = message.sender._id === userId || message.sender === userId;
-              
-              return (
-                <div
-                  key={message._id}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-                >
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2 break-words ${
-                      isOwn
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-800 text-white'
-                    }`}
-                  >
-                    {message.messageType === 'text' && (
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    )}
-                    {message.messageType === 'image' && (
-                      <img 
-                        src={message.mediaUrl} 
-                        alt="Shared" 
-                        className="max-w-full rounded-lg"
-                      />
-                    )}
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      <span className="text-xs opacity-70">
-                        {formatMessageTime(message.createdAt)}
-                      </span>
-                      {isOwn && (
-                        <span className="text-xs opacity-70">
-                          {message.status === 'read' ? '✓✓' : 
-                           message.status === 'delivered' ? '✓✓' : '✓'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+  const isOwn = message.sender?._id === userId || message.senderId === userId;
+  const senderAvatar = message.sender?.avatar || 'https://ui-avatars.com/api/?name=' + (message.sender?.name || 'User');
+  
+  return (
+    <div
+      key={message._id}
+      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2 animate-fadeIn`}
+    >
+      {/* Avatar for incoming messages (left side) */}
+      {!isOwn && (
+        <img 
+          src={senderAvatar}
+          alt={message.sender?.name}
+          className="w-8 h-8 rounded-full flex-shrink-0"
+        />
+      )}
+      
+      <div
+        className={`max-w-[75%] rounded-2xl px-4 py-2 break-words ${
+          isOwn
+            ? 'bg-purple-600 text-white rounded-br-sm'
+            : 'bg-gray-800 text-white rounded-bl-sm'
+        }`}
+      >
+        {/* Show sender name for incoming messages */}
+        {!isOwn && (
+          <p className="text-xs font-semibold text-gray-300 mb-1">
+            {message.sender?.name || 'User'}
+          </p>
+        )}
+        
+        {message.messageType === 'text' && (
+          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        )}
+        {message.messageType === 'image' && (
+          <img 
+            src={message.mediaUrl} 
+            alt="Shared" 
+            className="max-w-full rounded-lg"
+          />
+        )}
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <span className="text-xs opacity-70">
+            {formatMessageTime(message.createdAt)}
+          </span>
+          {isOwn && (
+            <span className="text-xs opacity-70">
+              {message.status === 'read' ? '✓✓' : 
+               message.status === 'delivered' ? '✓✓' : '✓'}
+            </span>
+          )}
+        </div>
+      </div>
+      
+    
+      {isOwn && (
+        <img 
+          src={user?.avatar || 'https://ui-avatars.com/api/?name=' + (user?.name || 'You')}
+          alt="You"
+          className="w-8 h-8 rounded-full flex-shrink-0"
+        />
+      )}
+    </div>
+  );
+})}
             
             {typing && (
               <div className="flex justify-start">
