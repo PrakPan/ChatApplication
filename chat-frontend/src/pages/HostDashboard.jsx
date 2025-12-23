@@ -24,7 +24,7 @@ const HostDashboard = () => {
   const [incomingCall, setIncomingCall] = useState(null);
   const [selectedHost, setSelectedHost] = useState(null);
   
-  const { socket, connected, setHostOnlineStatus } = useSocket();
+  const { socket, connected } = useSocket();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -76,11 +76,11 @@ const HostDashboard = () => {
     };
   }, [socket, connected, isOnline]);
 
-  useEffect(() => {
-    if (user?.role === 'host' || user?.role == 'coinSeller') {
-      setHostOnlineStatus(isOnline);
-    }
-  }, [isOnline, user, setHostOnlineStatus]);
+  // useEffect(() => {
+  //   if (user?.role === 'host' || user?.role == 'coinSeller') {
+  //     setHostOnlineStatus(isOnline);
+  //   }
+  // }, [isOnline, user, setHostOnlineStatus]);
 
   // Search debounce
   useEffect(() => {

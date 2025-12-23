@@ -132,10 +132,10 @@ export const SocketProvider = ({ children }) => {
   }, [isAuthenticated, user]);
 
 
-  const setHostOnlineStatus = (isOnline) => {
-    isHostOnlineRef.current = isOnline;
-    console.log('📊 Host online status updated:', isOnline);
-  };
+  // const setHostOnlineStatus = (isOnline) => {
+  //   isHostOnlineRef.current = isOnline;
+  //   console.log('📊 Host online status updated:', isOnline);
+  // };
 
 
   const emit = (event, data) => {
@@ -167,7 +167,7 @@ export const SocketProvider = ({ children }) => {
     emit,
     on,
     off,
-    setHostOnlineStatus 
+    // setHostOnlineStatus 
   };
 
   return (
