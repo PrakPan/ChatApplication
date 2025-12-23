@@ -4,29 +4,51 @@ const { MailtrapTransport } = require("mailtrap");
 require('dotenv').config();
 
 
-const transporter = nodemailer.createTransport(
-  MailtrapTransport({
-    token: process.env.TOKEN,
-  })
-);
+if (!process.env.TOKEN) {
+  throw new Error('MAILTRAP TOKEN is not defined in environment variables');
+}
 
+var transporter = nodemailer.createTransport({
+  host: "sandbox.smtp.mailtrap.io",
+  port: 2525,
+  auth: {
+    user: "32605cf66afc15",
+    pass: "734c12b180df96"
+  }
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    logger.error('Mailtrap connection failed:', error);
+  } else {
+    logger.info('Mailtrap is ready to send emails');
+  }
+});
 
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
     const mailOptions = {
-      from: `"VideoCall Platform" <${process.env.SMTP_USER}>`,
+      from: {
+        name: "VideoCall Platform",
+        address: "catliveofficial@gmail.com" 
+      },
       to,
       subject,
-      html
+      html,
+      text: text || subject
     };
 
     const info = await transporter.sendMail(mailOptions);
-    logger.info(`Email sent: ${info.messageId}`);
+    logger.info(`Email sent successfully to ${to}: ${info.messageId}`);
     return info;
   } catch (error) {
-    logger.error(`Email send failed: ${error.message}`);
-    throw new Error('Failed to send email');
+    logger.error(`Email send failed to ${to}:`, {
+      error: error.message,
+      code: error.code,
+      response: error.response
+    });
+    throw new Error(`Failed to send email: ${error.message}`);
   }
 };
 

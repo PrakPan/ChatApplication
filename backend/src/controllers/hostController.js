@@ -670,6 +670,6 @@ module.exports = {
   getAllHosts,
   saveHostPhotos,
   getHostLevelInfo,
-   getTodayOnlineTime, // NEW
+  getTodayOnlineTime, // NEW
   calculateTodayOnlineTime //
 };

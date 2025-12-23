@@ -163,8 +163,6 @@ exports.requestPasswordReset = asyncHandler(async (req, res) => {
 
   console.log("User Email", user);
   if (!user) {
-    // Return success message even if user doesn't exist (security best practice)
-    // This prevents user enumeration attacks
     return ApiResponse.success(
       res,
       200,
