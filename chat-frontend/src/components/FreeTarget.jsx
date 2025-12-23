@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Clock, Target, Award, TrendingUp, Calendar, Gift, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Clock, Target, Award, TrendingUp, Calendar, Gift, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
 
 export default function FreeTarget() {
@@ -10,6 +10,7 @@ export default function FreeTarget() {
   const [showReward, setShowReward] = useState(false);
   const [isHostOnline, setIsHostOnline] = useState(false);
   const lastCompletionCheck = useRef(null);
+  const refreshIntervalRef = useRef(null);
 
   // Load target data
   const loadFreeTarget = useCallback(async () => {
@@ -19,7 +20,7 @@ export default function FreeTarget() {
         const data = response.data.freeTarget;
         setFreeTarget(data);
         
-        // Initialize times from API
+        // Set times from API
         setCurrentTime(data.timeCompleted || 0);
         setTimeRemaining(data.timeRemaining || 0);
         
@@ -33,7 +34,7 @@ export default function FreeTarget() {
         }
       }
       
-      // Also check host online status
+      // Check host online status
       const profileResponse = await api.get('/auth/profile');
       if (profileResponse.success && profileResponse.data.hostProfile) {
         setIsHostOnline(profileResponse.data.hostProfile.isOnline);
@@ -50,53 +51,63 @@ export default function FreeTarget() {
     loadFreeTarget();
   }, [loadFreeTarget]);
 
-  // Refresh data every 30 seconds
+  // Setup refresh interval based on today's target status
   useEffect(() => {
-    const interval = setInterval(loadFreeTarget, 30000);
-    return () => clearInterval(interval);
-  }, [loadFreeTarget]);
+    // Clear existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
 
-  // Auto-increment timer (only when host is online)
+    if (!freeTarget) return;
+
+    const todayTarget = getTodayTargetFromData(freeTarget);
+    
+    // If day is completed or failed, don't refresh automatically
+    if (todayTarget?.status === 'completed' || todayTarget?.status === 'failed') {
+      return;
+    }
+
+    // Only refresh every 30 seconds if day is still pending
+    if (todayTarget?.status === 'pending') {
+      refreshIntervalRef.current = setInterval(loadFreeTarget, 30000);
+    }
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [freeTarget, loadFreeTarget]);
+
+  // Client-side timer (only when host is online and day is pending)
   useEffect(() => {
-    // Only run timer if free target exists
     if (!freeTarget) return;
     
+    const todayTarget = getTodayTargetFromData(freeTarget);
+    
+    // Don't run timer if day is completed or failed
+    if (todayTarget?.status === 'completed' || todayTarget?.status === 'failed') {
+      return;
+    }
+
+    // Only run timer if host is online and day is pending
+    if (!isHostOnline || todayTarget?.status !== 'pending') {
+      return;
+    }
+    
     const timer = setInterval(() => {
-      // Only increment if host is online
-      if (isHostOnline) {
-        setCurrentTime(prev => {
-          const newTime = prev + 1;
-          
-          // Check if target completed
-          const targetDuration = freeTarget?.targetDuration || 28800;
-          if (newTime >= targetDuration && timeRemaining > 0) {
-            checkCompletion();
-          }
-          
-          return newTime;
-        });
-        
-        setTimeRemaining(prev => Math.max(0, prev - 1));
-      } else {
-        // Host is offline, just refresh data without incrementing
-        loadFreeTarget();
-      }
+      setCurrentTime(prev => {
+        const targetDuration = freeTarget?.targetDurationPerDay || 28800;
+        const newTime = Math.min(prev + 1, targetDuration); // Cap at 8 hours
+        return newTime;
+      });
+      
+      setTimeRemaining(prev => Math.max(0, prev - 1));
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [freeTarget, isHostOnline, timeRemaining, loadFreeTarget]);
-
-  // Check if target is completed
-  const checkCompletion = async () => {
-    try {
-      const response = await api.post('/free-target/check-completion');
-      if (response.success && response.data.todayTarget?.status === 'completed') {
-        loadFreeTarget(); // Reload to get updated data
-      }
-    } catch (error) {
-      console.error('Failed to check completion:', error);
-    }
-  };
+  }, [freeTarget, isHostOnline]);
 
   const getTodayTargetFromData = (targetData) => {
     if (!targetData?.currentWeek?.days) return null;
@@ -129,12 +140,10 @@ export default function FreeTarget() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Show admin override status
     if (day.adminOverride) {
       return day.status === 'completed' ? '✅' : '❌';
     }
     
-    // Show actual status
     switch (day.status) {
       case 'completed':
         return '⭐';
@@ -149,12 +158,15 @@ export default function FreeTarget() {
 
   const calculateProgress = () => {
     if (!freeTarget) return 0;
-    const target = freeTarget.targetDuration || 28800;
+    const target = freeTarget.targetDurationPerDay || 28800;
     return Math.min((currentTime / target) * 100, 100);
   };
 
   const todayTarget = getTodayTargetFromData(freeTarget);
   const progress = calculateProgress();
+  const isDayCompleted = todayTarget?.status === 'completed';
+  const isDayFailed = todayTarget?.status === 'failed';
+  const isDayActive = todayTarget?.status === 'pending';
 
   // Reward Modal
   const RewardModal = () => {
@@ -254,19 +266,7 @@ export default function FreeTarget() {
 
         {/* Today's Progress Card */}
         <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-6 border border-yellow-100">
-          {/* Offline Warning Banner */}
-          {!isHostOnline && (
-            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-orange-900">You are offline</p>
-                <p className="text-xs text-orange-700 mt-1">
-                  Timer is paused. Go online to start tracking your progress.
-                </p>
-              </div>
-            </div>
-          )}
-
+          {/* Day Status Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-full font-semibold mb-4">
               <Target className="w-5 h-5" />
@@ -276,72 +276,125 @@ export default function FreeTarget() {
             {todayTarget && (
               <div className="mb-4">
                 <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
-                  todayTarget.status === 'completed' ? 'bg-green-100 text-green-700' :
-                  todayTarget.status === 'failed' ? 'bg-red-100 text-red-700' :
+                  isDayCompleted ? 'bg-green-100 text-green-700' :
+                  isDayFailed ? 'bg-red-100 text-red-700' :
                   'bg-blue-100 text-blue-700'
                 }`}>
-                  {todayTarget.status === 'completed' && '🎉 Completed'}
-                  {todayTarget.status === 'failed' && '❌ Failed'}
-                  {todayTarget.status === 'pending' && '⏳ In Progress'}
+                  {isDayCompleted && <><CheckCircle className="w-4 h-4" /> Completed</>}
+                  {isDayFailed && <><XCircle className="w-4 h-4" /> Failed</>}
+                  {isDayActive && '⏳ In Progress'}
                 </span>
               </div>
             )}
           </div>
 
-          {/* Real-time Time Display */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className={`bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 ${!isHostOnline ? 'opacity-60' : ''}`}>
-              <div className="text-sm text-gray-600 mb-1 flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Online Time
-                {!isHostOnline && <span className="text-xs text-orange-600 ml-1">(Paused)</span>}
-              </div>
-              <div className="text-2xl font-bold text-green-600 tabular-nums">
-                {formatTime(currentTime)}
-              </div>
-            </div>
-
-            <div className={`bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-4 border border-orange-200 ${!isHostOnline ? 'opacity-60' : ''}`}>
-              <div className="text-sm text-gray-600 mb-1 flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Remaining
-              </div>
-              <div className="text-2xl font-bold text-orange-600 tabular-nums">
-                {formatTime(timeRemaining)}
-              </div>
-            </div>
-          </div>
-
-          {/* Animated Progress Bar */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">
-                Progress {!isHostOnline && <span className="text-orange-600">(Timer Paused)</span>}
-              </span>
-              <span className="font-bold text-yellow-600">{progress.toFixed(1)}%</span>
-            </div>
-            <div className="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-              <div
-                className={`absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 rounded-full transition-all duration-500 ease-out shadow-lg ${!isHostOnline ? 'opacity-50' : ''}`}
-                style={{ width: `${progress}%` }}
-              >
-                {isHostOnline && <div className="absolute inset-0 bg-white/20 animate-shimmer"></div>}
-              </div>
-              
-              {/* Milestone markers */}
-              {[25, 50, 75].map(milestone => (
-                <div
-                  key={milestone}
-                  className="absolute top-0 w-0.5 h-full bg-white/60"
-                  style={{ left: `${milestone}%` }}
-                >
-                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-gray-500 font-medium">
-                    {milestone}%
+          {/* Show timer only if day is active/pending */}
+          {isDayActive ? (
+            <>
+              {/* Offline Warning Banner */}
+              {!isHostOnline && (
+                <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-orange-900">You are offline</p>
+                    <p className="text-xs text-orange-700 mt-1">
+                      Timer is paused. Go online to start tracking your progress.
+                    </p>
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Real-time Time Display */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className={`bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 ${!isHostOnline ? 'opacity-60' : ''}`}>
+                  <div className="text-sm text-gray-600 mb-1 flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    Online Time
+                    {!isHostOnline && <span className="text-xs text-orange-600 ml-1">(Paused)</span>}
+                  </div>
+                  <div className="text-2xl font-bold text-green-600 tabular-nums">
+                    {formatTime(currentTime)}
+                  </div>
+                </div>
+
+                <div className={`bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-4 border border-orange-200 ${!isHostOnline ? 'opacity-60' : ''}`}>
+                  <div className="text-sm text-gray-600 mb-1 flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    Remaining
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600 tabular-nums">
+                    {formatTime(timeRemaining)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Animated Progress Bar */}
+              <div className="mb-6">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">
+                    Progress {!isHostOnline && <span className="text-orange-600">(Timer Paused)</span>}
+                  </span>
+                  <span className="font-bold text-yellow-600">{progress.toFixed(1)}%</span>
+                </div>
+                <div className="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className={`absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 rounded-full transition-all duration-500 ease-out shadow-lg ${!isHostOnline ? 'opacity-50' : ''}`}
+                    style={{ width: `${progress}%` }}
+                  >
+                    {isHostOnline && <div className="absolute inset-0 bg-white/20 animate-shimmer"></div>}
+                  </div>
+                  
+                  {[25, 50, 75].map(milestone => (
+                    <div
+                      key={milestone}
+                      className="absolute top-0 w-0.5 h-full bg-white/60"
+                      style={{ left: `${milestone}%` }}
+                    >
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-gray-500 font-medium">
+                        {milestone}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Show completion message instead of timer */
+            <div className={`p-6 rounded-2xl text-center ${
+              isDayCompleted 
+                ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200' 
+                : 'bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-200'
+            }`}>
+              {isDayCompleted ? (
+                <>
+                  <CheckCircle className="w-16 h-16 mx-auto text-green-600 mb-4" />
+                  <h3 className="text-2xl font-bold text-green-700 mb-2">
+                    Target Achieved! 🎉
+                  </h3>
+                  <p className="text-green-600 mb-3">
+                    You completed {formatTime(currentTime)} today
+                  </p>
+                  <div className="bg-white rounded-xl p-4 inline-block">
+                    <p className="text-sm text-gray-600">Reward Earned</p>
+                    <p className="text-3xl font-bold text-green-600">💎 1,00,000</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-16 h-16 mx-auto text-red-600 mb-4" />
+                  <h3 className="text-2xl font-bold text-red-700 mb-2">
+                    Target Not Achieved
+                  </h3>
+                  <p className="text-red-600 mb-3">
+                    {todayTarget?.adminNote || 'Better luck tomorrow!'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Time logged: {formatTime(currentTime)}
+                  </p>
+                </>
+              )}
             </div>
-          </div>
+          )}
 
           {todayTarget?.adminOverride && (
             <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-xl">
@@ -461,7 +514,6 @@ export default function FreeTarget() {
       {/* Reward Modal */}
       <RewardModal />
 
-      {/* Custom animations */}
       <style jsx>{`
         @keyframes fade-in {
           from { opacity: 0; }
