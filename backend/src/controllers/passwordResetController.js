@@ -163,11 +163,7 @@ exports.requestPasswordReset = asyncHandler(async (req, res) => {
 
   console.log("User Email", user);
   if (!user) {
-    return ApiResponse.success(
-      res,
-      200,
-      "If an account exists, an OTP has been sent to your email"
-    );
+     throw new ApiError(500, "Failed to send OTP. Not a valid customer");
   }
 
   // Only proceed with OTP generation if user exists
