@@ -23,9 +23,9 @@ router.post('/check-completion', authenticate, authorize('host'), checkAndComple
 router.get('/weekly-stats', authenticate, authorize('host'), getWeeklyStats);
 
 // Admin routes
-router.get('/admin/all', authenticate, authorize('admin'), getAllFreeTargets);
-router.get('/admin/:hostId', authenticate, authorize('admin'), getFreeTarget);
-router.patch('/admin/:hostId/toggle', authenticate, authorize('admin'), toggleFreeTarget);
+router.get('/admin/all'  , getAllFreeTargets);
+router.get('/admin/:hostId', getFreeTarget);
+router.patch('/admin/:hostId/toggle', toggleFreeTarget);
 router.patch('/admin/:hostId/override-day', authenticate, authorize('admin'), overrideDayStatus);
 router.get('/admin/:hostId/stats', authenticate, authorize('admin'), getWeeklyStats);
 
