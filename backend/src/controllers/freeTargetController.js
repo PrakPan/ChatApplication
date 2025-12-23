@@ -1,5 +1,5 @@
 // ============================================
-// 1. UPDATED CONTROLLER (freeTargetController.js)
+// FIXED CONTROLLER with Correct Date Handling
 // ============================================
 
 const FreeTarget = require('../models/FreeTarget');
@@ -8,7 +8,34 @@ const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 
-// Helper: Calculate host's actual online time for today
+// Helper: Get today's date in IST (India Standard Time)
+const getTodayIST = () => {
+  const now = new Date();
+  // Convert to IST (UTC + 5:30)
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istTime = new Date(now.getTime() + istOffset);
+  istTime.setUTCHours(0, 0, 0, 0);
+  return istTime;
+};
+
+// Helper: Check if two dates are the same day in IST
+const isSameDayIST = (date1, date2) => {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  
+  // Convert both to IST
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist1 = new Date(d1.getTime() + istOffset);
+  const ist2 = new Date(d2.getTime() + istOffset);
+  
+  return (
+    ist1.getUTCFullYear() === ist2.getUTCFullYear() &&
+    ist1.getUTCMonth() === ist2.getUTCMonth() &&
+    ist1.getUTCDate() === ist2.getUTCDate()
+  );
+};
+
+// Helper: Calculate host's actual online time for today (IST)
 const calculateTodayOnlineTime = async (hostId) => {
   const host = await Host.findById(hostId).select('onlineTimeLogs');
   
@@ -16,21 +43,20 @@ const calculateTodayOnlineTime = async (hostId) => {
     return 0;
   }
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+  // Get today's start and end in IST
+  const todayIST = getTodayIST();
+  const todayStart = new Date(todayIST);
+  const todayEnd = new Date(todayIST);
+  todayEnd.setUTCHours(23, 59, 59, 999);
 
   let totalOnlineTime = 0;
 
-  // Calculate from completed sessions
   for (const log of host.onlineTimeLogs) {
     if (!log.startTime) continue;
 
     const sessionStart = new Date(log.startTime);
     
-    // Skip if session started before today
+    // Skip if session started before today (IST)
     if (sessionStart < todayStart) continue;
     
     // If session is still active (no end time)
@@ -50,23 +76,22 @@ const calculateTodayOnlineTime = async (hostId) => {
     }
   }
 
-  return totalOnlineTime;
+  // Cap at 8 hours (28800 seconds)
+  return Math.min(totalOnlineTime, 28800);
 };
 
 // Helper: Auto-mark past days for new hosts
 const autoMarkPastDays = async (freeTarget) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayIST = getTodayIST();
   
   let hasChanges = false;
 
   if (freeTarget.currentWeek && freeTarget.currentWeek.days) {
     for (const day of freeTarget.currentWeek.days) {
       const dayDate = new Date(day.date);
-      dayDate.setHours(0, 0, 0, 0);
       
-      // If day is in the past and still pending
-      if (dayDate < today && day.status === 'pending') {
+      // If day is in the past (before today IST) and still pending
+      if (dayDate < todayIST && day.status === 'pending') {
         day.status = 'failed';
         day.adminNote = 'Auto-marked as host joined after this date';
         hasChanges = true;
@@ -79,6 +104,17 @@ const autoMarkPastDays = async (freeTarget) => {
   }
 
   return freeTarget;
+};
+
+// Helper: Get current day target using IST
+const getCurrentDayTargetIST = (freeTarget) => {
+  if (!freeTarget?.currentWeek?.days) return null;
+  
+  const todayIST = getTodayIST();
+  
+  return freeTarget.currentWeek.days.find(day => {
+    return isSameDayIST(day.date, todayIST);
+  });
 };
 
 // Get free target data for host
@@ -122,18 +158,23 @@ exports.getFreeTarget = asyncHandler(async (req, res) => {
   // Auto-mark past days for new hosts
   freeTarget = await autoMarkPastDays(freeTarget);
 
-  // Calculate real-time online duration from host logs
-  const timeCompleted = await calculateTodayOnlineTime(hostId);
-  const timeRemaining = Math.max(
-    0,
-    freeTarget.targetDurationPerDay - timeCompleted
-  );
-
-  const todayTarget = freeTarget.getCurrentDayTarget();
+  // Get today's target using IST comparison
+  const todayTarget = getCurrentDayTargetIST(freeTarget);
   
-  // Update today's target with real-time data
-  if (todayTarget) {
+  // Only calculate time if day is pending
+  let timeCompleted = 0;
+  let timeRemaining = freeTarget.targetDurationPerDay;
+
+  if (todayTarget && todayTarget.status === 'pending') {
+    timeCompleted = await calculateTodayOnlineTime(hostId);
+    timeRemaining = Math.max(0, freeTarget.targetDurationPerDay - timeCompleted);
+    
+    // Update today's target with real-time data (don't save yet)
     todayTarget.totalCallDuration = timeCompleted;
+  } else if (todayTarget) {
+    // Day is completed or failed, use stored time
+    timeCompleted = todayTarget.totalCallDuration || 0;
+    timeRemaining = Math.max(0, freeTarget.targetDurationPerDay - timeCompleted);
   }
 
   // Calculate days left in week
@@ -148,12 +189,13 @@ exports.getFreeTarget = asyncHandler(async (req, res) => {
       timeRemaining,
       timeCompleted,
       targetDuration: freeTarget.targetDurationPerDay,
+      targetDurationPerDay: freeTarget.targetDurationPerDay,
       daysLeftInWeek
     }
   });
 });
 
-// Check and complete today's target (called periodically or when host goes offline)
+// Check and complete today's target (called periodically or manually)
 exports.checkAndCompleteTodayTarget = asyncHandler(async (req, res) => {
   const hostId = req.user.hostProfile._id;
   
@@ -163,10 +205,10 @@ exports.checkAndCompleteTodayTarget = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, 200, 'Free target not enabled', {});
   }
 
-  const todayTarget = freeTarget.getCurrentDayTarget();
+  const todayTarget = getCurrentDayTargetIST(freeTarget);
   
   if (!todayTarget || todayTarget.status !== 'pending') {
-    return ApiResponse.success(res, 200, 'No active target for today', {});
+    return ApiResponse.success(res, 200, 'No active target for today', { todayTarget });
   }
 
   // Calculate real online time
@@ -199,9 +241,12 @@ exports.checkAndCompleteTodayTarget = asyncHandler(async (req, res) => {
 
   await freeTarget.save();
 
+  const timeRemaining = Math.max(0, freeTarget.targetDurationPerDay - timeCompleted);
+
   return ApiResponse.success(res, 200, 'Target progress updated', {
     todayTarget,
-    timeRemaining: freeTarget.targetDurationPerDay - timeCompleted
+    timeCompleted,
+    timeRemaining
   });
 });
 
@@ -215,7 +260,7 @@ exports.startDailyTimer = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Free target not enabled');
   }
 
-  const todayTarget = freeTarget.getCurrentDayTarget();
+  const todayTarget = getCurrentDayTargetIST(freeTarget);
   
   if (!todayTarget) {
     throw new ApiError(400, 'No target found for today');
@@ -244,7 +289,7 @@ exports.stopDailyTimer = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Free target not found');
   }
 
-  const todayTarget = freeTarget.getCurrentDayTarget();
+  const todayTarget = getCurrentDayTargetIST(freeTarget);
   
   if (!todayTarget) {
     throw new ApiError(400, 'No target found for today');
@@ -293,7 +338,7 @@ exports.recordCallForTarget = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, 200, 'Free target not enabled', {});
   }
 
-  const todayTarget = freeTarget.getCurrentDayTarget();
+  const todayTarget = getCurrentDayTargetIST(freeTarget);
   
   if (!todayTarget || todayTarget.status !== 'pending') {
     return ApiResponse.success(res, 200, 'Not in active target period', {});
@@ -326,9 +371,9 @@ exports.recordCallForTarget = asyncHandler(async (req, res) => {
   const timeCompleted = await calculateTodayOnlineTime(hostId);
 
   ApiResponse.success(res, 200, 'Call recorded for free target', {
-    todayTarget: freeTarget.getCurrentDayTarget(),
+    todayTarget: getCurrentDayTargetIST(freeTarget),
     timeCompleted,
-    timeRemaining: freeTarget.targetDurationPerDay - timeCompleted
+    timeRemaining: Math.max(0, freeTarget.targetDurationPerDay - timeCompleted)
   });
 });
 
@@ -378,20 +423,15 @@ exports.overrideDayStatus = asyncHandler(async (req, res) => {
   }
 
   const targetDate = new Date(date);
-  targetDate.setHours(0, 0, 0, 0);
   
   let dayTarget = freeTarget.currentWeek?.days.find(d => {
-    const dayDate = new Date(d.date);
-    dayDate.setHours(0, 0, 0, 0);
-    return dayDate.getTime() === targetDate.getTime();
+    return isSameDayIST(d.date, targetDate);
   });
   
   if (!dayTarget) {
     for (const week of freeTarget.weekHistory) {
       dayTarget = week.days.find(d => {
-        const dayDate = new Date(d.date);
-        dayDate.setHours(0, 0, 0, 0);
-        return dayDate.getTime() === targetDate.getTime();
+        return isSameDayIST(d.date, targetDate);
       });
       if (dayTarget) break;
     }
