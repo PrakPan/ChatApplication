@@ -1,7 +1,3 @@
-// ============================================
-// UPDATED socketHandler.js - Fix User ID Consistency
-// ============================================
-
 const { verifyAccessToken } = require('../config/jwt');
 const User = require('../models/User');
 const Host = require('../models/Host');
@@ -13,6 +9,7 @@ const logger = require('../utils/logger');
 const connectedUsers = new Map(); // Map<userId (string), socketId>
 const socketUsers = new Map(); // Map<socketId, userId (string)>
 const typingUsers = new Map(); // Map<conversationId, Set<userId>>
+const activeCalls = new Map(); // Map<callId, {caller, receiver}>
 
 const socketHandler = (io) => {
   // Authentication middleware
@@ -32,6 +29,7 @@ const socketHandler = (io) => {
       }
 
       socket.user = user;
+      socket.userId = user._id.toString(); // Add string userId
       next();
     } catch (error) {
       next(new Error('Authentication error'));
@@ -39,27 +37,24 @@ const socketHandler = (io) => {
   });
 
   io.on('connection', (socket) => {
-    const userId = socket.user._id.toString(); // ALWAYS STRING
-    
-    // Store connection
+    const userId = socket.userId; // Use the pre-converted string
+
     connectedUsers.set(userId, socket.id);
     socketUsers.set(socket.id, userId);
     
-    logger.info(`User connected: ${socket.user.email} (${socket.id}) - UserId: ${userId}`);
+    logger.info(`✅ User connected: ${socket.user.email} (${socket.id}) - UserId: ${userId}`);
+    console.log('📋 Connected users map updated. Total connected:', connectedUsers.size);
 
-    // Notify user is online
     socket.broadcast.emit('user:online', { userId });
 
-    // ==================== CHAT EVENTS ====================
+    // ==================== DIRECT MESSAGING EVENTS ====================
 
-    // Join conversation room
     socket.on('chat:join', async ({ recipientId }) => {
       try {
         const conversationId = Message.generateConversationId(userId, recipientId);
         socket.join(conversationId);
         logger.info(`User ${userId} joined conversation ${conversationId}`);
 
-        // Mark messages as delivered
         await Message.updateMany(
           {
             conversationId,
@@ -71,8 +66,8 @@ const socketHandler = (io) => {
           }
         );
 
-        // Notify sender about delivery - ENSURE STRING
-        const recipientSocketId = connectedUsers.get(recipientId?.toString() || recipientId);
+        const recipientIdStr = recipientId?.toString() || recipientId;
+        const recipientSocketId = connectedUsers.get(recipientIdStr);
         if (recipientSocketId) {
           io.to(recipientSocketId).emit('messages:delivered', { conversationId });
         }
@@ -81,29 +76,24 @@ const socketHandler = (io) => {
       }
     });
 
-    // Leave conversation room
     socket.on('chat:leave', ({ recipientId }) => {
       const conversationId = Message.generateConversationId(userId, recipientId);
       socket.leave(conversationId);
       logger.info(`User ${userId} left conversation ${conversationId}`);
     });
 
-    // Send message
+    // Direct message send (for regular chat)
     socket.on('message:send', async (data) => {
       try {
         const { recipientId, content, messageType = 'text', replyTo, callId } = data;
-
-        // Validate recipient
         const recipient = await User.findById(recipientId);
         if (!recipient) {
           socket.emit('message:error', { message: 'Recipient not found' });
           return;
         }
 
-        // Generate conversation ID
         const conversationId = Message.generateConversationId(userId, recipientId);
 
-        // Create message
         const message = await Message.create({
           conversationId,
           sender: userId,
@@ -116,30 +106,25 @@ const socketHandler = (io) => {
           status: 'sent'
         });
 
-        // Populate sender info
         await message.populate('sender', 'name avatar userId');
         if (replyTo) {
           await message.populate('replyTo', 'content messageType sender');
         }
 
-        // Update or create conversation
         const conversation = await Conversation.findOrCreate(userId, recipientId);
         conversation.lastMessage = message._id;
         conversation.lastMessageAt = new Date();
         await conversation.incrementUnread(recipientId);
 
-        // Emit to sender (confirmation)
         socket.emit('message:sent', {
           tempId: data.tempId,
           message: message.toJSON()
         });
 
-        // FIXED: Ensure recipientId is string
         const recipientIdStr = recipientId?.toString() || recipientId;
         const recipientSocketId = connectedUsers.get(recipientIdStr);
         
         if (recipientSocketId) {
-          // Send to recipient
           io.to(recipientSocketId).emit('message:receive', {
             message: message.toJSON(),
             conversation: {
@@ -148,7 +133,6 @@ const socketHandler = (io) => {
             }
           });
 
-          // Check if recipient is in the conversation room
           const recipientSocket = io.sockets.sockets.get(recipientSocketId);
           if (recipientSocket) {
             const rooms = Array.from(recipientSocket.rooms);
@@ -170,7 +154,6 @@ const socketHandler = (io) => {
       }
     });
 
-    // Mark messages as read
     socket.on('messages:read', async ({ recipientId, messageIds }) => {
       try {
         const conversationId = Message.generateConversationId(userId, recipientId);
@@ -191,7 +174,6 @@ const socketHandler = (io) => {
           await conversation.resetUnread(userId);
         }
 
-        // FIXED: Ensure recipientId is string
         const recipientIdStr = recipientId?.toString() || recipientId;
         const recipientSocketId = connectedUsers.get(recipientIdStr);
         
@@ -209,7 +191,6 @@ const socketHandler = (io) => {
       }
     });
 
-    // Typing indicator
     socket.on('typing:start', ({ recipientId }) => {
       const conversationId = Message.generateConversationId(userId, recipientId);
       
@@ -218,7 +199,6 @@ const socketHandler = (io) => {
       }
       typingUsers.get(conversationId).add(userId);
 
-      // FIXED: Ensure recipientId is string
       const recipientIdStr = recipientId?.toString() || recipientId;
       const recipientSocketId = connectedUsers.get(recipientIdStr);
       
@@ -244,7 +224,6 @@ const socketHandler = (io) => {
         }
       }
 
-      // FIXED: Ensure recipientId is string
       const recipientIdStr = recipientId?.toString() || recipientId;
       const recipientSocketId = connectedUsers.get(recipientIdStr);
       
@@ -256,7 +235,6 @@ const socketHandler = (io) => {
       }
     });
 
-    // Delete message
     socket.on('message:delete', async ({ messageId, deleteForEveryone }) => {
       try {
         const message = await Message.findById(messageId);
@@ -308,46 +286,6 @@ const socketHandler = (io) => {
       }
     });
 
-    // In socketHandler.js, update the message:read event
-socket.on('messages:read', async ({ recipientId, messageIds }) => {
-  try {
-    const conversationId = Message.generateConversationId(userId, recipientId);
-
-    await Message.updateMany(
-      {
-        _id: { $in: messageIds },
-        recipient: userId,
-        status: { $ne: 'read' }
-      },
-      {
-        $set: { status: 'read', readAt: new Date() }
-      }
-    );
-
-    const conversation = await Conversation.findOne({ conversationId });
-    if (conversation) {
-      await conversation.resetUnread(userId);
-    }
-
-    // IMPORTANT: Notify sender with correct event name
-    const recipientIdStr = recipientId?.toString() || recipientId;
-    const recipientSocketId = connectedUsers.get(recipientIdStr);
-    
-    if (recipientSocketId) {
-      io.to(recipientSocketId).emit('messages:read', {  // Use 'messages:read' not 'chat:read'
-        conversationId,
-        messageIds,
-        readBy: userId
-      });
-    }
-
-    logger.info(`Messages marked as read in conversation ${conversationId}`);
-  } catch (error) {
-    logger.error(`Error marking messages as read: ${error.message}`);
-  }
-});
-
-    // React to message
     socket.on('message:react', async ({ messageId, emoji }) => {
       try {
         const message = await Message.findById(messageId);
@@ -390,83 +328,74 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
 
     // ==================== VIDEO CALL EVENTS ====================
 
-    // ADDED: Explicit authentication handler (legacy support)
-    socket.on('authenticate', (authUserId) => {
-      // This is redundant since we authenticate on connection
-      // But keeping for backward compatibility
-      logger.info(`User ${authUserId} explicit authenticate (already authenticated as ${userId})`);
-    });
-
-
-
     socket.on('call:offer', async ({ to, offer, callId }) => {
-  try {
-    console.log('📞 ========== CALL OFFER RECEIVED ==========');
-    console.log('From User ID:', userId);
-    console.log('To User ID:', to);
-    console.log('Call ID:', callId);
-    console.log('Offer SDP type:', offer?.type);
-    
-    if (!validateSdp(offer)) {
-      console.log('❌ Invalid SDP offer');
-      socket.emit('call:error', { message: 'Invalid offer' });
-      return;
-    }
-
-    // Convert to string
-    const toUserId = to?.toString() || to;
-    console.log('📋 Looking for userId (string):', toUserId);
-    
-    // Debug: Show all connected users
-    console.log('📋 All connected users:');
-    connectedUsers.forEach((socketId, userId) => {
-      console.log(`  - ${userId} -> ${socketId}`);
-    });
-    
-    const recipientSocketId = connectedUsers.get(toUserId);
-    
-    if (recipientSocketId) {
-      console.log('✅ Found recipient socket:', recipientSocketId);
-      
-      io.to(recipientSocketId).emit('call:offer', {
-        from: userId,
-        offer,
-        callId,
-        caller: {
-          id: socket.user._id,
-          name: socket.user.name,
-          avatar: socket.user.avatar
+      try {
+        console.log('📞 ========== CALL OFFER RECEIVED ==========');
+        console.log('From User ID:', userId);
+        console.log('To User ID (raw):', to);
+        console.log('Call ID:', callId);
+        console.log('Offer SDP type:', offer?.type);
+        
+        if (!validateSdp(offer)) {
+          console.log('❌ Invalid SDP offer');
+          socket.emit('call:error', { message: 'Invalid offer' });
+          return;
         }
-      });
-      
-      console.log('📤 Call offer sent successfully');
-    } else {
-      console.log('❌ Recipient NOT FOUND');
-      console.log('❌ Searched for:', toUserId);
-      console.log('❌ Type of search key:', typeof toUserId);
-      console.log('❌ Available keys:', Array.from(connectedUsers.keys()));
-      
-      socket.emit('call:error', { message: 'Recipient is offline' });
-    }
-    
-    console.log('========================================');
-  } catch (error) {
-    console.error('Error handling call offer:', error);
-    socket.emit('call:error', { message: 'Failed to send offer' });
-  }
-});
 
-   
+        const toUserId = to?.toString() || to;
+        console.log('To User ID (string):', toUserId);
+        
+        console.log('📋 All connected users:');
+        connectedUsers.forEach((socketId, uid) => {
+          console.log(`  - userId: "${uid}" -> socketId: ${socketId}`);
+        });
+        
+        const recipientSocketId = connectedUsers.get(toUserId);
+        
+        if (recipientSocketId) {
+          console.log('✅ Found recipient socket:', recipientSocketId);
+          
+          // Store active call
+          activeCalls.set(callId, {
+            caller: userId,
+            receiver: toUserId,
+            startTime: new Date()
+          });
+          
+          io.to(recipientSocketId).emit('call:offer', {
+            from: userId,
+            offer,
+            callId,
+            caller: {
+              id: socket.user._id,
+              name: socket.user.name,
+              avatar: socket.user.avatar
+            }
+          });
+          
+          console.log('📤 Call offer sent successfully');
+        } else {
+          console.log('❌ Recipient NOT FOUND');
+          console.log('❌ Searched for:', toUserId);
+          socket.emit('call:error', { message: 'Recipient is offline' });
+        }
+        
+        console.log('==========================================');
+      } catch (error) {
+        console.error('Error handling call offer:', error);
+        socket.emit('call:error', { message: 'Failed to send offer' });
+      }
+    });
 
-    // FIXED: Call answer handler with proper string conversion
     socket.on('call:answer', async ({ to, answer }) => {
       try {
+        console.log('📞 CALL ANSWER from', userId, 'to', to);
+        
         if (!validateSdp(answer)) {
           socket.emit('call:error', { message: 'Invalid answer' });
           return;
         }
 
-        // CRITICAL FIX: Ensure 'to' is converted to string
         const toUserId = to?.toString() || to;
         const recipientSocketId = connectedUsers.get(toUserId);
         
@@ -475,7 +404,10 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
             from: userId,
             answer
           });
+          console.log('✅ Call answer sent');
           logger.info(`Call answer sent from ${userId} to ${toUserId}`);
+        } else {
+          console.log('❌ Recipient not found for call answer');
         }
       } catch (error) {
         logger.error(`Error handling call answer: ${error.message}`);
@@ -483,14 +415,12 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
       }
     });
 
-    // FIXED: ICE candidate handler with proper string conversion
     socket.on('call:ice-candidate', async ({ to, candidate }) => {
       try {
         if (!validateIceCandidate(candidate)) {
           return;
         }
 
-        // CRITICAL FIX: Ensure 'to' is converted to string
         const toUserId = to?.toString() || to;
         const recipientSocketId = connectedUsers.get(toUserId);
         
@@ -505,9 +435,8 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
       }
     });
 
-    // FIXED: Call reject handler with proper string conversion
     socket.on('call:reject', ({ to, callId, reason }) => {
-      // CRITICAL FIX: Ensure 'to' is converted to string
+      console.log('📞 CALL REJECTED by', userId);
       const toUserId = to?.toString() || to;
       const recipientSocketId = connectedUsers.get(toUserId);
       
@@ -517,13 +446,16 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
           callId,
           reason
         });
+        
+        // Remove from active calls
+        activeCalls.delete(callId);
+        
         logger.info(`Call rejected by ${userId}`);
       }
     });
 
-    // FIXED: Call end handler with proper string conversion
     socket.on('call:end', ({ to, callId }) => {
-      // CRITICAL FIX: Ensure 'to' is converted to string
+      console.log('📞 CALL ENDED by', userId);
       const toUserId = to?.toString() || to;
       const recipientSocketId = connectedUsers.get(toUserId);
       
@@ -532,7 +464,84 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
           from: userId,
           callId
         });
+        
+        // Remove from active calls
+        activeCalls.delete(callId);
+        
         logger.info(`Call ended by ${userId}`);
+      }
+    });
+
+    // ==================== IN-CALL CHAT EVENTS ====================
+    // These are for sending messages DURING a video call
+    
+    socket.on('call:chat:send', ({ callId, to, message }) => {
+      try {
+        console.log('💬 IN-CALL MESSAGE from', userId, 'to', to);
+        
+        const toUserId = to?.toString() || to;
+        const recipientSocketId = connectedUsers.get(toUserId);
+        
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit('call:chat:receive', {
+            from: userId,
+            callId,
+            message,
+            sender: {
+              name: socket.user.name,
+              avatar: socket.user.avatar
+            },
+            timestamp: new Date()
+          });
+          
+          // Send confirmation to sender
+          socket.emit('call:chat:sent', {
+            tempId: message.tempId,
+            callId,
+            timestamp: new Date()
+          });
+          
+          console.log('✅ In-call message delivered');
+        } else {
+          console.log('❌ Recipient not found for in-call message');
+          socket.emit('call:chat:error', { 
+            message: 'Recipient is offline',
+            callId 
+          });
+        }
+      } catch (error) {
+        console.error('Error sending in-call message:', error);
+        socket.emit('call:chat:error', { 
+          message: 'Failed to send message',
+          callId 
+        });
+      }
+    });
+
+    socket.on('call:chat:typing', ({ callId, to }) => {
+      const toUserId = to?.toString() || to;
+      const recipientSocketId = connectedUsers.get(toUserId);
+      
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('call:chat:typing', {
+          from: userId,
+          callId,
+          user: {
+            name: socket.user.name
+          }
+        });
+      }
+    });
+
+    socket.on('call:chat:stop-typing', ({ callId, to }) => {
+      const toUserId = to?.toString() || to;
+      const recipientSocketId = connectedUsers.get(toUserId);
+      
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('call:chat:stop-typing', {
+          from: userId,
+          callId
+        });
       }
     });
 
@@ -542,6 +551,9 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
       try {
         connectedUsers.delete(userId);
         socketUsers.delete(socket.id);
+        
+        console.log('❌ User disconnected:', userId);
+        console.log('📋 Remaining connected users:', connectedUsers.size);
         
         // Clear typing indicators
         typingUsers.forEach((users, conversationId) => {
@@ -553,7 +565,25 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
           }
         });
         
-        // Check if user is a host and mark them offline
+        // End any active calls
+        activeCalls.forEach((callData, callId) => {
+          if (callData.caller === userId || callData.receiver === userId) {
+            const otherUserId = callData.caller === userId ? callData.receiver : callData.caller;
+            const otherSocketId = connectedUsers.get(otherUserId);
+            
+            if (otherSocketId) {
+              io.to(otherSocketId).emit('call:ended', {
+                from: userId,
+                callId,
+                reason: 'disconnect'
+              });
+            }
+            
+            activeCalls.delete(callId);
+          }
+        });
+        
+        // Handle host disconnect
         if (socket.user.role === 'host') {
           const host = await Host.findOne({ userId: socket.user._id });
           
@@ -584,7 +614,7 @@ socket.on('messages:read', async ({ recipientId, messageIds }) => {
     });
   });
 
-  // Periodic cleanup job
+  // Cleanup job
   const cleanupInactiveHosts = async () => {
     try {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
