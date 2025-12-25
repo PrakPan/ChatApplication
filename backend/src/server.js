@@ -148,11 +148,12 @@ app.use('/api/v1/calls', callRoutes);
 // app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin', photoApprovalRoutes);
 app.use('/api/v1/messages', messageRoutes);
+app.use('/api/v1/profile', profileRoutes);
 
 app.use('/api/v1/leaderboard', leaderboardRoutes);
 app.use('/api/v1/follow', followRoutes);
 app.use('/api/v1/agents', agentRoutes);
-app.use('/api/v1/profile', profileRoutes);
+// app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/withdrawals',withdrawalRoutes);
 app.use('/api/v1/levels', levelRoutes);
 
