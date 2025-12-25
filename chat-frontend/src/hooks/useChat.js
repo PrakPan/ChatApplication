@@ -228,7 +228,7 @@ export const useChat = (recipientId) => {
       if (before) params.before = before;
 
       const response = await axios.get(
-        `${API_URL}/messages/conversations/${recipientId}/messages`,
+        `${API_URL}/messages/${recipientId}/messages`,
         {
           headers: { Authorization: `Bearer ${token}` },
           params

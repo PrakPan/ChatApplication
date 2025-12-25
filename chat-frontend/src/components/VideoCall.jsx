@@ -6,6 +6,7 @@ import {
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useChat } from '../hooks/useChat';
 import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
 
 const FILTERS = [
   { id: 'none', name: 'None', filter: 'none' },
@@ -56,7 +57,7 @@ export const VideoCallComponent = ({
   const [selectedFilter, setSelectedFilter] = useState('none');
   const [facingMode, setFacingMode] = useState('user');
   const [availableCameras, setAvailableCameras] = useState([]);
-  
+  const {user} = useAuth();
   // Chat states
   const [showChat, setShowChat] = useState(false);
   const [messageText, setMessageText] = useState('');
