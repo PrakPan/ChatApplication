@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coins, Search, Power, PowerOff, Camera, Phone, PhoneOff } from 'lucide-react';
+import { Coins, Search, Power, PowerOff, Camera, Phone, PhoneOff, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
 import { VideoCallComponent } from '../components/VideoCall';
@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { HostProfileModal } from '../components/HostProfileModal';
 import { callService } from '../services/callService';
 import { useSocket } from '../hooks/useSocket';
+import { chatService } from '../services/chatService';
 
 const HostDashboard = () => { 
   const [user, setUser] = useState(null);
@@ -27,7 +28,20 @@ const HostDashboard = () => {
   const { socket, connected } = useSocket();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  useEffect(() => {
+    fetchUnreadCount();
+  }, []);
+
+   const fetchUnreadCount = async () => {
+      try {
+        const response = await chatService.getUnreadCount();
+        setUnreadCount(response.data.unreadCount || 0);
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
   const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5500/api/v1';
 
   // Fetch user and hosts on mount
@@ -35,6 +49,11 @@ const HostDashboard = () => {
     fetchUser();
     fetchHosts();
   }, []);
+
+    const handleNewMessage = () => {
+    // Increment unread count when new message arrives
+    fetchUnreadCount();
+  };
 
   // Socket event listeners
   useEffect(() => {
@@ -563,6 +582,18 @@ const HostDashboard = () => {
                 onLogout={handleLogout}
                 onNavigateToProfile={() => navigate('/profile')}
               />
+
+              <button
+              onClick={() => navigate('/messages')}
+              className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MessageCircle className="w-6 h-6 text-gray-700" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
 
 
               <button 

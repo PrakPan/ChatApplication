@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Send, MoreVertical } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -11,12 +11,25 @@ const MessagesPage = () => {
   const { user } = useAuth();
   const { socket } = useSocket();
   const location = useLocation();
+  const messagesEndRef = useRef(null);
+  
   const [conversations, setConversations] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
+
+  // Scroll to bottom on new messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     fetchConversations();
@@ -25,6 +38,7 @@ const MessagesPage = () => {
   // Handle opening specific chat from navigation state
   useEffect(() => {
     if (location.state?.openChatWithUserId) {
+      console.log('📱 Opening chat with user:', location.state.openChatWithUserId);
       handleOpenChatWithUser(location.state.openChatWithUserId);
       // Clear the state
       navigate(location.pathname, { replace: true, state: {} });
@@ -34,19 +48,75 @@ const MessagesPage = () => {
   useEffect(() => {
     if (!socket) return;
 
+    console.log('🔌 Setting up message socket listeners');
+
+    const handleIncomingMessage = (message) => {
+      console.log('📨 Received message:', message);
+      
+      // If this is for the currently open chat, add it
+      if (selectedChat && message.senderId === selectedChat.userId?._id) {
+        setMessages(prev => {
+          // Prevent duplicate messages
+          const exists = prev.some(msg => msg._id === message._id);
+          if (exists) return prev;
+          return [...prev, message];
+        });
+        
+        // Mark as read immediately
+        chatService.markAsRead(message.senderId).catch(err => 
+          console.error('Failed to mark as read:', err)
+        );
+      }
+      
+      // Update conversations list
+      fetchConversations();
+    };
+
+    const handleMessageRead = ({ userId }) => {
+      console.log('✅ Messages read by:', userId);
+      if (selectedChat && userId === selectedChat.userId?._id) {
+        setMessages(prev =>
+          prev.map(msg => ({ 
+            ...msg, 
+            isRead: true, 
+            status: 'read' 
+          }))
+        );
+      }
+    };
+
+    const handleTypingStart = ({ userId: typingUserId }) => {
+      console.log('⌨️ User typing:', typingUserId);
+      if (selectedChat && typingUserId === selectedChat.userId?._id) {
+        setIsTyping(true);
+      }
+    };
+
+    const handleTypingStop = ({ userId: typingUserId }) => {
+      console.log('⏸️ User stopped typing:', typingUserId);
+      if (selectedChat && typingUserId === selectedChat.userId?._id) {
+        setIsTyping(false);
+      }
+    };
+
     socket.on('chat:message', handleIncomingMessage);
     socket.on('chat:read', handleMessageRead);
+    socket.on('chat:typing', handleTypingStart);
+    socket.on('chat:stop-typing', handleTypingStop);
 
     return () => {
-      socket.off('chat:message');
-      socket.off('chat:read');
+      console.log('🧹 Cleaning up message socket listeners');
+      socket.off('chat:message', handleIncomingMessage);
+      socket.off('chat:read', handleMessageRead);
+      socket.off('chat:typing', handleTypingStart);
+      socket.off('chat:stop-typing', handleTypingStop);
     };
   }, [socket, selectedChat]);
 
   const fetchConversations = async () => {
     try {
       const response = await chatService.getConversations();
-      const convs = response.data.conversations || [];
+      const convs = response.conversations || [];
       
       // Sort by lastMessageAt (most recent first)
       const sortedConvs = convs.sort((a, b) => {
@@ -55,6 +125,7 @@ const MessagesPage = () => {
         return dateB - dateA;
       });
       
+      console.log('📋 Fetched conversations:', sortedConvs.length);
       setConversations(sortedConvs);
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
@@ -66,33 +137,51 @@ const MessagesPage = () => {
 
   const handleOpenChatWithUser = async (userId) => {
     try {
-      // Check if this conversation already exists in our list
-      const existingConv = conversations.find(
-        conv => conv.userId?._id === userId
+      console.log('🔍 Opening/creating chat with user:', userId);
+      
+      // Check if this conversation already exists
+      let existingConv = conversations.find(
+        conv => conv.userId?._id === userId || conv.userId === userId
       );
 
       if (existingConv) {
+        console.log('✅ Found existing conversation');
         setSelectedChat(existingConv);
-        fetchMessages(userId);
+        await fetchMessages(userId);
         return;
       }
 
-      // New conversation - fetch user details
+      // Create new conversation
+      console.log('➕ Creating new conversation');
       const response = await chatService.getOrCreateConversation(userId);
       
-      if (response.data.success) {
-        const conversationData = response.data.conversation;
+      if (response.success) {
+        const conversationData = response.conversation;
         
         const newConversation = {
           userId: conversationData.participant,
           conversationId: conversationData.conversationId,
           lastMessage: null,
+          lastMessageAt: new Date(),
           unreadCount: 0
         };
         
+        console.log('✅ Created new conversation:', newConversation);
+        
+        // Add to conversations list at the top
         setConversations(prev => [newConversation, ...prev]);
+        
+        // Set as selected chat immediately
         setSelectedChat(newConversation);
         setMessages([]);
+        
+        // Force scroll to show the new conversation
+        setTimeout(() => {
+          const convElement = document.querySelector(`[data-user-id="${userId}"]`);
+          if (convElement) {
+            convElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Failed to open chat:', error);
@@ -102,66 +191,81 @@ const MessagesPage = () => {
 
   const fetchMessages = async (userId) => {
     try {
+      console.log('📥 Fetching messages for user:', userId);
       const response = await chatService.getMessages(userId);
-      setMessages(response.data.messages || []);
+      const msgs = response.messages || [];
+      console.log('✅ Fetched messages:', msgs.length);
+      setMessages(msgs);
       
       // Mark as read
       await chatService.markAsRead(userId);
       
-      // Update conversation unread count
+      // Update conversation unread count locally
       setConversations(prev =>
         prev.map(conv =>
           conv.userId?._id === userId ? { ...conv, unreadCount: 0 } : conv
         )
       );
+      
+      // Emit read event via socket to notify sender
+      if (socket) {
+        socket.emit('chat:mark-read', {
+          to: userId
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
       toast.error('Failed to load messages');
     }
   };
 
-  const handleIncomingMessage = (message) => {
-    if (selectedChat && message.senderId === selectedChat.userId?._id) {
-      setMessages(prev => [...prev, message]);
-      chatService.markAsRead(message.senderId);
-    }
-    
-    fetchConversations();
-  };
-
-  const handleMessageRead = ({ userId }) => {
-    if (selectedChat && userId === selectedChat.userId?._id) {
-      setMessages(prev =>
-        prev.map(msg => ({ ...msg, isRead: true, status: 'read' }))
-      );
-    }
-  };
-
-  const handleSelectChat = (conversation) => {
+  const handleSelectChat = async (conversation) => {
+    console.log('💬 Selecting chat:', conversation.userId?.name);
     setSelectedChat(conversation);
     if (conversation.userId?._id) {
-      fetchMessages(conversation.userId._id);
+      await fetchMessages(conversation.userId._id);
     }
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedChat || !selectedChat.userId?._id) return;
+    if (!newMessage.trim() || !selectedChat || !selectedChat.userId?._id) {
+      console.log('❌ Cannot send: missing data');
+      return;
+    }
+
+    const messageContent = newMessage.trim();
+    const recipientId = selectedChat.userId._id;
+    
+    console.log('📤 Sending message to:', recipientId);
+    
+    // Stop typing indicator
+    if (socket && typingTimeout) {
+      clearTimeout(typingTimeout);
+      socket.emit('chat:stop-typing', { to: recipientId });
+    }
+    
+    // Clear input immediately
+    setNewMessage('');
 
     try {
-      const response = await chatService.sendMessage(
-        selectedChat.userId._id,
-        newMessage.trim()
-      );
+      const response = await chatService.sendMessage(recipientId, messageContent);
+      const sentMessage = response.message;
       
-      const sentMessage = response.data.message;
-      setMessages(prev => [...prev, sentMessage]);
-      setNewMessage('');
+      console.log('✅ Message sent:', sentMessage);
       
-      // Update conversation
+      // Add to local messages
+      setMessages(prev => {
+        // Prevent duplicate
+        const exists = prev.some(msg => msg._id === sentMessage._id);
+        if (exists) return prev;
+        return [...prev, sentMessage];
+      });
+      
+      // Update conversations list
       setConversations(prev => {
         const updatedConvs = prev.map(conv => {
-          if (conv.userId?._id === selectedChat.userId._id) {
+          if (conv.userId?._id === recipientId) {
             return {
               ...conv,
               lastMessage: {
@@ -176,7 +280,7 @@ const MessagesPage = () => {
         
         // Move to top
         const selectedConvIndex = updatedConvs.findIndex(
-          conv => conv.userId?._id === selectedChat.userId._id
+          conv => conv.userId?._id === recipientId
         );
         if (selectedConvIndex > 0) {
           const [selectedConv] = updatedConvs.splice(selectedConvIndex, 1);
@@ -186,17 +290,46 @@ const MessagesPage = () => {
         return updatedConvs;
       });
       
-      // Emit socket event
+      // Emit via socket for instant delivery
       if (socket) {
+        console.log('📡 Emitting message via socket');
         socket.emit('chat:send', {
-          to: selectedChat.userId._id,
+          to: recipientId,
           message: sentMessage
         });
       }
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
+      // Restore message in input on error
+      setNewMessage(messageContent);
     }
+  };
+
+  const handleTyping = (e) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    if (!socket || !selectedChat?.userId?._id) return;
+
+    // Clear existing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+
+    // Send typing start
+    socket.emit('chat:typing', {
+      to: selectedChat.userId._id
+    });
+
+    // Set timeout to send typing stop
+    const timeout = setTimeout(() => {
+      socket.emit('chat:stop-typing', {
+        to: selectedChat.userId._id
+      });
+    }, 3000);
+
+    setTypingTimeout(timeout);
   };
 
   const formatTime = (date) => {
@@ -275,7 +408,6 @@ const MessagesPage = () => {
               </div>
             ) : (
               filteredConversations.map((conversation) => {
-                // Safe property access
                 if (!conversation.userId) return null;
                 
                 const conversationUser = conversation.userId;
@@ -284,7 +416,7 @@ const MessagesPage = () => {
                 
                 return (
                   <button
-                    key={conversationUser._id || Math.random()}
+                    key={conversationUser._id}
                     onClick={() => handleSelectChat(conversation)}
                     className={`w-full p-4 flex items-center gap-3 hover:bg-gray-100 transition-colors border-b ${
                       selectedChat?.userId?._id === conversationUser._id
@@ -292,7 +424,6 @@ const MessagesPage = () => {
                         : ''
                     }`}
                   >
-                    {/* Avatar */}
                     <div className="relative flex-shrink-0">
                       <img
                         src={avatarUrl}
@@ -307,7 +438,6 @@ const MessagesPage = () => {
                       )}
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="font-semibold text-gray-900 truncate">
@@ -379,72 +509,91 @@ const MessagesPage = () => {
                     <p className="text-xs text-gray-400 mt-1">Messages expire after 24 hours</p>
                   </div>
                 ) : (
-                  messages.map((message, index) => {
-                    const isOwn = message.senderId === user?._id || message.sender?._id === user?._id;
-                    
-                    const senderAvatar = isOwn 
-                      ? (user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=9333ea&color=fff`)
-                      : (selectedChat?.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`);
-                    
-                    return (
-                      <div
-                        key={message._id || index}
-                        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2`}
-                      >
-                        {/* Avatar on left for incoming */}
-                        {!isOwn && (
-                          <img 
-                            src={senderAvatar}
-                            alt={selectedChat?.userId?.name || 'User'}
-                            className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-gray-200"
-                            onError={(e) => {
-                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`;
-                            }}
-                          />
-                        )}
-                        
-                        <div className="flex flex-col max-w-[70%]">
-                          {/* Sender name for incoming messages */}
-                          {!isOwn && selectedChat?.userId?.name && (
-                            <span className="text-xs font-semibold text-gray-500 mb-1 ml-2">
-                              {selectedChat.userId.name}
-                            </span>
+                  <>
+                    {messages.map((message, index) => {
+                      const isOwn = message.senderId === user?._id || message.sender?._id === user?._id;
+                      
+                      const senderAvatar = isOwn 
+                        ? (user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=9333ea&color=fff`)
+                        : (selectedChat?.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`);
+                      
+                      return (
+                        <div
+                          key={message._id || index}
+                          className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                        >
+                          {!isOwn && (
+                            <img 
+                              src={senderAvatar}
+                              alt={selectedChat?.userId?.name || 'User'}
+                              className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-gray-200"
+                              onError={(e) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`;
+                              }}
+                            />
                           )}
                           
-                          <div
-                            className={`rounded-2xl px-4 py-2 ${
-                              isOwn
-                                ? 'bg-purple-600 text-white rounded-br-sm'
-                                : 'bg-gray-100 text-gray-900 rounded-bl-sm'
-                            }`}
-                          >
-                            <p className="text-sm whitespace-pre-wrap break-words">
-                              {message.message || message.content}
-                            </p>
-                            <p
-                              className={`text-xs mt-1 ${
-                                isOwn ? 'text-purple-200' : 'text-gray-500'
+                          <div className="flex flex-col max-w-[70%]">
+                            {!isOwn && selectedChat?.userId?.name && (
+                              <span className="text-xs font-semibold text-gray-500 mb-1 ml-2">
+                                {selectedChat.userId.name}
+                              </span>
+                            )}
+                            
+                            <div
+                              className={`rounded-2xl px-4 py-2 ${
+                                isOwn
+                                  ? 'bg-purple-600 text-white rounded-br-sm'
+                                  : 'bg-gray-100 text-gray-900 rounded-bl-sm'
                               }`}
                             >
-                              {formatTime(message.createdAt)}
-                            </p>
+                              <p className="text-sm whitespace-pre-wrap break-words">
+                                {message.message || message.content}
+                              </p>
+                              <p
+                                className={`text-xs mt-1 ${
+                                  isOwn ? 'text-purple-200' : 'text-gray-500'
+                                }`}
+                              >
+                                {formatTime(message.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {isOwn && (
+                            <img 
+                              src={senderAvatar}
+                              alt="You"
+                              className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-purple-300"
+                              onError={(e) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=9333ea&color=fff`;
+                              }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Typing Indicator */}
+                    {isTyping && (
+                      <div className="flex justify-start items-end gap-2">
+                        <img 
+                          src={selectedChat?.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat?.userId?.name || 'User')}&background=6366f1&color=fff`}
+                          alt={selectedChat?.userId?.name || 'User'}
+                          className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-gray-200"
+                        />
+                        <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         </div>
-                        
-                        {/* Avatar on right for outgoing */}
-                        {isOwn && (
-                          <img 
-                            src={senderAvatar}
-                            alt="You"
-                            className="w-8 h-8 rounded-full flex-shrink-0 object-cover border-2 border-purple-300"
-                            onError={(e) => {
-                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'You')}&background=9333ea&color=fff`;
-                            }}
-                          />
-                        )}
                       </div>
-                    );
-                  })
+                    )}
+                    
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
               </div>
 
@@ -454,7 +603,7 @@ const MessagesPage = () => {
                   <input
                     type="text"
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleTyping}
                     placeholder="Type a message..."
                     className="flex-1 px-4 py-3 bg-white rounded-full border focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
