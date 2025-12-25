@@ -158,7 +158,6 @@ exports.requestPasswordReset = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email is required");
   }
 
-  // CHECK IF USER EXISTS FIRST
   const user = await User.findOne({ email: email.toLowerCase() });
 
   console.log("User Email", user);
@@ -166,9 +165,8 @@ exports.requestPasswordReset = asyncHandler(async (req, res) => {
      throw new ApiError(500, "Failed to send OTP. Not a valid customer");
   }
 
-  // Only proceed with OTP generation if user exists
   const otp = generateOTP();
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+  const expiresAt = Date.now() + 10 * 60 * 1000; 
 
   // Store OTP
   otpStore.set(email.toLowerCase(), {
@@ -177,8 +175,7 @@ exports.requestPasswordReset = asyncHandler(async (req, res) => {
     attempts: 0,
     userId: user._id,
   });
-  // const sendEmail = async ({ to, subject, html, text }) => {
-  // Send email only if user exists
+
   try {
     const html = passwordResetOtpTemplate({
       name: user.name,

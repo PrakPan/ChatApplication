@@ -21,14 +21,13 @@ exports.getConversations = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    // Format response to match frontend expectations
     const formattedConversations = conversations.map(conv => {
       const otherParticipant = conv.participants.find(
         p => p._id.toString() !== userId.toString()
       );
 
       return {
-        userId: otherParticipant, // Changed from 'participant' to 'userId' to match frontend
+        userId: otherParticipant,
         conversationId: conv.conversationId,
         lastMessage: conv.lastMessage ? {
           message: conv.lastMessage.content,
@@ -66,22 +65,27 @@ exports.getConversation = async (req, res) => {
     const userId = req.user._id;
     const { userId: otherUserId } = req.params;
 
-    // Validate other user exists
+    console.log('🔍 Getting conversation for:', { userId, otherUserId });
+
     const otherUser = await User.findById(otherUserId);
     if (!otherUser) {
+      console.log('❌ Other user not found:', otherUserId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
+    console.log('✅ Found other user:', otherUser.name);
+
     const conversationId = Message.generateConversationId(userId, otherUserId);
+    console.log('📋 Conversation ID:', conversationId);
     
     let conversation = await Conversation.findOne({ conversationId })
       .populate('participants', 'name avatar userId isActive isOnline');
 
-    // If conversation doesn't exist, create it
     if (!conversation) {
+      console.log('➕ Creating new conversation');
       conversation = await Conversation.findOrCreate(userId, otherUserId);
       await conversation.populate('participants', 'name avatar userId isActive isOnline');
     }
@@ -89,6 +93,8 @@ exports.getConversation = async (req, res) => {
     const otherParticipant = conversation.participants.find(
       p => p._id.toString() !== userId.toString()
     );
+
+    console.log('✅ Returning conversation with participant:', otherParticipant?.name);
 
     res.json({
       success: true,
@@ -101,7 +107,7 @@ exports.getConversation = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting conversation:', error);
+    console.error('❌ Error getting conversation:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch conversation'
@@ -124,7 +130,7 @@ exports.getMessages = async (req, res) => {
     const query = {
       conversationId,
       deletedFor: { $ne: userId },
-      createdAt: { $gte: yesterday } // Only recent messages
+      createdAt: { $gte: yesterday }
     };
 
     const messages = await Message.find(query)
@@ -176,7 +182,6 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
-    // Validate recipient
     const recipient = await User.findById(recipientId);
     if (!recipient) {
       return res.status(404).json({
@@ -214,7 +219,6 @@ exports.sendMessage = async (req, res) => {
     await conversation.save();
     await conversation.incrementUnread(recipientId);
 
-    // Format response
     const formattedMessage = {
       _id: message._id,
       senderId: message.sender._id,
@@ -249,7 +253,6 @@ exports.markAsRead = async (req, res) => {
 
     const conversationId = Message.generateConversationId(userId, otherUserId);
 
-    // Update all unread messages in this conversation
     await Message.updateMany(
       {
         conversationId,
@@ -262,7 +265,6 @@ exports.markAsRead = async (req, res) => {
       }
     );
 
-    // Reset unread count in conversation
     const conversation = await Conversation.findOne({ conversationId });
     if (conversation) {
       await conversation.resetUnread(userId);
@@ -294,7 +296,6 @@ exports.sendMediaMessage = async (req, res) => {
       });
     }
 
-    // Upload to cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'chat-media',
       resource_type: 'auto'
@@ -322,7 +323,6 @@ exports.sendMediaMessage = async (req, res) => {
 
     await message.populate('sender', 'name avatar userId');
 
-    // Update conversation
     const conversation = await Conversation.findOrCreate(userId, recipientId);
     conversation.lastMessage = message._id;
     conversation.lastMessageAt = new Date();
@@ -478,20 +478,37 @@ exports.getUnreadCount = async (req, res) => {
   }
 };
 
-
+// Cleanup old messages - Fixed to also clean lastMessage references
 exports.cleanupOldMessages = async () => {
   try {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
+    // Find messages to delete
+    const oldMessages = await Message.find({
+      createdAt: { $lt: yesterday }
+    }).select('_id conversationId');
+    
+    const messageIds = oldMessages.map(msg => msg._id);
+    
+    // Delete old messages
     await Message.deleteMany({
-      createdAt: { $lt: yesterday },
-      messageType: 'text' 
+      _id: { $in: messageIds }
     });
     
-    console.log('✅ Cleaned up messages older than 24 hours');
+    // Clear lastMessage references if they point to deleted messages
+    await Conversation.updateMany(
+      { lastMessage: { $in: messageIds } },
+      { 
+        $unset: { lastMessage: 1 },
+        $set: { lastMessageAt: yesterday }
+      }
+    );
+    
+    console.log(`✅ Cleaned up ${messageIds.length} messages older than 24 hours`);
   } catch (error) {
     console.error('Error cleaning up messages:', error);
   }
 };
 
+// Run cleanup every hour
 setInterval(exports.cleanupOldMessages, 60 * 60 * 1000);
