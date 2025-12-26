@@ -14,20 +14,20 @@ const {
   deleteBankAccount,
   setPrimaryBankAccount
 } = require('../controllers/bankAccountController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, authenticate } = require('../middleware/auth');
 
 // Host Withdrawal Routes
-router.post('/request',  createWithdrawalRequest);
-router.get('/history', getWithdrawalHistory);
-router.get('/stats', getWithdrawalStats);
-router.post('/:withdrawalId/cancel', cancelWithdrawal);
+router.post('/request', authenticate, createWithdrawalRequest);
+router.get('/history', authenticate,getWithdrawalHistory);
+router.get('/stats', authenticate, getWithdrawalStats);
+router.post('/:withdrawalId/cancel', authenticate, cancelWithdrawal);
 
 // Bank Account Routes
-router.post('/bank-accounts', addBankAccount);
-router.get('/bank-accounts', getBankAccounts);
-router.put('/bank-accounts/:accountId', updateBankAccount);
-router.delete('/bank-accounts/:accountId',deleteBankAccount);
-router.patch('/bank-accounts/:accountId/primary', setPrimaryBankAccount);
+router.post('/bank-accounts', authenticate, addBankAccount);
+router.get('/bank-accounts', authenticate, getBankAccounts);
+router.put('/bank-accounts/:accountId', authenticate, updateBankAccount);
+router.delete('/bank-accounts/:accountId',authenticate, deleteBankAccount);
+router.patch('/bank-accounts/:accountId/primary', authenticate, setPrimaryBankAccount);
 
 module.exports = router;
 
