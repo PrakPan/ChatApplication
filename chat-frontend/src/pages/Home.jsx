@@ -56,14 +56,18 @@ export const Home = () => {
     }
   };
 
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await chatService.getUnreadCount();
-      setUnreadCount(response.data.unreadCount || 0);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
+// home.jsx - Line 55-62
+const fetchUnreadCount = async () => {
+  try {
+    const response = await chatService.getUnreadCount();
+    // Fix: Handle different response structures
+    const count = response?.data?.unreadCount || response?.unreadCount || 0;
+    setUnreadCount(count);
+  } catch (error) {
+    console.error('Failed to fetch unread count:', error);
+    setUnreadCount(0); // Set to 0 on error instead of leaving undefined
+  }
+};
 
   const handleNewMessage = () => {
     // Increment unread count when new message arrives

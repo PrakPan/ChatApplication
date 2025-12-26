@@ -1,4 +1,5 @@
 import axios from 'axios';
+import api from './api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
 
@@ -206,13 +207,21 @@ export const chatService = {
     }
   },
   // Get unread count
-  getUnreadCount: async () => {
+ getUnreadCount: async () => {
     try {
-      const response = await api.get('/messages/unread-count');
-      return response.data;
+      const response = await axios.get(`${API_URL}/messages/unread-count`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+      });
+      
+      // Return consistent structure
+      return {
+        data: {
+          unreadCount: response.data?.unreadCount || 0
+        }
+      };
     } catch (error) {
-      console.error('Error fetching unread count:', error);
-      throw error;
+      console.error('Get unread count error:', error);
+      return { data: { unreadCount: 0 } }; // Return default on error
     }
-  }
+  },
 };

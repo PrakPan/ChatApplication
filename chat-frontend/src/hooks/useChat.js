@@ -217,47 +217,57 @@ export const useChat = (recipientId) => {
   }, [socket, recipientId, conversationId, on, off]);
 
   // Load messages from API
-  const loadMessages = async (before = null) => {
-    if (loading || !recipientId) return;
+ // useChat.js - Line 230-255
+const loadMessages = async (before = null) => {
+  if (loading || !recipientId) return;
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      
-      const params = { limit: 50 };
-      if (before) params.before = before;
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('accessToken');
+    
+    const params = { limit: 50 };
+    if (before) params.before = before;
 
-      const response = await axios.get(
-        `${API_URL}/messages/${recipientId}/messages`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params
-        }
-      );
-
-      const { messages: newMessages, pagination } = response.data;
-
-      if (before) {
-        setMessages(prev => [...newMessages, ...prev]);
-      } else {
-        setMessages(newMessages);
-        // Mark messages as read
-        const unreadMessageIds = newMessages
-          .filter(msg => msg.recipient === localStorage.getItem('userId') && msg.status !== 'read')
-          .map(msg => msg._id);
-        
-        if (unreadMessageIds.length > 0) {
-          setTimeout(() => markAsRead(unreadMessageIds), 500);
-        }
+    const response = await axios.get(
+      `${API_URL}/messages/${recipientId}/messages`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params
       }
+    );
 
-      setHasMore(pagination.hasMore);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    } finally {
-      setLoading(false);
+    // Fix: Handle different response structures
+    const newMessages = response.data?.messages || response.data?.data?.messages || [];
+    const pagination = response.data?.pagination || { hasMore: false };
+
+    if (before) {
+      setMessages(prev => [...newMessages, ...prev]);
+    } else {
+      setMessages(newMessages);
+      
+      // Fix: Add optional chaining and null checks
+      const userId = localStorage.getItem('userId');
+      const unreadMessageIds = newMessages
+        ?.filter(msg => 
+          msg?.recipient === userId && 
+          msg?.status !== 'read'
+        )
+        ?.map(msg => msg._id) || [];
+      
+      if (unreadMessageIds.length > 0) {
+        setTimeout(() => markAsRead(unreadMessageIds), 500);
+      }
     }
-  };
+
+    setHasMore(pagination.hasMore);
+  } catch (error) {
+    console.error('Error loading messages:', error);
+    setMessages([]); // Set empty array on error
+    setHasMore(false);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Load more messages (pagination)
   const loadMore = useCallback(() => {
