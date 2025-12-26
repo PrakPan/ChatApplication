@@ -40,25 +40,38 @@ const MessagesPage = () => {
     if (location.state?.openChatWithUserId) {
       console.log('📱 Opening chat with user:', location.state.openChatWithUserId);
       handleOpenChatWithUser(location.state.openChatWithUserId);
-      // Clear the state
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);
 
+  // SINGLE socket listener setup
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log('⚠️ Socket not connected');
+      return;
+    }
 
     console.log('🔌 Setting up message socket listeners');
 
+    // Handle incoming messages
     const handleIncomingMessage = (message) => {
       console.log('📨 Received message:', message);
       
       // If this is for the currently open chat, add it
       if (selectedChat && message.senderId === selectedChat.userId?._id) {
         setMessages(prev => {
-          // Prevent duplicate messages
-          const exists = prev.some(msg => msg._id === message._id);
-          if (exists) return prev;
+          // Check for duplicate by _id OR by tempId
+          const isDuplicate = prev.some(msg => 
+            msg._id === message._id || 
+            (msg.tempId && msg.tempId === message.tempId)
+          );
+          
+          if (isDuplicate) {
+            console.log('⚠️ Duplicate message, skipping');
+            return prev;
+          }
+          
+          console.log('✅ Adding message to chat');
           return [...prev, message];
         });
         
@@ -66,25 +79,35 @@ const MessagesPage = () => {
         chatService.markAsRead(message.senderId).catch(err => 
           console.error('Failed to mark as read:', err)
         );
+        
+        // Emit read receipt
+        if (socket) {
+          socket.emit('chat:mark-read', { to: message.senderId });
+        }
+      } else {
+        console.log('📬 Message for different chat, updating conversations');
       }
       
-      // Update conversations list
+      // Always update conversations list
       fetchConversations();
     };
 
-    const handleMessageRead = ({ userId }) => {
+    // Handle message read receipts
+    const handleMessageRead = ({ userId, messageIds }) => {
       console.log('✅ Messages read by:', userId);
       if (selectedChat && userId === selectedChat.userId?._id) {
         setMessages(prev =>
-          prev.map(msg => ({ 
-            ...msg, 
-            isRead: true, 
-            status: 'read' 
-          }))
+          prev.map(msg => {
+            if (messageIds?.includes(msg._id)) {
+              return { ...msg, isRead: true, status: 'read' };
+            }
+            return msg;
+          })
         );
       }
     };
 
+    // Handle typing indicators
     const handleTypingStart = ({ userId: typingUserId }) => {
       console.log('⌨️ User typing:', typingUserId);
       if (selectedChat && typingUserId === selectedChat.userId?._id) {
@@ -99,17 +122,62 @@ const MessagesPage = () => {
       }
     };
 
+    // Handle message sent confirmation
+    const handleMessageSent = ({ tempId, message }) => {
+      console.log('✅ Message sent confirmation:', tempId);
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.tempId === tempId
+            ? { ...message, status: 'sent' }
+            : msg
+        )
+      );
+    };
+
+    // Handle message delivered
+    const handleMessageDelivered = ({ messageId }) => {
+      console.log('📬 Message delivered:', messageId);
+      setMessages(prev =>
+        prev.map(msg =>
+          msg._id === messageId
+            ? { ...msg, status: 'delivered' }
+            : msg
+        )
+      );
+    };
+
+    // Register all listeners
     socket.on('chat:message', handleIncomingMessage);
     socket.on('chat:read', handleMessageRead);
     socket.on('chat:typing', handleTypingStart);
     socket.on('chat:stop-typing', handleTypingStop);
+    socket.on('message:sent', handleMessageSent);
+    socket.on('message:delivered', handleMessageDelivered);
 
+    // Cleanup
     return () => {
       console.log('🧹 Cleaning up message socket listeners');
       socket.off('chat:message', handleIncomingMessage);
       socket.off('chat:read', handleMessageRead);
       socket.off('chat:typing', handleTypingStart);
       socket.off('chat:stop-typing', handleTypingStop);
+      socket.off('message:sent', handleMessageSent);
+      socket.off('message:delivered', handleMessageDelivered);
+    };
+  }, [socket, selectedChat]);
+
+  // Join/leave conversation rooms
+  useEffect(() => {
+    if (!socket || !selectedChat?.userId?._id) return;
+
+    const recipientId = selectedChat.userId._id;
+    console.log('🚪 Joining conversation room:', recipientId);
+    
+    socket.emit('chat:join', { recipientId });
+
+    return () => {
+      console.log('🚪 Leaving conversation room:', recipientId);
+      socket.emit('chat:leave', { recipientId });
     };
   }, [socket, selectedChat]);
 
@@ -118,7 +186,6 @@ const MessagesPage = () => {
       const response = await chatService.getConversations();
       const convs = response.conversations || [];
       
-      // Sort by lastMessageAt (most recent first)
       const sortedConvs = convs.sort((a, b) => {
         const dateA = new Date(a.lastMessageAt || 0);
         const dateB = new Date(b.lastMessageAt || 0);
@@ -139,7 +206,6 @@ const MessagesPage = () => {
     try {
       console.log('🔍 Opening/creating chat with user:', userId);
       
-      // Check if this conversation already exists
       let existingConv = conversations.find(
         conv => conv.userId?._id === userId || conv.userId === userId
       );
@@ -151,7 +217,6 @@ const MessagesPage = () => {
         return;
       }
 
-      // Create new conversation
       console.log('➕ Creating new conversation');
       const response = await chatService.getOrCreateConversation(userId);
       
@@ -168,14 +233,10 @@ const MessagesPage = () => {
         
         console.log('✅ Created new conversation:', newConversation);
         
-        // Add to conversations list at the top
         setConversations(prev => [newConversation, ...prev]);
-        
-        // Set as selected chat immediately
         setSelectedChat(newConversation);
         setMessages([]);
         
-        // Force scroll to show the new conversation
         setTimeout(() => {
           const convElement = document.querySelector(`[data-user-id="${userId}"]`);
           if (convElement) {
@@ -207,11 +268,9 @@ const MessagesPage = () => {
         )
       );
       
-      // Emit read event via socket to notify sender
+      // Emit read event via socket
       if (socket) {
-        socket.emit('chat:mark-read', {
-          to: userId
-        });
+        socket.emit('chat:mark-read', { to: userId });
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
@@ -236,6 +295,7 @@ const MessagesPage = () => {
 
     const messageContent = newMessage.trim();
     const recipientId = selectedChat.userId._id;
+    const tempId = `temp_${Date.now()}_${Math.random()}`;
     
     console.log('📤 Sending message to:', recipientId);
     
@@ -248,19 +308,36 @@ const MessagesPage = () => {
     // Clear input immediately
     setNewMessage('');
 
+    // Add optimistic message
+    const optimisticMessage = {
+      _id: tempId,
+      tempId: tempId,
+      senderId: user._id,
+      sender: user,
+      message: messageContent,
+      content: messageContent,
+      messageType: 'text',
+      createdAt: new Date().toISOString(),
+      status: 'sending'
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
+    scrollToBottom();
+
     try {
       const response = await chatService.sendMessage(recipientId, messageContent);
       const sentMessage = response.message;
       
-      console.log('✅ Message sent:', sentMessage);
+      console.log('✅ Message sent via API:', sentMessage);
       
-      // Add to local messages
-      setMessages(prev => {
-        // Prevent duplicate
-        const exists = prev.some(msg => msg._id === sentMessage._id);
-        if (exists) return prev;
-        return [...prev, sentMessage];
-      });
+      // Replace optimistic message with real message
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.tempId === tempId
+            ? { ...sentMessage, status: 'sent' }
+            : msg
+        )
+      );
       
       // Update conversations list
       setConversations(prev => {
@@ -293,15 +370,21 @@ const MessagesPage = () => {
       // Emit via socket for instant delivery
       if (socket) {
         console.log('📡 Emitting message via socket');
-        socket.emit('chat:send', {
-          to: recipientId,
-          message: sentMessage
+        socket.emit('message:send', {
+          recipientId,
+          content: messageContent,
+          messageType: 'text',
+          tempId: tempId
         });
       }
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
-      // Restore message in input on error
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.tempId !== tempId));
+      
+      // Restore message in input
       setNewMessage(messageContent);
     }
   };
@@ -383,7 +466,6 @@ const MessagesPage = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Conversations List */}
         <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-96 flex-col border-r bg-gray-50`}>
-          {/* Search */}
           <div className="p-4 bg-white border-b">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -397,7 +479,6 @@ const MessagesPage = () => {
             </div>
           </div>
 
-          {/* Conversation List */}
           <div className="flex-1 overflow-y-auto">
             {filteredConversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8">
@@ -417,6 +498,7 @@ const MessagesPage = () => {
                 return (
                   <button
                     key={conversationUser._id}
+                    data-user-id={conversationUser._id}
                     onClick={() => handleSelectChat(conversation)}
                     className={`w-full p-4 flex items-center gap-3 hover:bg-gray-100 transition-colors border-b ${
                       selectedChat?.userId?._id === conversationUser._id
@@ -469,7 +551,6 @@ const MessagesPage = () => {
         <div className={`${selectedChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-white`}>
           {selectedChat && selectedChat.userId ? (
             <>
-              {/* Chat Header */}
               <div className="p-4 border-b flex items-center justify-between bg-gray-50">
                 <div className="flex items-center gap-3">
                   <button
@@ -500,7 +581,6 @@ const MessagesPage = () => {
                 </button>
               </div>
 
-              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -519,7 +599,7 @@ const MessagesPage = () => {
                       
                       return (
                         <div
-                          key={message._id || index}
+                          key={message._id || message.tempId || index}
                           className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2`}
                         >
                           {!isOwn && (
@@ -550,13 +630,23 @@ const MessagesPage = () => {
                               <p className="text-sm whitespace-pre-wrap break-words">
                                 {message.message || message.content}
                               </p>
-                              <p
-                                className={`text-xs mt-1 ${
-                                  isOwn ? 'text-purple-200' : 'text-gray-500'
-                                }`}
-                              >
-                                {formatTime(message.createdAt)}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p
+                                  className={`text-xs ${
+                                    isOwn ? 'text-purple-200' : 'text-gray-500'
+                                  }`}
+                                >
+                                  {formatTime(message.createdAt)}
+                                </p>
+                                {isOwn && message.status && (
+                                  <span className="text-xs text-purple-200">
+                                    {message.status === 'sending' && '⏳'}
+                                    {message.status === 'sent' && '✓'}
+                                    {message.status === 'delivered' && '✓✓'}
+                                    {message.status === 'read' && '✓✓'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           
@@ -574,7 +664,6 @@ const MessagesPage = () => {
                       );
                     })}
                     
-                    {/* Typing Indicator */}
                     {isTyping && (
                       <div className="flex justify-start items-end gap-2">
                         <img 
@@ -597,7 +686,6 @@ const MessagesPage = () => {
                 )}
               </div>
 
-              {/* Message Input */}
               <div className="p-4 border-t bg-gray-50">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                   <input
