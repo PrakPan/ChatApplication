@@ -98,7 +98,6 @@ const getUserLevelProgress = asyncHandler(async (req, res) => {
   let level = await Level.findOne({ userId });
 
   if (!level) {
-    // Create default level if not exists
     level = await Level.create({
       userId,
       richLevel: 1,
@@ -124,14 +123,19 @@ const getUserLevelProgress = asyncHandler(async (req, res) => {
     { level: 9, diamonds: 3125000 },
   ];
 
+  const currentRichLevelData = richLevels.find(
+    (l) => l.level === level.richLevel
+  );
   const nextRichLevelData = richLevels.find(
     (l) => l.level === level.richLevel + 1
   );
+  
   const nextRichLevel = nextRichLevelData
     ? {
         nextLevel: nextRichLevelData.level,
-        total: nextRichLevelData.diamonds,
-        needed: nextRichLevelData.diamonds - level.totalDiamondsRecharged,
+        totalRequired: nextRichLevelData.diamonds,
+        coinsNeeded: Math.max(0, nextRichLevelData.diamonds - level.totalDiamondsRecharged),
+        progress: level.totalDiamondsRecharged,
       }
     : null;
 
@@ -146,14 +150,20 @@ const getUserLevelProgress = asyncHandler(async (req, res) => {
     { level: 7, beans: 3000000, rate: 350 },
   ];
 
+  const currentCharmLevelData = charmLevels.find(
+    (l) => l.level === level.charmLevel
+  );
   const nextCharmLevelData = charmLevels.find(
     (l) => l.level === level.charmLevel + 1
   );
+  
   const nextCharmLevel = nextCharmLevelData
     ? {
         nextLevel: nextCharmLevelData.level,
-        total: nextCharmLevelData.beans,
-        needed: nextCharmLevelData.beans - level.totalBeansEarned,
+        totalRequired: nextCharmLevelData.beans,
+        beansNeeded: Math.max(0, nextCharmLevelData.beans - level.totalBeansEarned),
+        nextRate: nextCharmLevelData.rate,
+        progress: level.totalBeansEarned,
       }
     : null;
 
@@ -163,12 +173,14 @@ const getUserLevelProgress = asyncHandler(async (req, res) => {
     richLevel: {
       current: level.richLevel,
       totalDiamondsRecharged: level.totalDiamondsRecharged,
+      coinsNeeded: nextRichLevel?.coinsNeeded || 0,
       next: nextRichLevel,
     },
     charmLevel: {
       current: level.charmLevel,
       totalBeansEarned: level.totalBeansEarned,
       currentRate: host?.ratePerMinute || 50,
+      beansNeeded: nextCharmLevel?.beansNeeded || 0,
       next: nextCharmLevel,
     },
   });

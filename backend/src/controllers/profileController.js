@@ -23,6 +23,44 @@ const getProfile = asyncHandler(async (req, res) => {
   // Get level info
   const level = await Level.findOne({ userId: user._id });
 
+  // Rich level calculations
+  const richLevels = [
+    { level: 1, diamonds: 0 },
+    { level: 2, diamonds: 1000 },
+    { level: 3, diamonds: 6000 },
+    { level: 4, diamonds: 125000 },
+    { level: 5, diamonds: 250000 },
+    { level: 6, diamonds: 500000 },
+    { level: 7, diamonds: 1000000 },
+    { level: 8, diamonds: 2000000 },
+    { level: 9, diamonds: 3125000 },
+  ];
+
+  const currentRichLevel = level?.richLevel || 1;
+  const totalDiamondsRecharged = level?.totalDiamondsRecharged || 0;
+  const nextRichLevelData = richLevels.find((l) => l.level === currentRichLevel + 1);
+  const coinsNeeded = nextRichLevelData 
+    ? Math.max(0, nextRichLevelData.diamonds - totalDiamondsRecharged)
+    : 0;
+
+  // Charm level calculations
+  const charmLevels = [
+    { level: 1, beans: 0, rate: 50 },
+    { level: 2, beans: 1, rate: 100 },
+    { level: 3, beans: 10, rate: 150 },
+    { level: 4, beans: 1000000, rate: 200 },
+    { level: 5, beans: 2000000, rate: 250 },
+    { level: 6, beans: 2500000, rate: 300 },
+    { level: 7, beans: 3000000, rate: 350 },
+  ];
+
+  const currentCharmLevel = level?.charmLevel || 1;
+  const totalBeansEarned = level?.totalBeansEarned || 0;
+  const nextCharmLevelData = charmLevels.find((l) => l.level === currentCharmLevel + 1);
+  const beansNeeded = nextCharmLevelData 
+    ? Math.max(0, nextCharmLevelData.beans - totalBeansEarned)
+    : 0;
+
   // Get follow stats
   const [followersCount, followingCount] = await Promise.all([
     Follow.getFollowerCount(user._id),
@@ -57,10 +95,14 @@ const getProfile = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Profile retrieved', {
     user,
     level: {
-      richLevel: level?.richLevel || 1,
-      charmLevel: level?.charmLevel || 1,
-      totalDiamondsRecharged: level?.totalDiamondsRecharged || 0,
-      totalBeansEarned: level?.totalBeansEarned || 0
+      richLevel: currentRichLevel,
+      charmLevel: currentCharmLevel,
+      totalDiamondsRecharged,
+      totalBeansEarned,
+      coinsNeeded,
+      beansNeeded,
+      nextRichLevel: nextRichLevelData?.level || null,
+      nextCharmLevel: nextCharmLevelData?.level || null,
     },
     followStats: {
       followersCount,

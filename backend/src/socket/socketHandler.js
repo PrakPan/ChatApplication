@@ -83,113 +83,230 @@ const socketHandler = (io) => {
     });
 
     // Direct message send (for regular chat)
-    socket.on('message:send', async (data) => {
-      try {
-        const { recipientId, content, messageType = 'text', replyTo, callId } = data;
-        const recipient = await User.findById(recipientId);
-        if (!recipient) {
-          socket.emit('message:error', { message: 'Recipient not found' });
-          return;
-        }
+   // Key fixes in socketHandler.js
 
-        const conversationId = Message.generateConversationId(userId, recipientId);
+// In message:send event handler
+socket.on('message:send', async (data) => {
+  try {
+    const { recipientId, content, messageType = 'text', replyTo, callId, tempId } = data;
+    
+    const recipient = await User.findById(recipientId);
+    if (!recipient) {
+      socket.emit('message:error', { message: 'Recipient not found' });
+      return;
+    }
 
-        const message = await Message.create({
+    const conversationId = Message.generateConversationId(userId, recipientId);
+
+    const message = await Message.create({
+      conversationId,
+      sender: userId,
+      recipient: recipientId,
+      messageType,
+      content: messageType === 'text' ? content : undefined,
+      mediaUrl: messageType === 'image' || messageType === 'file' ? content : undefined,
+      replyTo,
+      callId,
+      status: 'sent'
+    });
+
+    await message.populate('sender', 'name avatar userId');
+    if (replyTo) {
+      await message.populate('replyTo', 'content messageType sender');
+    }
+
+    const conversation = await Conversation.findOrCreate(userId, recipientId);
+    conversation.lastMessage = message._id;
+    conversation.lastMessageAt = new Date();
+    await conversation.save();
+    await conversation.incrementUnread(recipientId);
+
+    // Format message consistently
+    const formattedMessage = {
+      _id: message._id,
+      senderId: message.sender._id,
+      sender: message.sender,
+      message: message.content,
+      content: message.content,
+      messageType: message.messageType,
+      createdAt: message.createdAt,
+      status: message.status,
+      conversationId: message.conversationId
+    };
+
+    // Send confirmation to sender
+    socket.emit('message:sent', {
+      tempId: tempId,
+      message: formattedMessage
+    });
+
+    const recipientIdStr = recipientId?.toString() || recipientId;
+    const recipientSocketId = connectedUsers.get(recipientIdStr);
+    
+    console.log('📤 Sending message to recipient:', recipientIdStr);
+    console.log('📍 Recipient socket ID:', recipientSocketId);
+    
+    if (recipientSocketId) {
+      // CRITICAL: Emit to BOTH event names for compatibility
+      io.to(recipientSocketId).emit('chat:message', formattedMessage);
+      io.to(recipientSocketId).emit('message:receive', {
+        message: formattedMessage,
+        conversation: {
           conversationId,
-          sender: userId,
-          recipient: recipientId,
-          messageType,
-          content: messageType === 'text' ? content : undefined,
-          mediaUrl: messageType === 'image' || messageType === 'file' ? content : undefined,
-          replyTo,
-          callId,
-          status: 'sent'
-        });
-
-        await message.populate('sender', 'name avatar userId');
-        if (replyTo) {
-          await message.populate('replyTo', 'content messageType sender');
+          unreadCount: conversation.unreadCount.get(recipientId.toString())
         }
+      });
 
-        const conversation = await Conversation.findOrCreate(userId, recipientId);
-        conversation.lastMessage = message._id;
-        conversation.lastMessageAt = new Date();
-        await conversation.incrementUnread(recipientId);
-
-        socket.emit('message:sent', {
-          tempId: data.tempId,
-          message: message.toJSON()
-        });
-
-        const recipientIdStr = recipientId?.toString() || recipientId;
-        const recipientSocketId = connectedUsers.get(recipientIdStr);
+      // Check if recipient is in the conversation room
+      const recipientSocket = io.sockets.sockets.get(recipientSocketId);
+      if (recipientSocket) {
+        const rooms = Array.from(recipientSocket.rooms);
         
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit('message:receive', {
-            message: message.toJSON(),
-            conversation: {
-              conversationId,
-              unreadCount: conversation.unreadCount.get(recipientId.toString())
-            }
-          });
-
-          const recipientSocket = io.sockets.sockets.get(recipientSocketId);
-          if (recipientSocket) {
-            const rooms = Array.from(recipientSocket.rooms);
-            
-            if (rooms.includes(conversationId)) {
-              message.status = 'delivered';
-              message.deliveredAt = new Date();
-              await message.save();
-              
-              socket.emit('message:delivered', { messageId: message._id });
-            }
-          }
+        if (rooms.includes(conversationId)) {
+          message.status = 'delivered';
+          message.deliveredAt = new Date();
+          await message.save();
+          
+          socket.emit('message:delivered', { messageId: message._id });
         }
+      }
+      
+      console.log('✅ Message emitted to recipient socket');
+    } else {
+      console.log('⚠️ Recipient is offline');
+    }
 
-        logger.info(`Message sent from ${userId} to ${recipientId}`);
-      } catch (error) {
-        logger.error(`Error sending message: ${error.message}`);
-        socket.emit('message:error', { message: 'Failed to send message' });
+    logger.info(`Message sent from ${userId} to ${recipientId}`);
+  } catch (error) {
+    logger.error(`Error sending message: ${error.message}`);
+    socket.emit('message:error', { message: 'Failed to send message' });
+  }
+});
+
+// Fix messages:read event
+socket.on('messages:read', async ({ recipientId, messageIds }) => {
+  try {
+    const conversationId = Message.generateConversationId(userId, recipientId);
+
+    await Message.updateMany(
+      {
+        _id: { $in: messageIds },
+        recipient: userId,
+        status: { $ne: 'read' }
+      },
+      {
+        $set: { status: 'read', readAt: new Date() }
+      }
+    );
+
+    const conversation = await Conversation.findOne({ conversationId });
+    if (conversation) {
+      await conversation.resetUnread(userId);
+    }
+
+    const recipientIdStr = recipientId?.toString() || recipientId;
+    const recipientSocketId = connectedUsers.get(recipientIdStr);
+    
+    if (recipientSocketId) {
+      // Emit to BOTH event names
+      io.to(recipientSocketId).emit('messages:read', {
+        conversationId,
+        messageIds,
+        readBy: userId
+      });
+      io.to(recipientSocketId).emit('chat:read', {
+        userId: userId,
+        messageIds
+      });
+    }
+
+    console.log('✅ Messages marked as read, notification sent');
+  } catch (error) {
+    logger.error(`Error marking messages as read: ${error.message}`);
+  }
+});
+
+// Add a chat:mark-read event for frontend compatibility
+socket.on('chat:mark-read', async ({ to }) => {
+  try {
+    const conversationId = Message.generateConversationId(userId, to);
+
+    const unreadMessages = await Message.find({
+      conversationId,
+      recipient: userId,
+      status: { $ne: 'read' }
+    }).select('_id');
+
+    const messageIds = unreadMessages.map(msg => msg._id);
+
+    if (messageIds.length > 0) {
+      await Message.updateMany(
+        { _id: { $in: messageIds } },
+        { $set: { status: 'read', readAt: new Date() } }
+      );
+
+      const conversation = await Conversation.findOne({ conversationId });
+      if (conversation) {
+        await conversation.resetUnread(userId);
+      }
+
+      const recipientIdStr = to?.toString() || to;
+      const recipientSocketId = connectedUsers.get(recipientIdStr);
+      
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('chat:read', {
+          userId: userId,
+          messageIds
+        });
+      }
+    }
+  } catch (error) {
+    logger.error(`Error in chat:mark-read: ${error.message}`);
+  }
+});
+
+// Fix typing events
+socket.on('chat:typing', ({ to }) => {
+  const recipientIdStr = to?.toString() || to;
+  const recipientSocketId = connectedUsers.get(recipientIdStr);
+  
+  if (recipientSocketId) {
+    io.to(recipientSocketId).emit('chat:typing', {
+      userId: userId,
+      user: {
+        name: socket.user.name,
+        avatar: socket.user.avatar
       }
     });
+  }
+});
 
-    socket.on('messages:read', async ({ recipientId, messageIds }) => {
-      try {
-        const conversationId = Message.generateConversationId(userId, recipientId);
-
-        await Message.updateMany(
-          {
-            _id: { $in: messageIds },
-            recipient: userId,
-            status: { $ne: 'read' }
-          },
-          {
-            $set: { status: 'read', readAt: new Date() }
-          }
-        );
-
-        const conversation = await Conversation.findOne({ conversationId });
-        if (conversation) {
-          await conversation.resetUnread(userId);
-        }
-
-        const recipientIdStr = recipientId?.toString() || recipientId;
-        const recipientSocketId = connectedUsers.get(recipientIdStr);
-        
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit('messages:read', {
-            conversationId,
-            messageIds,
-            readBy: userId
-          });
-        }
-
-        logger.info(`Messages marked as read in conversation ${conversationId}`);
-      } catch (error) {
-        logger.error(`Error marking messages as read: ${error.message}`);
-      }
+socket.on('chat:stop-typing', ({ to }) => {
+  const recipientIdStr = to?.toString() || to;
+  const recipientSocketId = connectedUsers.get(recipientIdStr);
+  
+  if (recipientSocketId) {
+    io.to(recipientSocketId).emit('chat:stop-typing', {
+      userId: userId
     });
+  }
+});
+
+// Add chat:send event for direct compatibility with frontend
+socket.on('chat:send', async ({ to, message }) => {
+  try {
+    const recipientIdStr = to?.toString() || to;
+    const recipientSocketId = connectedUsers.get(recipientIdStr);
+    
+    if (recipientSocketId) {
+      // Forward the already-saved message to recipient
+      io.to(recipientSocketId).emit('chat:message', message);
+      console.log('✅ Chat message forwarded via chat:send');
+    }
+  } catch (error) {
+    logger.error(`Error in chat:send: ${error.message}`);
+  }
+});
 
     socket.on('typing:start', ({ recipientId }) => {
       const conversationId = Message.generateConversationId(userId, recipientId);
