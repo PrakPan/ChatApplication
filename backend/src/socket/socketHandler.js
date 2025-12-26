@@ -6,10 +6,10 @@ const Conversation = require('../models/Conversation');
 const { validateSdp, validateIceCandidate } = require('../services/webrtcService');
 const logger = require('../utils/logger');
 
-const connectedUsers = new Map(); // Map<userId (string), socketId>
-const socketUsers = new Map(); // Map<socketId, userId (string)>
-const typingUsers = new Map(); // Map<conversationId, Set<userId>>
-const activeCalls = new Map(); // Map<callId, {caller, receiver}>
+const connectedUsers = new Map();
+const socketUsers = new Map(); 
+const typingUsers = new Map(); 
+const activeCalls = new Map();
 
 const socketHandler = (io) => {
   // Authentication middleware
@@ -29,7 +29,7 @@ const socketHandler = (io) => {
       }
 
       socket.user = user;
-      socket.userId = user._id.toString(); // Add string userId
+      socket.userId = user._id.toString(); 
       next();
     } catch (error) {
       next(new Error('Authentication error'));
@@ -81,9 +81,6 @@ const socketHandler = (io) => {
       socket.leave(conversationId);
       logger.info(`User ${userId} left conversation ${conversationId}`);
     });
-
-    // Direct message send (for regular chat)
-   // Key fixes in socketHandler.js
 
 // In message:send event handler
 socket.on('message:send', async (data) => {
