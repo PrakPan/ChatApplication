@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { 
   Mic, MicOff, Video, VideoOff, Phone, SwitchCamera, 
-  Sparkles, X, MessageCircle, Send
+  Sparkles, X, MessageCircle, Send, AlertCircle
 } from 'lucide-react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useChat } from '../hooks/useChat';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import api from '../utils/api';
 
 const FILTERS = [
   { id: 'none', name: 'None', filter: 'none' },
@@ -49,6 +50,7 @@ export const VideoCallComponent = ({
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const messageInputRef = useRef(null);
+  const balanceCheckIntervalRef = useRef(null);
   
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
@@ -57,7 +59,9 @@ export const VideoCallComponent = ({
   const [selectedFilter, setSelectedFilter] = useState('none');
   const [facingMode, setFacingMode] = useState('user');
   const [availableCameras, setAvailableCameras] = useState([]);
-  const {user} = useAuth();
+  const [lowBalanceWarning, setLowBalanceWarning] = useState(false);
+  const { user, refreshUser } = useAuth();
+  
   // Chat states
   const [showChat, setShowChat] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -100,12 +104,53 @@ export const VideoCallComponent = ({
     getCameras();
   }, []);
 
+  // NEW: Balance checking for users (not hosts)
+  useEffect(() => {
+    if (isHost || callStatus !== 'connected') {
+      return;
+    }
+
+    // Check balance every 30 seconds during active call
+    const checkBalance = async () => {
+      try {
+        const response = await api.post('/calls/check-balance', { callId });
+        
+        if (!response.data.data.shouldContinue) {
+          if (response.data.data.insufficientBalance) {
+            toast.error('Insufficient balance. Call ending...');
+            console.log('💰 Insufficient balance detected, ending call');
+            await handleEndCall();
+          }
+        } else {
+          // Check if balance is getting low
+          const currentBalance = user?.coinBalance || 0;
+          if (currentBalance < 50) { // Warning threshold
+            setLowBalanceWarning(true);
+          }
+        }
+      } catch (error) {
+        console.error('Balance check error:', error);
+      }
+    };
+
+    // Check immediately
+    checkBalance();
+
+    // Then check every 30 seconds
+    balanceCheckIntervalRef.current = setInterval(checkBalance, 30000);
+
+    return () => {
+      if (balanceCheckIntervalRef.current) {
+        clearInterval(balanceCheckIntervalRef.current);
+      }
+    };
+  }, [callStatus, isHost, callId, user?.coinBalance]);
+
   // FIXED: Initialize call only once
   useEffect(() => {
     isMountedRef.current = true;
 
     const initCall = async () => {
-      // Prevent duplicate initialization
       if (callInitializedRef.current) {
         console.log('⚠️ Call already initialized, skipping');
         return;
@@ -134,19 +179,21 @@ export const VideoCallComponent = ({
       } catch (error) {
         console.error('❌ Failed to initialize call:', error);
         toast.error('Failed to initialize call');
-        callInitializedRef.current = false; // Reset on error
+        callInitializedRef.current = false;
         onEnd();
       }
     };
 
     initCall();
 
-    // Cleanup on unmount
     return () => {
       console.log('🧹 VideoCallComponent unmounting');
       isMountedRef.current = false;
+      if (balanceCheckIntervalRef.current) {
+        clearInterval(balanceCheckIntervalRef.current);
+      }
     };
-  }, []); // Empty dependency array - initialize only once
+  }, []);
 
   // Update local video
   useEffect(() => {
@@ -190,7 +237,18 @@ export const VideoCallComponent = ({
   };
 
   const handleEndCall = async () => {
-    console.log('📞 User ending call');
+    const wasDisconnected = false; 
+    const hostManuallyDisconnected = isHost; 
+    try {
+      await api.post('/calls/end', { 
+        callId,
+        wasDisconnected,
+        hostManuallyDisconnected 
+      });
+    } catch (error) {
+      console.error('Error ending call:', error);
+    }
+    
     endCall();
     await onEnd();
   };
@@ -293,6 +351,20 @@ export const VideoCallComponent = ({
       <canvas ref={webRTCCanvasRef} className="hidden" />
       <video ref={webRTCVideoRef} className="hidden" />
 
+      {/* Low Balance Warning */}
+      {lowBalanceWarning && !isHost && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20 bg-yellow-500 text-black px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <AlertCircle className="h-5 w-5" />
+          <span className="font-semibold">Low Balance! Please recharge soon.</span>
+          <button 
+            onClick={() => setLowBalanceWarning(false)}
+            className="ml-2 hover:bg-yellow-600 rounded-full p-1"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Video Section */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${showChat ? 'md:w-2/3' : 'w-full'}`}>
         {/* Header */}
@@ -308,6 +380,9 @@ export const VideoCallComponent = ({
               </p>
               {callStatus === 'connected' && (
                 <p className="text-2xl font-bold">{formatDuration(callDuration)}</p>
+              )}
+              {!isHost && user && (
+                <p className="text-xs opacity-75 mt-1">Balance: {user.coinBalance} beans</p>
               )}
             </div>
             <button
@@ -341,22 +416,22 @@ export const VideoCallComponent = ({
                   <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
                     <Video className="h-12 w-12 text-white" />
                   </div>
-                 <p className="text-white text-lg font-semibold mb-2">
-  {callStatus === 'calling' ? 'Calling...' : 
-   callStatus === 'accepted' ? 'Host Accepted!' :  // NEW
-   callStatus === 'connecting' ? 'Connecting video...' :
-   callStatus === 'connected' ? 'Connected' :
-   callStatus === 'reconnecting' ? 'Reconnecting...' :
-   'Waiting for video...'}
-</p>
-<p className="text-white/60 text-sm">
-  {callStatus === 'calling' ? 'Waiting for host to answer' :
-   callStatus === 'accepted' ? 'Setting up video connection...' :  // NEW
-   callStatus === 'connecting' ? 'Establishing video stream' :
-   callStatus === 'connected' ? 'Enjoy your call' :
-   callStatus === 'reconnecting' ? 'Connection interrupted' :
-   'Please wait...'}
-</p>
+                  <p className="text-white text-lg font-semibold mb-2">
+                    {callStatus === 'calling' ? 'Calling...' : 
+                     callStatus === 'accepted' ? 'Host Accepted!' :
+                     callStatus === 'connecting' ? 'Connecting video...' :
+                     callStatus === 'connected' ? 'Connected' :
+                     callStatus === 'reconnecting' ? 'Reconnecting...' :
+                     'Waiting for video...'}
+                  </p>
+                  <p className="text-white/60 text-sm">
+                    {callStatus === 'calling' ? 'Waiting for host to answer' :
+                     callStatus === 'accepted' ? 'Setting up video connection...' :
+                     callStatus === 'connecting' ? 'Establishing video stream' :
+                     callStatus === 'connected' ? 'Enjoy your call' :
+                     callStatus === 'reconnecting' ? 'Connection interrupted' :
+                     'Please wait...'}
+                  </p>
                 </div>
               </div>
             )}
