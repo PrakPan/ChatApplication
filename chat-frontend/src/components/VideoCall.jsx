@@ -7,7 +7,8 @@ import { useWebRTC } from '../hooks/useWebRTC';
 import { useChat } from '../hooks/useChat';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
-import api from '../utils/api';
+import api from '../services/api';
+
 
 const FILTERS = [
   { id: 'none', name: 'None', filter: 'none' },
@@ -122,9 +123,8 @@ export const VideoCallComponent = ({
             await handleEndCall();
           }
         } else {
-          // Check if balance is getting low
           const currentBalance = user?.coinBalance || 0;
-          if (currentBalance < 50) { // Warning threshold
+          if (currentBalance < 50) { 
             setLowBalanceWarning(true);
           }
         }

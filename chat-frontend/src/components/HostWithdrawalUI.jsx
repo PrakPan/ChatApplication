@@ -255,101 +255,301 @@ const HostWithdrawalUI = ({ onBack }) => {
     </div>
   );
 
-  const OverviewTab = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-8 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-purple-100 text-sm mb-1">Available Balance</p>
-            <div className="flex items-center space-x-2">
-              <BiDiamond className="w-8 h-8" />
-              <h2 className="text-4xl font-bold">{balance.toLocaleString()}</h2>
-            </div>
-            <p className="text-purple-100 text-sm mt-2">≈ ₹{balance.toLocaleString('en-IN')}</p>
-          </div>
-          <BiWallet className="w-16 h-16 opacity-20" />
-        </div>
-        
-        <button
-          onClick={() => {
-            if (bankAccounts.length === 0) {
-              toast.error('Please add a bank account first');
-              setActiveTab('bank');
-            } else if (balance < 1000) {
-              toast.error('Minimum balance of 1000 diamonds required');
-            } else {
-              setShowWithdrawModal(true);
-            }
-          }}
-          disabled={balance < 1000}
-          className="w-full mt-4 bg-white text-purple-600 py-3 px-6 rounded-lg font-semibold hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {balance < 1000 ? 'Insufficient Balance (Min: 1000)' : 'Withdraw Diamonds'}
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={MdOutlineAttachMoney} title="Total Requested" value={`₹${stats.totalRequested.toLocaleString()}`} color="bg-blue-500" />
-        <StatCard icon={FiCheckCircle} title="Completed" value={`₹${stats.totalCompleted.toLocaleString()}`} color="bg-green-500" />
-        <StatCard icon={FiClock} title="Pending" value={`₹${stats.totalPending.toLocaleString()}`} color="bg-yellow-500" />
-        <StatCard icon={FiXCircle} title="Rejected" value={`₹${stats.totalRejected.toLocaleString()}`} color="bg-red-500" />
-      </div>
+const HistoryTab = () => {
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return <FiCheckCircle className="text-green-500" />;
+      case 'pending': return <FiClock className="text-yellow-500" />;
+      case 'processing': return <FiAlertCircle className="text-blue-500" />;
+      case 'rejected': return <FiXCircle className="text-red-500" />;
+      case 'failed': return <FiXCircle className="text-orange-500" />;
+      default: return <FiAlertCircle className="text-gray-500" />;
+    }
+  };
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <BiInfoCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-800">
-            <p className="font-semibold mb-1">Withdrawal Guidelines</p>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>Minimum withdrawal: 1000 diamonds</li>
-              <li>Processing: 2-5 business days</li>
-              <li>Diamonds deducted immediately</li>
-              <li>Rejected requests auto-refunded</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'failed': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-  const HistoryTab = () => (
+  const getStatusMessage = (status) => {
+    switch (status) {
+      case 'pending': return 'Your withdrawal request is pending review';
+      case 'processing': return 'Your withdrawal is being processed';
+      case 'completed': return 'Withdrawal completed successfully';
+      case 'rejected': return 'Withdrawal rejected - Diamonds refunded';
+      case 'failed': return 'Withdrawal failed - Diamonds refunded';
+      default: return '';
+    }
+  };
+
+  return (
     <div className="space-y-4">
       {withdrawals.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center">
           <BiHistory className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500">No withdrawal history yet</p>
+          <p className="text-gray-500 text-lg font-medium">No withdrawal history yet</p>
+          <p className="text-gray-400 text-sm mt-2">Your withdrawal requests will appear here</p>
         </div>
       ) : (
         withdrawals.map(withdrawal => (
-          <div key={withdrawal._id} className="bg-white rounded-xl p-6 shadow-sm">
+          <div key={withdrawal._id} className="bg-white rounded-xl p-6 shadow-sm border-l-4" 
+               style={{ 
+                 borderLeftColor: 
+                   withdrawal.status === 'completed' ? '#10b981' : 
+                   withdrawal.status === 'processing' ? '#3b82f6' :
+                   withdrawal.status === 'pending' ? '#f59e0b' : '#ef4444'
+               }}>
             <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="flex items-start space-x-4 flex-1">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                   {getStatusIcon(withdrawal.status)}
                 </div>
-                <div>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="font-semibold text-lg">₹{withdrawal.amount.toLocaleString()}</h3>
-                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(withdrawal.status)}`}>
-                      {withdrawal.status}
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="flex items-center">
+                      <BiDiamond className="w-6 h-6 mr-1 text-purple-600" />
+                      <h3 className="font-bold text-2xl text-gray-900">
+                        {withdrawal.amount.toLocaleString()}
+                      </h3>
+                    </div>
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(withdrawal.status)}`}>
+                      {withdrawal.status.toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">{withdrawal.bankDetails?.bankName} • {withdrawal.bankDetails?.accountNumber}</p>
-                  <p className="text-xs text-gray-500 mt-1">Requested: {new Date(withdrawal.createdAt).toLocaleDateString()}</p>
-                  {withdrawal.processedAt && <p className="text-xs text-gray-500">Processed: {new Date(withdrawal.processedAt).toLocaleDateString()}</p>}
-                  {withdrawal.transactionId && <p className="text-xs text-gray-500 font-mono">TXN: {withdrawal.transactionId}</p>}
-                  {withdrawal.rejectionReason && <p className="text-xs text-red-600 mt-1">Reason: {withdrawal.rejectionReason}</p>}
+                  
+                  <p className="text-sm text-gray-600 mb-3">
+                    {getStatusMessage(withdrawal.status)}
+                  </p>
+
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                    <p className="text-xs text-gray-500 mb-1">Bank Details</p>
+                    <p className="text-sm font-semibold text-gray-900">{withdrawal.bankDetails?.bankName}</p>
+                    <p className="text-sm text-gray-600">{withdrawal.bankDetails?.accountName}</p>
+                    <p className="text-xs font-mono text-gray-500">{withdrawal.bankDetails?.accountNumber}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-500">Requested</p>
+                      <p className="font-medium text-gray-900">
+                        {new Date(withdrawal.createdAt).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(withdrawal.createdAt).toLocaleTimeString('en-IN', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    
+                    {withdrawal.processedAt && (
+                      <div>
+                        <p className="text-xs text-gray-500">Processed</p>
+                        <p className="font-medium text-gray-900">
+                          {new Date(withdrawal.processedAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(withdrawal.processedAt).toLocaleTimeString('en-IN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {withdrawal.transactionId && (
+                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
+                      <p className="text-xs text-green-700 font-medium">Transaction ID</p>
+                      <p className="text-sm font-mono text-green-900">{withdrawal.transactionId}</p>
+                    </div>
+                  )}
+
+                  {withdrawal.rejectionReason && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <FiAlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-red-700 font-semibold mb-1">Reason for {withdrawal.status}</p>
+                          <p className="text-sm text-red-900">{withdrawal.rejectionReason}</p>
+                          <p className="text-xs text-red-600 mt-2">
+                            💎 {withdrawal.amount.toLocaleString()} diamonds have been refunded to your account
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {withdrawal.status === 'pending' && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <FiClock className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-yellow-900">
+                            Your withdrawal is under review. Diamonds have been deducted from your balance.
+                          </p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            Processing time: 2-5 business days
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {withdrawal.status === 'processing' && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <FiAlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-blue-900">
+                            Your withdrawal is being processed. Funds will be transferred soon.
+                          </p>
+                          <p className="text-xs text-blue-700 mt-1">
+                            You'll receive a notification once completed
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              {withdrawal.status === 'pending' && (
-                <button onClick={() => handleCancelWithdrawal(withdrawal._id)} className="text-red-600 hover:text-red-800 text-sm font-medium">Cancel</button>
-              )}
             </div>
           </div>
         ))
       )}
     </div>
   );
+};
+
+// Updated Overview Tab with better messaging
+const OverviewTab = () => (
+  <div className="space-y-6">
+    <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-purple-100 text-sm mb-1">Available Balance</p>
+          <div className="flex items-center space-x-2">
+            <BiDiamond className="w-8 h-8" />
+            <h2 className="text-5xl font-bold">{balance.toLocaleString()}</h2>
+          </div>
+          <p className="text-purple-100 text-sm mt-2">≈ ₹{balance.toLocaleString('en-IN')}</p>
+        </div>
+        <BiWallet className="w-20 h-20 opacity-20" />
+      </div>
+      
+      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 mb-4">
+        <p className="text-xs text-purple-100 mb-1">💡 Important Note</p>
+        <p className="text-sm text-white">
+          Diamonds are deducted immediately when you request withdrawal. 
+          Refunds are automatic if rejected.
+        </p>
+      </div>
+
+      <button
+        onClick={() => {
+          if (bankAccounts.length === 0) {
+            toast.error('Please add a bank account first');
+            setActiveTab('bank');
+          } else if (balance < 1000) {
+            toast.error('Minimum balance of 1000 diamonds required');
+          } else {
+            setShowWithdrawModal(true);
+          }
+        }}
+        disabled={balance < 1000}
+        className="w-full mt-4 bg-white text-purple-600 py-3 px-6 rounded-lg font-bold hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+      >
+        {balance < 1000 ? (
+          <>
+            <FiAlertCircle className="w-5 h-5" />
+            <span>Minimum 1000 Diamonds Required</span>
+          </>
+        ) : (
+          <>
+            <BiDiamond className="w-5 h-5" />
+            <span>Request Withdrawal</span>
+          </>
+        )}
+      </button>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard 
+        icon={MdOutlineAttachMoney} 
+        title="Total Requested" 
+        value={`₹${stats.totalRequested.toLocaleString()}`} 
+        color="bg-blue-500" 
+      />
+      <StatCard 
+        icon={FiCheckCircle} 
+        title="Completed" 
+        value={`₹${stats.totalCompleted.toLocaleString()}`} 
+        color="bg-green-500" 
+      />
+      <StatCard 
+        icon={FiClock} 
+        title="In Progress" 
+        value={`₹${stats.totalPending.toLocaleString()}`} 
+        color="bg-yellow-500" 
+      />
+      <StatCard 
+        icon={FiXCircle} 
+        title="Rejected/Failed" 
+        value={`₹${(stats.totalRejected + stats.totalFailed).toLocaleString()}`} 
+        color="bg-red-500" 
+      />
+    </div>
+
+    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6">
+      <div className="flex items-start space-x-4">
+        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <BiInfoCircle className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-3">Withdrawal Process</h3>
+          <ul className="space-y-2">
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-600 font-bold">1.</span>
+              <span className="text-sm text-gray-700">Minimum withdrawal: 1000 diamonds (≈ ₹1000)</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-600 font-bold">2.</span>
+              <span className="text-sm text-gray-700">Diamonds are deducted immediately upon request</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-600 font-bold">3.</span>
+              <span className="text-sm text-gray-700">Admin reviews within 24-48 hours</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-600 font-bold">4.</span>
+              <span className="text-sm text-gray-700">Processing time: 2-5 business days after approval</span>
+            </li>
+            <li className="flex items-start space-x-2">
+              <span className="text-blue-600 font-bold">5.</span>
+              <span className="text-sm text-gray-700">Rejected requests: Diamonds auto-refunded immediately</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
   const BankAccountsTab = () => (
     <div className="space-y-4">

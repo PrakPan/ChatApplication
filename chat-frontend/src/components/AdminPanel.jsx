@@ -2056,6 +2056,57 @@ const FreeTargetModal = () => (
     </div>
   );
 
+  const HostGradeDropdown = ({ host, onGradeChange }) => {
+  const [updating, setUpdating] = useState(false);
+  
+  const gradeInfo = {
+    'D': { rate: 800, color: 'bg-gray-100 text-gray-800' },
+    'C': { rate: 900, color: 'bg-blue-100 text-blue-800' },
+    'B': { rate: 1100, color: 'bg-purple-100 text-purple-800' },
+    'A': { rate: 1200, color: 'bg-yellow-100 text-yellow-800' }
+  };
+
+  const handleGradeChange = async (newGrade) => {
+    if (newGrade === host.grade) return;
+    
+    if (!confirm(`Change host grade from ${host.grade} to ${newGrade}? Rate will change from ${host.ratePerMinute} to ${gradeInfo[newGrade].rate} coins/min.`)) {
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      await api.patch(`/admin/hosts/${host._id}/grade`, { grade: newGrade });
+      alert(`Host grade updated to ${newGrade}`);
+      onGradeChange();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to update grade');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <select
+        value={host.grade || 'D'}
+        onChange={(e) => handleGradeChange(e.target.value)}
+        disabled={updating}
+        className={`px-3 py-1 text-sm font-semibold rounded-lg border-2 focus:ring-2 focus:ring-purple-500 ${gradeInfo[host.grade || 'D'].color}`}
+      >
+        <option value="D">Grade D (800/min)</option>
+        <option value="C">Grade C (900/min)</option>
+        <option value="B">Grade B (1100/min)</option>
+        <option value="A">Grade A (1200/min)</option>
+      </select>
+      {updating && (
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
   const HostsListTab = () => {
     const [updatingStatus, setUpdatingStatus] = useState(null);
     const [showReasonModal, setShowReasonModal] = useState(false);
@@ -2209,11 +2260,12 @@ const FreeTargetModal = () => (
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <BiCoin className="w-4 h-4 mr-1 text-yellow-600" />
-                        {host.ratePerMinute}/min
-                      </div>
-                    </td>
+  <HostGradeDropdown host={host} onGradeChange={loadData} />
+  <div className="text-xs text-gray-500 mt-1 flex items-center">
+    <BiCoin className="w-3 h-3 mr-1" />
+    {host.ratePerMinute}/min
+  </div>
+</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-semibold text-green-600">
                         ₹{host.totalEarnings?.toLocaleString()}
@@ -2883,15 +2935,17 @@ const FreeTargetModal = () => (
     </div>
   );
 
-  const WithdrawalManagementTab = () => {
+const WithdrawalManagementTab = () => {
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showProcessModal, setShowProcessModal] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
-  const [transactionId, setTransactionId] = useState('');
-  const [notes, setNotes] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [statusForm, setStatusForm] = useState({
+    status: 'processing',
+    transactionId: '',
+    notes: '',
+    rejectionReason: ''
+  });
   const [filterStatus, setFilterStatus] = useState('pending');
 
   useEffect(() => {
@@ -2912,43 +2966,25 @@ const FreeTargetModal = () => (
     }
   };
 
-  const handleProcessWithdrawal = async () => {
-    if (!transactionId.trim()) {
-      alert('Please enter transaction ID');
+  const handleUpdateStatus = async () => {
+    if (statusForm.status === 'completed' && !statusForm.transactionId) {
+      alert('Transaction ID is required for completed status');
+      return;
+    }
+
+    if (statusForm.status === 'rejected' && !statusForm.rejectionReason) {
+      alert('Rejection reason is required');
       return;
     }
 
     try {
-      await api.post(`/admin/withdrawals/${selectedWithdrawal._id}/process`, {
-        transactionId,
-        notes
-      });
-      alert('Withdrawal processed successfully!');
-      setShowProcessModal(false);
-      setTransactionId('');
-      setNotes('');
+      await api.patch(`/admin/withdrawals/${selectedWithdrawal._id}/status`, statusForm);
+      alert(`Withdrawal status updated to ${statusForm.status}`);
+      setShowStatusModal(false);
+      setStatusForm({ status: 'processing', transactionId: '', notes: '', rejectionReason: '' });
       loadWithdrawals();
     } catch (error) {
-      alert(error.response?.data?.error || 'Failed to process withdrawal');
-    }
-  };
-
-  const handleRejectWithdrawal = async () => {
-    if (!rejectionReason.trim()) {
-      alert('Please provide rejection reason');
-      return;
-    }
-
-    try {
-      await api.post(`/admin/withdrawals/${selectedWithdrawal._id}/reject`, {
-        reason: rejectionReason
-      });
-      alert('Withdrawal rejected and diamonds refunded');
-      setShowRejectModal(false);
-      setRejectionReason('');
-      loadWithdrawals();
-    } catch (error) {
-      alert(error.response?.data?.error || 'Failed to reject withdrawal');
+      alert(error.response?.data?.error || 'Failed to update status');
     }
   };
 
@@ -2956,9 +2992,21 @@ const FreeTargetModal = () => (
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
       case 'rejected': return 'bg-red-100 text-red-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
+      case 'failed': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return <FiCheckCircle className="text-green-500" />;
+      case 'pending': return <FiClock className="text-yellow-500" />;
+      case 'processing': return <FiAlertCircle className="text-blue-500" />;
+      case 'rejected': return <FiXCircle className="text-red-500" />;
+      case 'failed': return <FiXCircle className="text-orange-500" />;
+      default: return <FiAlertCircle className="text-gray-500" />;
     }
   };
 
@@ -2973,11 +3021,12 @@ const FreeTargetModal = () => (
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All</option>
+            <option value="">All Statuses</option>
             <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
             <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
             <option value="rejected">Rejected</option>
-            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -2992,24 +3041,12 @@ const FreeTargetModal = () => (
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Host Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bank Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Host</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bank Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -3017,12 +3054,8 @@ const FreeTargetModal = () => (
                   <tr key={withdrawal._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="font-medium text-gray-900">
-                          {withdrawal.hostId?.userId?.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {withdrawal.hostId?.userId?.email}
-                        </div>
+                        <div className="font-medium text-gray-900">{withdrawal.hostId?.userId?.name}</div>
+                        <div className="text-sm text-gray-500">{withdrawal.hostId?.userId?.email}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -3036,36 +3069,30 @@ const FreeTargetModal = () => (
                       <div className="text-sm">
                         <div className="font-medium">{withdrawal.bankDetails.bankName}</div>
                         <div className="text-gray-600">{withdrawal.bankDetails.accountName}</div>
-                        <div className="text-gray-500 font-mono text-xs">
-                          {withdrawal.bankDetails.accountNumber}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          IFSC: {withdrawal.bankDetails.ifscCode}
-                        </div>
+                        <div className="text-gray-500 font-mono text-xs">{withdrawal.bankDetails.accountNumber}</div>
+                        <div className="text-gray-500 text-xs">IFSC: {withdrawal.bankDetails.ifscCode}</div>
                         {withdrawal.bankDetails.upiId && (
-                          <div className="text-gray-500 text-xs">
-                            UPI: {withdrawal.bankDetails.upiId}
-                          </div>
+                          <div className="text-gray-500 text-xs">UPI: {withdrawal.bankDetails.upiId}</div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(withdrawal.status)}`}>
-                        {withdrawal.status}
-                      </span>
+                      <div className="flex items-center space-x-2 mb-1">
+                        {getStatusIcon(withdrawal.status)}
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(withdrawal.status)}`}>
+                          {withdrawal.status}
+                        </span>
+                      </div>
                       {withdrawal.transactionId && (
-                        <div className="text-xs text-gray-500 mt-1 font-mono">
-                          TXN: {withdrawal.transactionId}
-                        </div>
+                        <div className="text-xs text-gray-500 font-mono">TXN: {withdrawal.transactionId}</div>
+                      )}
+                      {withdrawal.rejectionReason && (
+                        <div className="text-xs text-red-600 mt-1">{withdrawal.rejectionReason}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="text-gray-900">
-                        {new Date(withdrawal.createdAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-gray-500 text-xs">
-                        {new Date(withdrawal.createdAt).toLocaleTimeString()}
-                      </div>
+                      <div className="text-gray-900">{new Date(withdrawal.createdAt).toLocaleDateString()}</div>
+                      <div className="text-gray-500 text-xs">{new Date(withdrawal.createdAt).toLocaleTimeString()}</div>
                       {withdrawal.processedAt && (
                         <div className="text-green-600 text-xs mt-1">
                           Processed: {new Date(withdrawal.processedAt).toLocaleDateString()}
@@ -3073,35 +3100,26 @@ const FreeTargetModal = () => (
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {withdrawal.status === 'pending' ? (
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => {
-                              setSelectedWithdrawal(withdrawal);
-                              setShowProcessModal(true);
-                            }}
-                            className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm flex items-center space-x-1"
-                          >
-                            <FiCheckCircle className="w-4 h-4" />
-                            <span>Approve</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedWithdrawal(withdrawal);
-                              setShowRejectModal(true);
-                            }}
-                            className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm flex items-center space-x-1"
-                          >
-                            <FiXCircle className="w-4 h-4" />
-                            <span>Reject</span>
-                          </button>
-                        </div>
+                      {(withdrawal.status === 'pending' || withdrawal.status === 'processing') ? (
+                        <button
+                          onClick={() => {
+                            setSelectedWithdrawal(withdrawal);
+                            setStatusForm({
+                              status: withdrawal.status === 'pending' ? 'processing' : 'completed',
+                              transactionId: '',
+                              notes: '',
+                              rejectionReason: ''
+                            });
+                            setShowStatusModal(true);
+                          }}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                        >
+                          Update Status
+                        </button>
                       ) : (
-                        <div className="text-sm text-gray-500">
-                          {withdrawal.status === 'completed' ? 'Completed' : 
-                           withdrawal.status === 'rejected' ? `Rejected: ${withdrawal.rejectionReason}` :
-                           withdrawal.status}
-                        </div>
+                        <span className="text-sm text-gray-500">
+                          {withdrawal.status === 'completed' ? 'Completed' : withdrawal.status}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -3113,19 +3131,19 @@ const FreeTargetModal = () => (
           {withdrawals.length === 0 && (
             <div className="text-center py-12">
               <BiWallet className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">No {filterStatus} withdrawals found</p>
+              <p className="text-gray-500">No {filterStatus || 'pending'} withdrawals found</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Process Withdrawal Modal */}
-      {showProcessModal && selectedWithdrawal && (
+      {/* Status Update Modal */}
+      {showStatusModal && selectedWithdrawal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Process Withdrawal</h3>
-              <button onClick={() => setShowProcessModal(false)}>
+              <h3 className="text-xl font-bold">Update Withdrawal Status</h3>
+              <button onClick={() => setShowStatusModal(false)}>
                 <FiX className="w-6 h-6 text-gray-400 hover:text-gray-600" />
               </button>
             </div>
@@ -3143,89 +3161,81 @@ const FreeTargetModal = () => (
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Bank</span>
-                <span className="text-sm">{selectedWithdrawal.bankDetails.bankName}</span>
+                <span className="text-sm text-gray-600">Current Status</span>
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedWithdrawal.status)}`}>
+                  {selectedWithdrawal.status}
+                </span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Transaction ID *
-                </label>
-                <input
-                  type="text"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter transaction ID"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">New Status *</label>
+                <select
+                  value={statusForm.status}
+                  onChange={(e) => setStatusForm({...statusForm, status: e.target.value})}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                  <option value="rejected">Rejected</option>
+                </select>
               </div>
 
+              {statusForm.status === 'completed' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Transaction ID *</label>
+                  <input
+                    type="text"
+                    value={statusForm.transactionId}
+                    onChange={(e) => setStatusForm({...statusForm, transactionId: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter transaction ID"
+                  />
+                </div>
+              )}
+
+              {(statusForm.status === 'rejected' || statusForm.status === 'failed') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {statusForm.status === 'rejected' ? 'Rejection Reason *' : 'Failure Reason'}
+                  </label>
+                  <textarea
+                    value={statusForm.rejectionReason}
+                    onChange={(e) => setStatusForm({...statusForm, rejectionReason: e.target.value})}
+                    rows="3"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Explain the reason..."
+                  />
+                  <p className="text-xs text-orange-600 mt-1">
+                    💎 Diamonds will be automatically refunded to host
+                  </p>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes (Optional)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admin Notes (Optional)</label>
                 <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows="3"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  placeholder="Add any notes..."
+                  value={statusForm.notes}
+                  onChange={(e) => setStatusForm({...statusForm, notes: e.target.value})}
+                  rows="2"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Add any internal notes..."
                 />
               </div>
 
               <button
-                onClick={handleProcessWithdrawal}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                onClick={handleUpdateStatus}
+                className={`w-full py-3 rounded-lg font-semibold text-white ${
+                  statusForm.status === 'completed' ? 'bg-green-600 hover:bg-green-700' :
+                  statusForm.status === 'processing' ? 'bg-blue-600 hover:bg-blue-700' :
+                  'bg-red-600 hover:bg-red-700'
+                }`}
               >
-                Confirm & Process
+                Update to {statusForm.status}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reject Withdrawal Modal */}
-      {showRejectModal && selectedWithdrawal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Reject Withdrawal</h3>
-              <button onClick={() => setShowRejectModal(false)}>
-                <FiX className="w-6 h-6 text-gray-400 hover:text-gray-600" />
-              </button>
-            </div>
-
-            <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="flex items-center text-red-800 mb-2">
-                <FiAlertCircle className="w-5 h-5 mr-2" />
-                <span className="font-semibold">Diamonds will be refunded</span>
-              </div>
-              <p className="text-sm text-red-700">
-                {selectedWithdrawal.amount.toLocaleString()} diamonds will be automatically refunded to the host's account.
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rejection Reason *
-              </label>
-              <textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                rows="4"
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                placeholder="Please provide a reason for rejection..."
-              />
-            </div>
-
-            <button
-              onClick={handleRejectWithdrawal}
-              className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold"
-            >
-              Reject & Refund
-            </button>
           </div>
         </div>
       )}
