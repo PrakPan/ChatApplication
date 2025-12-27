@@ -11,9 +11,10 @@ const WeeklyLeaderboard = require('../models/WeeklyLeaderboard');
 
 const initiateCall = asyncHandler(async (req, res) => {
   const { hostId } = req.body;
-
+ console.log("HHH",hostId);
   // Get host details
   const host = await Host.findById(hostId);
+
   if (!host) {
     throw new ApiError(404, 'Host not found');
   }
@@ -73,7 +74,7 @@ const acceptCall = asyncHandler(async (req, res) => {
 });
 
 const endCall = asyncHandler(async (req, res) => {
-  const { callId } = req.body;
+  const { callId, wasDisconnected } = req.body;
 
   const call = await Call.findById(callId).populate('hostId');
   if (!call) {
