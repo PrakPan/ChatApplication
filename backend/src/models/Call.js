@@ -29,6 +29,13 @@ const callSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  coinsDeductedSoFar: {
+    type: Number,
+    default: 0
+  },
+  lastBilledAt: {
+    type: Date
+  },
   status: {
     type: String,
     enum: ['initiated', 'ongoing', 'completed', 'cancelled', 'failed'],

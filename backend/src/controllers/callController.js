@@ -11,7 +11,8 @@ const WeeklyLeaderboard = require('../models/WeeklyLeaderboard');
 
 const initiateCall = asyncHandler(async (req, res) => {
   const { hostId } = req.body;
- console.log("HHH",hostId);
+  console.log("HHH", hostId);
+
   // Get host details
   const host = await Host.findById(hostId);
 
@@ -38,7 +39,9 @@ const initiateCall = asyncHandler(async (req, res) => {
     userId: req.user._id,
     hostId: host._id,
     startTime: new Date(),
-    status: 'initiated'
+    status: 'initiated',
+    lastBilledAt: new Date(), // Track when we last deducted coins
+    coinsDeductedSoFar: 0 // Track total coins deducted during call
   });
 
   logger.info(`Call initiated: User ${user.email} to Host ${host._id}`);
@@ -66,6 +69,7 @@ const acceptCall = asyncHandler(async (req, res) => {
 
   call.status = 'ongoing';
   call.startTime = new Date();
+  call.lastBilledAt = new Date(); // Reset billing timer when call actually starts
   await call.save();
 
   logger.info(`Call accepted: ${callId}`);
@@ -73,44 +77,99 @@ const acceptCall = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Call accepted', { call });
 });
 
-const endCall = asyncHandler(async (req, res) => {
-  const { callId, wasDisconnected } = req.body;
+// NEW: Check balance and deduct coins during ongoing call
+const checkCallBalance = asyncHandler(async (req, res) => {
+  const { callId } = req.body;
 
   const call = await Call.findById(callId).populate('hostId');
   if (!call) {
     throw new ApiError(404, 'Call not found');
   }
 
-  const duration = Math.floor((call?.endTime - call?.startTime) / 1000);
+  if (call.status !== 'ongoing') {
+    return ApiResponse.success(res, 200, 'Call not ongoing', { 
+      shouldContinue: false 
+    });
+  }
 
+  // Verify user is part of this call
+  const isUser = call.userId.toString() === req.user._id.toString();
+  if (!isUser && req.user.role !== 'admin') {
+    throw new ApiError(403, 'Not authorized');
+  }
 
-  const FreeTarget = require('../models/FreeTarget');
-  const freeTarget = await FreeTarget.findOne({ 
-    hostId: call.hostId._id,
-    isEnabled: true 
+  // Get host's charm level to determine rate
+  const hostLevel = await Level.findOne({ userId: call.hostId.userId });
+  const ratePerMinute = hostLevel ? hostLevel.getRatePerMinute() : call.hostId.ratePerMinute;
+
+  // Calculate time since last billing
+  const now = new Date();
+  const lastBilledAt = call.lastBilledAt || call.startTime;
+  const secondsSinceLastBill = Math.floor((now - lastBilledAt) / 1000);
+
+  // Only bill if at least 60 seconds have passed (1 minute)
+  if (secondsSinceLastBill < 60) {
+    return ApiResponse.success(res, 200, 'Not time to bill yet', { 
+      shouldContinue: true,
+      secondsUntilNextBill: 60 - secondsSinceLastBill
+    });
+  }
+
+  // Calculate minutes to bill (round down to complete minutes)
+  const minutesToBill = Math.floor(secondsSinceLastBill / 60);
+  const coinsToBill = minutesToBill * ratePerMinute;
+
+  // Check user balance
+  const user = await User.findById(call.userId);
+  if (user.coinBalance < coinsToBill) {
+    // Insufficient balance - end call
+    logger.warn(`Insufficient balance during call ${callId}. Ending call.`);
+    
+    return ApiResponse.success(res, 200, 'Insufficient balance', { 
+      shouldContinue: false,
+      insufficientBalance: true,
+      currentBalance: user.coinBalance,
+      requiredAmount: coinsToBill
+    });
+  }
+
+  // Deduct coins
+  user.coinBalance -= coinsToBill;
+  await user.save();
+
+  // Update call record
+  call.coinsDeductedSoFar = (call.coinsDeductedSoFar || 0) + coinsToBill;
+  call.lastBilledAt = now;
+  await call.save();
+
+  // Create transaction record
+  await Transaction.create({
+    userId: call.userId,
+    type: 'call_debit_partial',
+    amount: coinsToBill,
+    coins: coinsToBill,
+    status: 'completed',
+    callId: call._id,
+    description: `Ongoing call billing: ${minutesToBill} minute(s) @ ${ratePerMinute} beans/min`
   });
 
-  if (freeTarget) {
-    const todayTarget = freeTarget.getCurrentDayTarget();
-    
-    if (todayTarget && todayTarget.status === 'pending') {
-      // Handle disconnected call
-      if (wasDisconnected) {
-        const dayFailed = freeTarget.recordDisconnect(callId);
-        if (dayFailed) {
-          logger.warn(`Free target day failed due to disconnects for host ${call.hostId._id}`);
-        }
-      }
+  logger.info(`Billed ${coinsToBill} beans for ${minutesToBill} minutes on call ${callId}`);
 
-      // Add call duration
-      if (duration > 0) {
-        freeTarget.addCallDuration(duration);
-        freeTarget.stats.totalCallsCompleted += 1;
-        freeTarget.stats.totalCallDuration += duration;
-      }
+  ApiResponse.success(res, 200, 'Balance checked and billed', { 
+    shouldContinue: true,
+    coinsBilled: coinsToBill,
+    minutesBilled: minutesToBill,
+    newBalance: user.coinBalance,
+    totalDeductedSoFar: call.coinsDeductedSoFar
+  });
+});
 
-      await freeTarget.save();
-    }
+const endCall = asyncHandler(async (req, res) => {
+  const { callId, wasDisconnected, hostManuallyDisconnected } = req.body;
+
+  const call = await Call.findById(callId).populate('hostId');
+  if (!call) {
+    throw new ApiError(404, 'Call not found');
   }
 
   // Verify user is part of this call
@@ -126,52 +185,116 @@ const endCall = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Call already ended');
   }
 
-  // Calculate duration and beans
+  // Calculate final duration
   call.endTime = new Date();
   const durationInSeconds = Math.floor((call.endTime - call.startTime) / 1000);
   const durationInMinutes = Math.ceil(durationInSeconds / 60);
-  
+
   // Get host's charm level to determine rate
   const hostLevel = await Level.findOne({ userId: call.hostId.userId });
   const ratePerMinute = hostLevel ? hostLevel.getRatePerMinute() : call.hostId.ratePerMinute;
+
+  // Calculate remaining coins to deduct (if any)
+  const lastBilledAt = call.lastBilledAt || call.startTime;
+  const secondsSinceLastBill = Math.floor((call.endTime - lastBilledAt) / 1000);
+  const remainingMinutes = Math.ceil(secondsSinceLastBill / 60);
+  const remainingCoins = remainingMinutes * ratePerMinute;
+
+  const user = await User.findById(call.userId);
+
+  // Deduct remaining coins if any
+  let finalCoinsDeducted = call.coinsDeductedSoFar || 0;
   
+  if (remainingCoins > 0) {
+    if (user.coinBalance >= remainingCoins) {
+      user.coinBalance -= remainingCoins;
+      finalCoinsDeducted += remainingCoins;
+      
+      await Transaction.create({
+        userId: call.userId,
+        type: 'call_debit_final',
+        amount: remainingCoins,
+        coins: remainingCoins,
+        status: 'completed',
+        callId: call._id,
+        description: `Final billing for ${remainingMinutes} minute(s) @ ${ratePerMinute} beans/min`
+      });
+    } else {
+      // User ran out of balance - deduct what they have
+      const coinsAvailable = user.coinBalance;
+      if (coinsAvailable > 0) {
+        finalCoinsDeducted += coinsAvailable;
+        user.coinBalance = 0;
+        
+        await Transaction.create({
+          userId: call.userId,
+          type: 'call_debit_final',
+          amount: coinsAvailable,
+          coins: coinsAvailable,
+          status: 'completed',
+          callId: call._id,
+          description: `Final billing (partial - insufficient balance)`
+        });
+      }
+      
+      logger.warn(`User ${call.userId} ended call with insufficient balance`);
+    }
+  }
+
+  await user.save();
+
+  // Update call record with final details
   call.duration = durationInSeconds;
-  call.coinsSpent = durationInMinutes * ratePerMinute; // Now using beans
+  call.coinsSpent = finalCoinsDeducted;
   call.status = 'completed';
   await call.save();
 
-  // Deduct beans from user
-  const user = await User.findById(call.userId);
-  if (user.coinBalance < call.coinsSpent) {
-    call.status = 'failed';
-    await call.save();
-    throw new ApiError(400, 'Insufficient balance to complete call');
-  }
-
-  user.coinBalance -= call.coinsSpent;
-  await user.save();
-
-  // Create debit transaction
-  await Transaction.create({
-    userId: call.userId,
-    type: 'call_debit',
-    amount: call.coinsSpent,
-    coins: call.coinsSpent,
-    status: 'completed',
-    callId: call._id,
-    description: `Call with host for ${durationInMinutes} minutes (${call.coinsSpent} beans)`
+  // Handle Free Target tracking
+  const FreeTarget = require('../models/FreeTarget');
+  const freeTarget = await FreeTarget.findOne({ 
+    hostId: call.hostId._id,
+    isEnabled: true 
   });
 
-  // Calculate host earnings (70% - beans earned)
-  const hostEarnings = Math.floor(call.coinsSpent * (REVENUE_SPLIT.HOST_PERCENTAGE / 100));
+  if (freeTarget) {
+    const todayTarget = freeTarget.getCurrentDayTarget();
+    
+    if (todayTarget && todayTarget.status === 'pending') {
+      if (wasDisconnected) {
+        const dayFailed = freeTarget.recordDisconnect(callId);
+        if (dayFailed) {
+          logger.warn(`Free target day failed due to disconnects for host ${call.hostId._id}`);
+        }
+      }
+
+      if (durationInSeconds > 0) {
+        freeTarget.addCallDuration(durationInSeconds);
+        freeTarget.stats.totalCallsCompleted += 1;
+        freeTarget.stats.totalCallDuration += durationInSeconds;
+      }
+
+      await freeTarget.save();
+    }
+  }
+
+  // Calculate host earnings (70%)
+  const hostEarnings = Math.floor(finalCoinsDeducted * (REVENUE_SPLIT.HOST_PERCENTAGE / 100));
 
   // Update host earnings
   const hostDoc = await Host.findById(call.hostId._id);
   hostDoc.totalEarnings += hostEarnings;
   hostDoc.totalCalls += 1;
+  
+  // IMPORTANT: Only set host offline if they manually disconnected
+  // Don't change online status if call just ended normally
+  if (hostManuallyDisconnected === true && isHost) {
+    hostDoc.isOnline = false;
+    logger.info(`Host ${hostDoc._id} manually disconnected and went offline`);
+  }
+  
   await hostDoc.save();
 
-  // Update host's charm level (beans earned)
+  // Update host's charm level
   if (!hostLevel) {
     await Level.create({ 
       userId: call.hostId.userId,
@@ -197,15 +320,16 @@ const endCall = asyncHandler(async (req, res) => {
   await updateWeeklyLeaderboard(call.userId, 'user', durationInSeconds);
   await updateWeeklyLeaderboard(hostDoc.userId, 'host', durationInSeconds);
 
-  logger.info(`Call ended: ${callId}, Duration: ${durationInMinutes}min, Beans: ${call.coinsSpent}, Host Charm Level: ${hostLevel?.charmLevel || 1}`);
+  logger.info(`Call ended: ${callId}, Duration: ${durationInMinutes}min, Total Beans: ${finalCoinsDeducted}, Host Earnings: ${hostEarnings}`);
 
   ApiResponse.success(res, 200, 'Call ended successfully', { 
     call,
-    coinsSpent: call.coinsSpent,
+    coinsSpent: finalCoinsDeducted,
     duration: durationInMinutes,
     newBalance: user.coinBalance,
     hostEarnings,
-    rateUsed: ratePerMinute
+    rateUsed: ratePerMinute,
+    hostStillOnline: hostDoc.isOnline
   });
 });
 
@@ -343,6 +467,7 @@ module.exports = {
   initiateCall,
   acceptCall,
   endCall,
+  checkCallBalance, // NEW EXPORT
   rateCall,
   getCallHistory,
   getCallDetails

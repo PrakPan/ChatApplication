@@ -4098,3 +4098,25 @@
 {"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-27 18:22:34"}
 {"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:22:35"}
 {"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-27 18:22:36"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-27 18:25:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-27 18:25:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:25:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:25:00"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-27 18:28:26"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-27 18:28:26"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-27 18:28:26"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-27 18:28:26"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-01.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-27 18:28:26"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:28:27"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-27 18:28:29"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-27 18:29:11"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-27 18:29:11"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-27 18:29:11"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-27 18:29:11"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-01.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-27 18:29:12"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:29:13"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-27 18:29:14"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-27 18:30:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-27 18:30:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:30:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2025-12-27 18:30:00"}
