@@ -122,6 +122,92 @@ const rejectWithdrawal = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Withdrawal rejected', { withdrawal });
 });
 
+const updateWithdrawalStatus = asyncHandler(async (req, res) => {
+  const { withdrawalId } = req.params;
+  const { status, transactionId, notes, rejectionReason } = req.body;
+  
+  if (!['processing', 'completed', 'failed', 'rejected'].includes(status)) {
+    throw new ApiError(400, 'Invalid status');
+  }
+  
+  const withdrawal = await Withdrawal.findById(withdrawalId).populate('hostId');
+  
+  if (!withdrawal) {
+    throw new ApiError(404, 'Withdrawal not found');
+  }
+  
+  if (withdrawal.status !== 'pending' && withdrawal.status !== 'processing') {
+    throw new ApiError(400, 'Cannot update withdrawal in current status');
+  }
+  
+  const previousStatus = withdrawal.status;
+  withdrawal.status = status;
+  withdrawal.processedBy = req.user?._id || 'Admin';
+  withdrawal.processedAt = new Date();
+  
+  if (transactionId) {
+    withdrawal.transactionId = transactionId;
+  }
+  
+  if (notes) {
+    withdrawal.adminNotes = notes;
+  }
+  
+  // Handle status changes
+  if (status === 'rejected' || status === 'failed') {
+    if (!rejectionReason && status === 'rejected') {
+      throw new ApiError(400, 'Rejection reason is required');
+    }
+    
+    withdrawal.rejectionReason = rejectionReason || 'Processing failed';
+    
+    // REFUND DIAMONDS
+    const host = await Host.findById(withdrawal.hostId._id);
+    host.totalEarnings += withdrawal.amount;
+    await host.save();
+    
+    // Create refund transaction
+    await Transaction.create({
+      userId: withdrawal.hostId.userId,
+      type: 'withdrawal_refund',
+      amount: withdrawal.amount,
+      status: 'completed',
+      description: `Withdrawal ${status} - Refund of ${withdrawal.amount} diamonds`,
+      metadata: {
+        withdrawalId: withdrawal._id,
+        reason: withdrawal.rejectionReason
+      }
+    });
+    
+    logger.info(`Withdrawal ${withdrawalId} ${status}. Refunded ${withdrawal.amount} diamonds to host ${host._id}`);
+  }
+  
+  if (status === 'completed') {
+    if (!transactionId) {
+      throw new ApiError(400, 'Transaction ID is required for completed withdrawals');
+    }
+    
+    // Update transaction
+    await Transaction.findOneAndUpdate(
+      { 'metadata.withdrawalId': withdrawal._id },
+      { 
+        status: 'completed',
+        description: `Withdrawal completed - ${withdrawal.amount} diamonds (TXN: ${transactionId})`
+      }
+    );
+    
+    logger.info(`Withdrawal ${withdrawalId} completed. Transaction ID: ${transactionId}`);
+  }
+  
+  await withdrawal.save();
+  
+  ApiResponse.success(res, 200, `Withdrawal status updated to ${status}`, {
+    withdrawal
+  });
+});
+
+
+
 const getRevenueStats = asyncHandler(async (req, res) => {
   const { startDate, endDate } = req.query;
 
@@ -581,6 +667,38 @@ const deleteHost = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Host deleted successfully');
 });
 
+const updateHostGrade = asyncHandler(async (req, res) => {
+  const { hostId } = req.params;
+  const { grade } = req.body;
+  
+  if (!['D', 'C', 'B', 'A'].includes(grade)) {
+    throw new ApiError(400, 'Invalid grade. Must be D, C, B, or A');
+  }
+  
+  const host = await Host.findById(hostId);
+  
+  if (!host) {
+    throw new ApiError(404, 'Host not found');
+  }
+  
+  const oldGrade = host.grade;
+  const oldRate = host.ratePerMinute;
+  
+  host.grade = grade;
+  // Rate will be auto-updated by pre-save hook
+  await host.save();
+  
+  logger.info(`Host ${hostId} grade updated from ${oldGrade} to ${grade}. Rate: ${oldRate} -> ${host.ratePerMinute}`);
+  
+  ApiResponse.success(res, 200, 'Host grade updated successfully', {
+    host,
+    oldGrade,
+    newGrade: grade,
+    oldRate,
+    newRate: host.ratePerMinute
+  });
+});
+
 // ============= Call History =============
 const getCallHistory = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, userId, hostId, status, search } = req.query;
@@ -827,6 +945,7 @@ module.exports = {
   getHostCallHistory,
   getWeeklyLeaderboard,
   updateUserLevel,
+  updateHostGrade,
   // ADD THESE MISSING FUNCTIONS:
   getPendingHosts,
   getPendingWithdrawals,
@@ -834,5 +953,6 @@ module.exports = {
   rejectWithdrawal,
   getRevenueStats,
   updateHostStatus,
-  toggleUserStatus  // if you have this route
+  toggleUserStatus, // if you have this route
+  updateWithdrawalStatus
 };

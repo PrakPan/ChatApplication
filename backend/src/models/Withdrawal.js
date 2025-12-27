@@ -17,7 +17,7 @@ const withdrawalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'failed', 'rejected', 'cancelled'],
+    enum: ['pending', 'processing', 'completed', 'failed', 'rejected'],
     default: 'pending'
   },
   bankDetails: {
@@ -44,6 +44,10 @@ const withdrawalSchema = new mongoose.Schema({
   },
   processedAt: {
     type: Date
+  },
+  processedBy:{
+    type: String,
+    default: 'Admin'
   },
   notes: {
     type: String

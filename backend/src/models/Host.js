@@ -12,10 +12,15 @@ const hostSchema = new mongoose.Schema({
     type: String,
     maxlength: [500, 'Bio cannot exceed 500 characters']
   },
+  grade: {
+    type: String,
+    enum: ['D', 'C', 'B', 'A'],
+    default: 'D'
+  },
   ratePerMinute: {
     type: Number,
     required: [true, 'Rate per minute is required'],
-    default: 50,
+    default: 800,
     min: [10, 'Rate must be at least 10 coins per minute']
   },
   onlineTimeLogs: [{
@@ -106,7 +111,16 @@ hostSchema.index({ agentId: 1 });
 hostSchema.index({ isOnline: 1, lastSeen: -1 });
 hostSchema.index({ userId: 1, isOnline: 1 });
 
-// Virtual to get approved photos count
+hostSchema.methods.getRateByGrade = function() {
+  const gradeRates = {
+    'D': 800,
+    'C': 900,
+    'B': 1100,
+    'A': 1200
+  };
+  return gradeRates[this.grade] || 800;
+};
+
 hostSchema.virtual('approvedPhotosCount').get(function() {
   return this.photos.filter(photo => photo.approvalStatus === 'approved').length;
 });
@@ -201,9 +215,11 @@ hostSchema.methods.getTodayOnlineTime = function() {
   return totalTime;
 };
 
-// Pre-save hook to update lastSeen when going offline
 hostSchema.pre('save', function(next) {
-  // Auto-approve host if they have 3+ approved photos
+  if (this.isModified('grade')) {
+    this.ratePerMinute = this.getRateByGrade();
+  }
+
   if (this.isModified('photos')) {
     const approvedCount = this.photos.filter(photo => photo.approvalStatus === 'approved').length;
     if (approvedCount >= 3 && this.status === 'pending') {
@@ -218,5 +234,6 @@ hostSchema.pre('save', function(next) {
   
   next();
 });
+
 
 module.exports = mongoose.model('Host', hostSchema);

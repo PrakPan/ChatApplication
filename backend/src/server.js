@@ -203,6 +203,38 @@ process.on('uncaughtException', (err) => {
 
 scheduleJob();
 
+// async function migrateHostGrades() {
+//   try {
+//     // Set all existing hosts to Grade D if they don't have a grade
+//     const result = await Host.updateMany(
+//       { grade: { $exists: false } },
+//       { 
+//         $set: { 
+//           grade: 'D',
+//           ratePerMinute: 800 
+//         } 
+//       }
+//     );
+    
+//     console.log(`✅ Updated ${result.modifiedCount} hosts to Grade D with 800 coins/min`);
+    
+//     // Verify
+//     const hosts = await Host.find({});
+//     console.log(`📊 Total hosts: ${hosts.length}`);
+//     console.log(`Grade breakdown:`);
+//     const grades = await Host.aggregate([
+//       { $group: { _id: '$grade', count: { $sum: 1 } } },
+//       { $sort: { _id: 1 } }
+//     ]);
+//     grades.forEach(g => console.log(`  Grade ${g._id}: ${g.count} hosts`));
+    
+//   } catch (error) {
+//     console.error('❌ Migration failed:', error);
+//   }
+// }
+
+// // Run migration
+// migrateHostGrades();
 
 // async function initializeFreeTargets() {
 //   await mongoose.connect(process.env.MONGODB_URI);
