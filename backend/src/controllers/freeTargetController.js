@@ -182,6 +182,9 @@ exports.getFreeTarget = asyncHandler(async (req, res) => {
     ? freeTarget.currentWeek.days.filter(d => d.status === 'pending').length
     : 0;
 
+  const host = await Host.findById(hostId).select('isOnline');
+  const activateClock = host?.isOnline === true;
+
   ApiResponse.success(res, 200, 'Free target data retrieved', {
     freeTarget: {
       ...freeTarget.toObject(),
@@ -190,7 +193,8 @@ exports.getFreeTarget = asyncHandler(async (req, res) => {
       timeCompleted,
       targetDuration: freeTarget.targetDurationPerDay,
       targetDurationPerDay: freeTarget.targetDurationPerDay,
-      daysLeftInWeek
+      daysLeftInWeek,
+      activateClock
     }
   });
 });

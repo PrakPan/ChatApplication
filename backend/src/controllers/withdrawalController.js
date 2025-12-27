@@ -144,7 +144,7 @@ const getWithdrawalStats = asyncHandler(async (req, res) => {
       totalPending: 0,
       totalRejected: 0
     },
-    rate: 100000,
+    rate: 100,
   });
 });
 
