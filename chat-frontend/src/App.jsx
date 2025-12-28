@@ -76,20 +76,13 @@ function AppRoutes() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                 { (user?.role == 'admin') && <AdminPanel/> }
-                </ProtectedRoute>
-              }
-            />
+           
             {/* Protected Routes */}
             <Route
               path="/"
               element={
                 <ProtectedRoute>
-                 { (user?.role == 'host' || user?.role == 'coinSeller') ? <HostDashboard/> : user?.role == 'user' ? <Home /> : <Login/>}
+                 { (user?.role == 'host' || user?.role == 'coinSeller') ? <HostDashboard/> : user?.role == 'user' ? <Home /> : user?.role == 'admin' ? <AdminPanel /> : <Login/>}
                 </ProtectedRoute>
               }
             />
