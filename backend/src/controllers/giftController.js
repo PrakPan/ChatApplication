@@ -70,7 +70,7 @@ const sendGift = asyncHandler(async (req, res) => {
   }
 
   // Get host
-  const host = await Host.findById(hostId).populate('userId');
+  const host = await Host.findOne({ userId: hostId }).populate('userId');
   if (!host) {
     throw new ApiError(404, 'Host not found');
   }
