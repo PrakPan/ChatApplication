@@ -839,6 +839,84 @@ const socketHandler = (io) => {
       logger.error(`Socket error for ${userId}: ${error.message}`);
     });
 
+    // ==================== GIFT EVENTS ====================
+
+socket.on('gift:send', async ({ callId, hostId, giftId, quantity }) => {
+  try {
+    console.log('🎁 Gift send event:', { callId, hostId, giftId, quantity, from: userId });
+    
+    // This is just for real-time notification
+    // The actual transaction is handled by the API endpoint
+    
+    const host = await Host.findById(hostId).populate('userId');
+    if (!host) {
+      socket.emit('gift:error', { message: 'Host not found' });
+      return;
+    }
+
+    // Get host's socket
+    const hostUserId = host.userId._id.toString();
+    const hostSocketId = connectedUsers.get(hostUserId);
+
+    if (hostSocketId) {
+      // Notify host about the gift
+      io.to(hostSocketId).emit('gift:received', {
+        giftId,
+        quantity,
+        senderName: socket.user.name,
+        senderAvatar: socket.user.avatar,
+        senderId: userId,
+        callId,
+        timestamp: new Date()
+      });
+      console.log(`✅ Gift notification sent to host ${hostUserId}`);
+    } else {
+      console.log(`⚠️ Host ${hostUserId} is not connected`);
+    }
+
+  } catch (error) {
+    logger.error(`Error handling gift send: ${error.message}`);
+    socket.emit('gift:error', { message: 'Failed to send gift notification' });
+  }
+});
+
+// Optional: Add gift animation sync for both parties
+socket.on('gift:animation-start', ({ callId, to, giftId }) => {
+  try {
+    const toUserId = to?.toString() || to;
+    const recipientSocketId = connectedUsers.get(toUserId);
+
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('gift:animation-start', {
+        from: userId,
+        callId,
+        giftId,
+        timestamp: new Date()
+      });
+    }
+  } catch (error) {
+    logger.error(`Error syncing gift animation: ${error.message}`);
+  }
+});
+
+socket.on('gift:animation-end', ({ callId, to, giftId }) => {
+  try {
+    const toUserId = to?.toString() || to;
+    const recipientSocketId = connectedUsers.get(toUserId);
+
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('gift:animation-end', {
+        from: userId,
+        callId,
+        giftId,
+        timestamp: new Date()
+      });
+    }
+  } catch (error) {
+    logger.error(`Error syncing gift animation end: ${error.message}`);
+  }
+});
+
     
   });
 

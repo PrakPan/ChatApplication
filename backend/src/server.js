@@ -44,6 +44,10 @@ const passwordResetRoutes = require('./routes/passwordResetRoutes');
 const FreeTarget = require('./models/FreeTarget');
 const { scheduleJob } = require('./utils/cronJobs');
 
+const giftRoutes = require('./routes/giftRoutes');
+
+
+
 // Initialize express
 const app = express();
 const server = http.createServer(app);
@@ -156,6 +160,8 @@ app.use('/api/v1/agents', agentRoutes);
 // app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/withdrawals',withdrawalRoutes);
 app.use('/api/v1/levels', levelRoutes);
+// Register routes
+app.use('/api/v1/gifts', giftRoutes);
 
 
 // Socket.io handler
