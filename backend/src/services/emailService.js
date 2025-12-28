@@ -8,12 +8,19 @@ if (!process.env.TOKEN) {
   throw new Error('MAILTRAP TOKEN is not defined in environment variables');
 }
 
+
+// const transporter = nodemailer.createTransport(
+//   MailtrapTransport({
+//     token: process.env.TOKEN,
+//   })
+// );
+
 var transporter = nodemailer.createTransport({
-  host: "sandbox.smtp.mailtrap.io",
-  port: 2525,
+  host: "live.smtp.mailtrap.io",
+  port: 587,
   auth: {
-    user: "32605cf66afc15",
-    pass: "734c12b180df96"
+    user: "smtp@mailtrap.io",
+    pass: "bf80da639e54d1d8ec451b41bed76a11"
   }
 });
 
@@ -27,13 +34,16 @@ transporter.verify((error, success) => {
 
 
 const sendEmail = async ({ to, subject, html, text }) => {
+
+  console.log("Email Mail Options",to,subject);
   try {
     const mailOptions = {
       from: {
         name: "VideoCall Platform",
-        address: "catliveofficial@gmail.com" 
+        // address: "catliveofficial@gmail.com" 
+        address: "no-reply@catlive.in"
       },
-      to,
+      to : [to],
       subject,
       html,
       text: text || subject

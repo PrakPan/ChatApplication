@@ -57,7 +57,7 @@ const acceptCall = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Call not found');
   }
 
-  // Verify host owns this call
+  
   const host = await Host.findOne({ userId: req.user._id });
   if (!host || call.hostId.toString() !== host._id.toString()) {
     throw new ApiError(403, 'Not authorized');
@@ -69,7 +69,7 @@ const acceptCall = asyncHandler(async (req, res) => {
 
   call.status = 'ongoing';
   call.startTime = new Date();
-  call.lastBilledAt = new Date(); // Reset billing timer when call actually starts
+  call.lastBilledAt = new Date(); 
   await call.save();
 
   logger.info(`Call accepted: ${callId}`);
@@ -77,7 +77,7 @@ const acceptCall = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Call accepted', { call });
 });
 
-// NEW: Check balance and deduct coins during ongoing call
+
 const checkCallBalance = asyncHandler(async (req, res) => {
   const { callId } = req.body;
 

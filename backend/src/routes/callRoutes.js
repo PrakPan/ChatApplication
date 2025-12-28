@@ -22,4 +22,5 @@ router.post('/rate', validate(validators.rateCall), rateCall);
 router.get('/history', getCallHistory);
 router.get('/:callId', getCallDetails);
 
+
 module.exports = router;

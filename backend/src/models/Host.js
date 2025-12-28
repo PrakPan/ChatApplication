@@ -23,10 +23,9 @@ const hostSchema = new mongoose.Schema({
     default: 800,
     min: [10, 'Rate must be at least 10 coins per minute']
   },
-  // ============ NEW: Call Status Field ============
   callStatus: {
     type: String,
-    enum: ['available', 'busy', 'offline'],
+    enum: ['online', 'busy', 'offline'],
     default: 'offline'
   },
   currentCallId: {
