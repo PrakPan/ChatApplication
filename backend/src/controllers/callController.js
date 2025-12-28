@@ -212,7 +212,7 @@ const endCall = asyncHandler(async (req, res) => {
       
       await Transaction.create({
         userId: call.userId,
-        type: 'call_debit_final',
+        type: 'call_debit',
         amount: remainingCoins,
         coins: remainingCoins,
         status: 'completed',
@@ -228,7 +228,7 @@ const endCall = asyncHandler(async (req, res) => {
         
         await Transaction.create({
           userId: call.userId,
-          type: 'call_debit_final',
+          type: 'call_debit',
           amount: coinsAvailable,
           coins: coinsAvailable,
           status: 'completed',

@@ -23,6 +23,18 @@ const hostSchema = new mongoose.Schema({
     default: 800,
     min: [10, 'Rate must be at least 10 coins per minute']
   },
+  // ============ NEW: Call Status Field ============
+  callStatus: {
+    type: String,
+    enum: ['available', 'busy', 'offline'],
+    default: 'offline'
+  },
+  currentCallId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Call',
+    default: null
+  },
+  // ===============================================
   onlineTimeLogs: [{
     startTime: {
       type: Date,
@@ -106,10 +118,9 @@ const hostSchema = new mongoose.Schema({
 });
 
 hostSchema.index({ agentId: 1 });
-
-// Index for better query performance on online status and last seen
 hostSchema.index({ isOnline: 1, lastSeen: -1 });
 hostSchema.index({ userId: 1, isOnline: 1 });
+hostSchema.index({ callStatus: 1 }); // NEW INDEX
 
 hostSchema.methods.getRateByGrade = function() {
   const gradeRates = {
@@ -125,6 +136,25 @@ hostSchema.virtual('approvedPhotosCount').get(function() {
   return this.photos.filter(photo => photo.approvalStatus === 'approved').length;
 });
 
+// ============ NEW: Call Status Methods ============
+hostSchema.methods.setCallBusy = async function(callId) {
+  this.callStatus = 'busy';
+  this.currentCallId = callId;
+  await this.save();
+  console.log(`Host ${this._id} is now busy on call ${callId}`);
+};
+
+hostSchema.methods.setCallAvailable = async function() {
+  this.callStatus = this.isOnline ? 'available' : 'offline';
+  this.currentCallId = null;
+  await this.save();
+  console.log(`Host ${this._id} is now ${this.callStatus}`);
+};
+
+hostSchema.methods.isAvailableForCall = function() {
+  return this.isOnline && this.callStatus === 'available' && this.status === 'approved';
+};
+// ================================================
 
 hostSchema.virtual('freeTargetEnabled').get(async function() {
   const FreeTarget = require('./FreeTarget');
@@ -132,17 +162,17 @@ hostSchema.virtual('freeTargetEnabled').get(async function() {
   return freeTarget?.isEnabled || false;
 });
 
-// Method to check if host can go online
 hostSchema.methods.canGoOnline = function() {
   return this.status === 'approved' && this.approvedPhotosCount >= 3;
 };
 
 hostSchema.methods.startOnlineSession = async function() {
   if (this.isOnline) {
-    return; // Already online
+    return;
   }
   
   this.isOnline = true;
+  this.callStatus = 'available'; // NEW: Set as available
   this.onlineTimeLogs.push({
     startTime: new Date(),
     endTime: null,
@@ -153,15 +183,15 @@ hostSchema.methods.startOnlineSession = async function() {
   console.log(`Host ${this._id} went online at ${new Date()}`);
 };
 
-// Method to end online session
 hostSchema.methods.endOnlineSession = async function() {
   if (!this.isOnline) {
-    return; // Already offline
+    return;
   }
   
   this.isOnline = false;
+  this.callStatus = 'offline'; // NEW: Set as offline
+  this.currentCallId = null; // NEW: Clear call ID
   
-  // Find the active session (last log without endTime)
   const activeSession = this.onlineTimeLogs[this.onlineTimeLogs.length - 1];
   
   if (activeSession && !activeSession.endTime) {
@@ -177,7 +207,6 @@ hostSchema.methods.endOnlineSession = async function() {
   await this.save();
 };
 
-// Method to get today's total online time
 hostSchema.methods.getTodayOnlineTime = function() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -192,17 +221,14 @@ hostSchema.methods.getTodayOnlineTime = function() {
     
     const sessionStart = new Date(log.startTime);
     
-    // Skip sessions that started before today
     if (sessionStart < todayStart) continue;
     
-    // If session is still active
     if (!log.endTime) {
       const now = new Date();
       if (now > todayStart) {
         totalTime += Math.floor((now - sessionStart) / 1000);
       }
     } else {
-      // Completed session
       const sessionEnd = new Date(log.endTime);
       if (sessionEnd >= todayStart && sessionStart <= todayEnd) {
         const start = sessionStart > todayStart ? sessionStart : todayStart;
@@ -227,13 +253,19 @@ hostSchema.pre('save', function(next) {
     }
   }
   
-  // Update lastSeen when going offline
+  // Update lastSeen and callStatus when going offline
   if (this.isModified('isOnline') && !this.isOnline) {
     this.lastSeen = new Date();
+    this.callStatus = 'offline'; // NEW
+    this.currentCallId = null; // NEW
+  }
+  
+  // Auto-update callStatus based on isOnline
+  if (this.isModified('isOnline') && this.isOnline && this.callStatus === 'offline') {
+    this.callStatus = 'available'; // NEW
   }
   
   next();
 });
-
 
 module.exports = mongoose.model('Host', hostSchema);
