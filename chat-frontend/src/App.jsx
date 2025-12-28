@@ -76,6 +76,14 @@ function AppRoutes() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                 { (user?.role == 'admin') && <AdminPanel/> }
+                </ProtectedRoute>
+              }
+            />
             {/* Protected Routes */}
             <Route
               path="/"
@@ -86,14 +94,14 @@ function AppRoutes() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/admin-panel"
               element={
                 <ProtectedRoute>
                  <AdminPanel/>
                 </ProtectedRoute>
               }
-            />
+            /> */}
             
             <Route
               path="/profile"
