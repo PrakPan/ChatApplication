@@ -203,6 +203,50 @@ process.on('uncaughtException', (err) => {
 
 scheduleJob();
 
+// async function createAdmin() {
+//   try {
+//     await mongoose.connect(process.env.MONGODB_URI);
+
+//     const adminEmail = 'admin@catlive.in';
+//     const adminPhone = '9999900000';
+
+//     // Check if admin already exists
+//     const existingAdmin = await User.findOne({
+//       $or: [{ email: adminEmail }, { role: 'admin' }]
+//     });
+
+//     if (existingAdmin) {
+//       console.log('⚠️ Admin already exists');
+//       process.exit(0);
+//     }
+
+//     const adminUser = new User({
+//       name: 'Admin',
+//       email: adminEmail,
+//       phone: adminPhone,
+//       password: 'Admin@12345',
+//       role: 'admin',
+//       country: 'India',
+//       dob: new Date('2000-01-01'),
+//       gender: 'other',
+//       isVerified: true,
+//       isActive: true
+//     });
+
+//     await adminUser.save();
+
+//     console.log('🎉 Admin user created successfully');
+//     console.log('📧 Email:', adminEmail);
+//     console.log('🔑 Password: Admin@12345');
+//   } catch (error) {
+//     console.error('❌ Failed to create admin:', error.message);
+//   } finally {
+//     await mongoose.disconnect();
+//     process.exit(0);
+//   }
+// }
+
+// createAdmin();
 // async function migrateHostGrades() {
 //   try {
 //     // Set all existing hosts to Grade D if they don't have a grade
