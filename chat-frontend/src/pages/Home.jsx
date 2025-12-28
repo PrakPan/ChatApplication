@@ -14,7 +14,7 @@ import { Coins, MessageCircle } from 'lucide-react';
 
 export const Home = () => {
   const { user, logout } = useAuth();
-  const { socket } = useSocket();
+  const { socket,onHostStatusChange } = useSocket();
   const navigate = useNavigate();
   const [hosts, setHosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +43,35 @@ export const Home = () => {
       socket.off('chat:message');
     };
   }, [socket]);
+
+   useEffect(() => {
+    if (!onHostStatusChange) return;
+
+    const unsubscribe = onHostStatusChange((data) => {
+      console.log('🔄 Updating host status:', data);
+      
+      setHosts(prevHosts => {
+        return prevHosts.map(host => {
+          if (host._id === data.hostId || host.userId?._id === data.userId) {
+            return {
+              ...host,
+              isOnline: data.isOnline,
+              lastSeen: data.timestamp
+            };
+          }
+          return host;
+        }).filter(host => {
+          return true;
+        });
+      });
+
+      if (data.isOnline) {
+        toast.success(`A host is now online!`, { duration: 2000 });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [onHostStatusChange]);
 
   const fetchHosts = async () => {
     try {

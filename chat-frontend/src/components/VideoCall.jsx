@@ -166,7 +166,7 @@ export const VideoCallComponent = ({
         callInitializedRef.current = true;
 
         if (incomingOffer && remoteUserId) {
-          console.log('📲 Accepting incoming call...');
+          console.log('📲 Accepting incoming call...',callId);
           await acceptCall(remoteUserId, incomingOffer, callId);
         } else if (!isHost && callId && remoteUserId) {
           console.log('📞 Starting outgoing call...');

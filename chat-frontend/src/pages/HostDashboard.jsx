@@ -25,7 +25,7 @@ const HostDashboard = () => {
   const [incomingCall, setIncomingCall] = useState(null);
   const [selectedHost, setSelectedHost] = useState(null);
   
-  const { socket, connected } = useSocket();
+  const { socket, connected,onHostStatusChange, emitHostStatusChange } = useSocket();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -94,6 +94,30 @@ const HostDashboard = () => {
       socket.off('host:online');
     };
   }, [socket, connected, isOnline]);
+
+
+  useEffect(() => {
+    if (!onHostStatusChange) return;
+
+    const unsubscribe = onHostStatusChange((data) => {
+      console.log('🔄 Host Dashboard: Updating host status:', data);
+      
+      setHosts(prevHosts => {
+        return prevHosts.map(host => {
+          if (host._id === data.hostId || host.userId?._id === data.userId) {
+            return {
+              ...host,
+              isOnline: data.isOnline,
+              lastSeen: data.timestamp
+            };
+          }
+          return host;
+        });
+      });
+    });
+
+    return () => unsubscribe();
+  }, [onHostStatusChange]);
 
   // useEffect(() => {
   //   if (user?.role === 'host' || user?.role == 'coinSeller') {
@@ -316,7 +340,7 @@ const HostDashboard = () => {
     }
   };
 
-  const toggleOnlineStatus = async () => {
+   const toggleOnlineStatus = async () => {
     try {
       setTogglingOnline(true);
       const token = localStorage.getItem('accessToken');
@@ -332,17 +356,19 @@ const HostDashboard = () => {
       if (data.success) {
         const newOnlineStatus = data.data.isOnline;
         setIsOnline(newOnlineStatus);
+        
+        // Emit socket event for real-time update
+        if (emitHostStatusChange && hostProfile?._id) {
+          emitHostStatusChange(hostProfile._id, newOnlineStatus);
+        }
+        
         toast.success(`You are now ${newOnlineStatus ? 'online' : 'offline'}`);
         
-        // If going offline and there's an incoming call, reject it
         if (!newOnlineStatus && incomingCall) {
           rejectIncomingCall(incomingCall.from, incomingCall.callId);
         }
         
         return true;
-      } else {
-        toast.error(data.message || 'Failed to toggle online status');
-        return false;
       }
     } catch (error) {
       console.error('Failed to toggle online status:', error);

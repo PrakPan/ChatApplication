@@ -10,6 +10,7 @@ export const SocketProvider = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
   const socketRef = useRef(null);
   const isHostOnlineRef = useRef(false);
+  const hostStatusCallbacks = useRef(new Set());
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -32,12 +33,17 @@ export const SocketProvider = ({ children }) => {
         console.log('✅ Socket connected:', newSocket.id);
         setConnected(true);
         
-        // Authenticate socket with user ID
         if (user?._id) {
           newSocket.emit('authenticate', user._id);
           console.log('🔐 Authenticated socket with user ID:', user._id);
         }
       });
+
+      newSocket.on('host:status-changed', (data) => {
+        console.log('📡 Host status changed:', data);
+        hostStatusCallbacks.current.forEach(callback => callback(data));
+      });
+
 
       newSocket.on('disconnect', (reason) => {
         console.log('❌ Socket disconnected:', reason);
@@ -68,6 +74,8 @@ export const SocketProvider = ({ children }) => {
       });
 
       setSocket(newSocket);
+
+
 
       // Handle beforeunload - mark host offline when tab closes
       // const handleBeforeUnload = async (e) => {
@@ -131,6 +139,20 @@ export const SocketProvider = ({ children }) => {
     }
   }, [isAuthenticated, user]);
 
+   const onHostStatusChange = (callback) => {
+    hostStatusCallbacks.current.add(callback);
+    return () => hostStatusCallbacks.current.delete(callback);
+  };
+
+  // Emit host status change
+  const emitHostStatusChange = (hostId, isOnline) => {
+    if (socketRef.current && connected) {
+      const event = isOnline ? 'host:go-online' : 'host:go-offline';
+      socketRef.current.emit(event, { hostId });
+      console.log(`📤 Emitted ${event}:`, hostId);
+    }
+  };
+
 
   // const setHostOnlineStatus = (isOnline) => {
   //   isHostOnlineRef.current = isOnline;
@@ -168,6 +190,8 @@ export const SocketProvider = ({ children }) => {
     on,
     off,
     // setHostOnlineStatus 
+    onHostStatusChange,
+    emitHostStatusChange
   };
 
   return (
