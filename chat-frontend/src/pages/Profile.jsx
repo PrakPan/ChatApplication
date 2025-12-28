@@ -266,6 +266,54 @@ export const Profile = () => {
     return null;
   };
 
+
+  // Avatar with Frame component - Frame wraps around the border
+const AvatarWithFrame = ({ avatar, frameUrl, name, size = 'w-64 h-64', textSize = 'text-4xl', ringSize = 'ring-4' }) => {
+  // Calculate frame size (larger than avatar to wrap around)
+  const getFrameSize = (avatarSize) => {
+    const sizeMap = {
+      'w-8 h-8': 'w-12 h-12',
+      'w-12 h-12': 'w-16 h-16',
+      'w-32 h-32': 'w-40 h-40',
+      'w-64 h-64': 'w-[9rem] h-[13rem]',
+    };
+    return sizeMap[avatarSize] || 'w-40 h-40';
+  };
+
+  const frameSize = getFrameSize(size);
+
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Frame Overlay - Outside the avatar */}
+      {frameUrl && !uploading && (
+        <img
+          src={frameUrl}
+          alt="Level Frame"
+          className={`absolute ${frameSize} pointer-events-none z-10 w-[10rem] h-[13rem] mr-[13px] -top-[33.5%]`}
+          style={{ objectFit: 'cover' }}
+        />
+      )}
+      
+      {/* Avatar */}
+      {uploading ? (
+        <div className={`${size} rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center shadow-2xl ${ringSize} ring-purple-100`}>
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent"></div>
+        </div>
+      ) : avatar ? (
+        <img
+          src={avatar}
+          alt={name}
+          className={`${size} rounded-full object-cover shadow-2xl ${ringSize} ring-purple-100`}
+        />
+      ) : (
+        <div className={`${size} rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center text-white ${textSize} font-bold shadow-2xl ${ringSize} ring-purple-100`}>
+          {name?.charAt(0)?.toUpperCase() || 'U'}
+        </div>
+      )}
+    </div>
+  );
+};
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
@@ -305,17 +353,14 @@ export const Profile = () => {
           <div className="flex flex-col items-center mb-6">
             <div className="relative">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center text-white text-4xl font-bold shadow-2xl ring-4 ring-purple-100">
-                {uploading ? (
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent"></div>
-                ) : user?.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  user?.name?.charAt(0)?.toUpperCase() || 'U'
-                )}
+              
+                  <AvatarWithFrame
+                avatar={user?.avatar}
+                frameUrl={user?.frameUrl}
+                name={user?.name}
+                size="w-32 h-32"
+                textSize="text-4xl"
+              />
               </div>
               <input
                 ref={fileInputRef}
@@ -327,7 +372,7 @@ export const Profile = () => {
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="absolute bottom-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
+                className="absolute z-[88] bottom-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
               >
                 <ImagePlus className="w-5 h-5 " />
               </button>

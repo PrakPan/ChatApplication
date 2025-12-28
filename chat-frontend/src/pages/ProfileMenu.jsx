@@ -37,6 +37,33 @@ export const ProfileMenu = ({ user, onLogout }) => {
     setIsOpen(false);
   };
 
+  const AvatarWithFrame = ({ avatar, frameUrl, name, size = 'w-8 h-8' }) => (
+    <div className={`relative ${size}`}>
+      {/* Avatar */}
+      {avatar ? (
+        <img
+          src={avatar}
+          alt={name}
+          className={`${size} rounded-full object-cover`}
+        />
+      ) : (
+        <div className={`${size} rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ${size === 'w-8 h-8' ? 'text-sm' : 'text-lg'}`}>
+          {getInitials(name)}
+        </div>
+      )}
+      
+      {/* Frame Overlay */}
+      {frameUrl && (
+        <img
+          src={frameUrl}
+          alt="Level Frame"
+          className={`absolute inset-0 ${size} pointer-events-none`}
+          style={{ objectFit: 'contain' }}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="relative" ref={menuRef}>
       {/* Profile Button */}
@@ -44,17 +71,12 @@ export const ProfileMenu = ({ user, onLogout }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 bg-white rounded-full px-3 py-2 shadow-sm hover:shadow-md transition-all border border-gray-200"
       >
-        {user?.avatar ? (
-          <img
-            src={user.avatar}
-            alt={user.name}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-            {getInitials(user?.name)}
-          </div>
-        )}
+        <AvatarWithFrame 
+          avatar={user?.avatar}
+          frameUrl={user?.frameUrl}
+          name={user?.name}
+          size="w-8 h-8"
+        />
         <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -64,17 +86,12 @@ export const ProfileMenu = ({ user, onLogout }) => {
           {/* User Info */}
           <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 border-b border-gray-100">
             <div className="flex items-center space-x-3">
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-white"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg ring-2 ring-white">
-                  {getInitials(user?.name)}
-                </div>
-              )}
+              <AvatarWithFrame 
+                avatar={user?.avatar}
+                frameUrl={user?.frameUrl}
+                name={user?.name}
+                size="w-12 h-12"
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 truncate">{user?.name}</p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
