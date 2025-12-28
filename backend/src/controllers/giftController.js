@@ -54,9 +54,9 @@ const sendGift = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Call not found');
   }
 
-  if (call.status !== 'ongoing') {
-    throw new ApiError(400, 'Can only send gifts during ongoing calls');
-  }
+  // if (call.status !== 'ongoing') {
+  //   throw new ApiError(400, 'Can only send gifts during ongoing calls');
+  // }
 
   // Verify user is part of the call
   if (call.userId.toString() !== req.user._id.toString()) {
