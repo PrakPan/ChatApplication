@@ -597,7 +597,7 @@ const AvatarWithFrame = ({ avatar, frameUrl, name, size = 'w-64 h-64', textSize 
               </button>
             )}
 
-            <button 
+           {user?.role === 'host' && <button
               onClick={() => navigate('/withdraw')}
               className="w-full flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 rounded-2xl transition-all duration-300 group"
             >
@@ -607,7 +607,7 @@ const AvatarWithFrame = ({ avatar, frameUrl, name, size = 'w-64 h-64', textSize 
                 </div>
                 <span className="text-base font-semibold text-gray-700">Withdrawal</span>
               </div>
-            </button>
+            </button>}
           </div>
         </div>
 
