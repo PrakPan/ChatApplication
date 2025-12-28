@@ -285,13 +285,6 @@ const endCall = asyncHandler(async (req, res) => {
   hostDoc.totalEarnings += hostEarnings;
   hostDoc.totalCalls += 1;
   
-  // IMPORTANT: Only set host offline if they manually disconnected
-  // Don't change online status if call just ended normally
-  if (hostManuallyDisconnected === true && isHost) {
-    hostDoc.isOnline = false;
-    logger.info(`Host ${hostDoc._id} manually disconnected and went offline`);
-  }
-  
   await hostDoc.save();
 
   // Update host's charm level
