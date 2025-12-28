@@ -12,6 +12,7 @@
     "axios": "^1.6.2",
     "css": "^3.0.0",
     "date-fns": "^3.0.0",
+    "lottie-web": "^5.13.0",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
