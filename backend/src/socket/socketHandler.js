@@ -55,6 +55,70 @@ const socketHandler = (io) => {
 
     socket.broadcast.emit("user:online", { userId });
 
+  // ==================== HOST STATUS EVENTS ====================
+
+  // When a host goes online
+  socket.on("host:go-online", async ({ hostId }) => {
+    try {
+      console.log("📡 Host going online:", hostId);
+      
+      const host = await Host.findById(hostId);
+      if (!host) {
+        socket.emit("host:status-error", { message: "Host not found" });
+        return;
+      }
+
+      // Update host status
+      host.isOnline = true;
+      host.lastSeen = new Date();
+      await host.save();
+
+      // Broadcast to ALL connected users
+      io.emit("host:status-changed", {
+        hostId: host._id,
+        userId: host.userId,
+        isOnline: true,
+        timestamp: new Date()
+      });
+
+      logger.info(`Host ${hostId} is now online`);
+    } catch (error) {
+      logger.error(`Error setting host online: ${error.message}`);
+      socket.emit("host:status-error", { message: "Failed to update status" });
+    }
+  });
+
+  // When a host goes offline
+  socket.on("host:go-offline", async ({ hostId }) => {
+    try {
+      console.log("📡 Host going offline:", hostId);
+      
+      const host = await Host.findById(hostId);
+      if (!host) {
+        socket.emit("host:status-error", { message: "Host not found" });
+        return;
+      }
+
+      // Update host status
+      host.isOnline = false;
+      host.lastSeen = new Date();
+      await host.save();
+
+      // Broadcast to ALL connected users
+      io.emit("host:status-changed", {
+        hostId: host._id,
+        userId: host.userId,
+        isOnline: false,
+        timestamp: new Date()
+      });
+
+      logger.info(`Host ${hostId} is now offline`);
+    } catch (error) {
+      logger.error(`Error setting host offline: ${error.message}`);
+      socket.emit("host:status-error", { message: "Failed to update status" });
+    }
+  });
+
     // ==================== DIRECT MESSAGING EVENTS ====================
 
     socket.on("chat:join", async ({ recipientId }) => {

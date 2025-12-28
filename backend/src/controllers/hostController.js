@@ -396,13 +396,15 @@ const toggleHostOnlineStatus = asyncHandler(async (req, res) => {
       host.lastSeen = new Date();
       await host.save();
       
-      // Emit socket event
-      if (req.io) {
-        req.io.emit('host:offline', { 
-          hostId: host._id,
-          userId: host.userId 
-        });
-      }
+    
+  if (req.io) {
+    io.emit("host:status-changed", {
+      hostId: host._id,
+      userId: host.userId,
+      isOnline: host.isOnline,
+      timestamp: new Date()
+    });
+  }
       
       logger.info(`Host force offline: ${req.user.email} - Session duration: ${sessionDuration}s`);
     }

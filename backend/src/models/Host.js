@@ -25,7 +25,7 @@ const hostSchema = new mongoose.Schema({
   },
   callStatus: {
     type: String,
-    enum: ['online', 'busy', 'offline'],
+    enum: ['available', 'busy', 'offline'],
     default: 'offline'
   },
   currentCallId: {
