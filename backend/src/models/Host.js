@@ -241,6 +241,7 @@ hostSchema.methods.getTodayOnlineTime = function() {
   return totalTime;
 };
 
+// Host.js - Update pre-save hook
 hostSchema.pre('save', function(next) {
   if (this.isModified('grade')) {
     this.ratePerMinute = this.getRateByGrade();
@@ -253,16 +254,26 @@ hostSchema.pre('save', function(next) {
     }
   }
   
-  // Update lastSeen and callStatus when going offline
+  // Only update these when MANUALLY setting isOnline to false
+  // Don't trigger on every save
   if (this.isModified('isOnline') && !this.isOnline) {
-    this.lastSeen = new Date();
-    this.callStatus = 'offline'; // NEW
-    this.currentCallId = null; // NEW
+    // Only set offline status if not already set
+    if (this.callStatus !== 'offline') {
+      this.callStatus = 'offline';
+      this.currentCallId = null;
+    }
+    // Only update lastSeen if not recently updated (within last minute)
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    if (!this.lastSeen || this.lastSeen < oneMinuteAgo) {
+      this.lastSeen = new Date();
+    }
   }
   
-  // Auto-update callStatus based on isOnline
-  if (this.isModified('isOnline') && this.isOnline && this.callStatus === 'offline') {
-    this.callStatus = 'available'; // NEW
+  // Auto-update callStatus when going online
+  if (this.isModified('isOnline') && this.isOnline) {
+    if (this.callStatus === 'offline' || !this.callStatus) {
+      this.callStatus = 'available';
+    }
   }
   
   next();

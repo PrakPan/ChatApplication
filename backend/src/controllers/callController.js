@@ -326,7 +326,6 @@ const endCall = asyncHandler(async (req, res) => {
   });
 });
 
-// Helper function to update weekly leaderboard
 async function updateWeeklyLeaderboard(userId, userType, durationInSeconds) {
   const now = new Date();
   const weekStart = new Date(now);
@@ -460,7 +459,7 @@ module.exports = {
   initiateCall,
   acceptCall,
   endCall,
-  checkCallBalance, // NEW EXPORT
+  checkCallBalance, 
   rateCall,
   getCallHistory,
   getCallDetails

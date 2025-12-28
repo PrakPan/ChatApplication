@@ -661,67 +661,64 @@ socket.on('chat:send', async ({ to, message }) => {
 
     // ==================== DISCONNECT ====================
 
-    socket.on('disconnect', async () => {
-      try {
-        connectedUsers.delete(userId);
-        socketUsers.delete(socket.id);
-        
-        console.log('❌ User disconnected:', userId);
-        console.log('📋 Remaining connected users:', connectedUsers.size);
-        
-        // Clear typing indicators
-        typingUsers.forEach((users, conversationId) => {
-          if (users.has(userId)) {
-            users.delete(userId);
-            if (users.size === 0) {
-              typingUsers.delete(conversationId);
-            }
-          }
-        });
-        
-        // End any active calls
-        activeCalls.forEach((callData, callId) => {
-          if (callData.caller === userId || callData.receiver === userId) {
-            const otherUserId = callData.caller === userId ? callData.receiver : callData.caller;
-            const otherSocketId = connectedUsers.get(otherUserId);
-            
-            if (otherSocketId) {
-              io.to(otherSocketId).emit('call:ended', {
-                from: userId,
-                callId,
-                reason: 'disconnect'
-              });
-            }
-            
-            activeCalls.delete(callId);
-          }
-        });
-        
-        // Handle host disconnect
-        if (socket.user.role === 'host') {
-          const host = await Host.findOne({ userId: socket.user._id });
-          
-          if (host && host.isOnline) {
-            host.isOnline = false;
-            host.lastSeen = new Date();
-            await host.save();
-            
-            logger.info(`Host ${socket.user.email} marked offline due to socket disconnect`);
-            
-            io.emit('host:offline', { 
-              hostId: host._id,
-              userId: socket.user._id 
-            });
-          }
+  // socketHandler.js - Update disconnect handler
+socket.on('disconnect', async () => {
+  try {
+    connectedUsers.delete(userId);
+    socketUsers.delete(socket.id);
+    
+    console.log('❌ User disconnected:', userId);
+    console.log('📋 Remaining connected users:', connectedUsers.size);
+    
+    // Clear typing indicators
+    typingUsers.forEach((users, conversationId) => {
+      if (users.has(userId)) {
+        users.delete(userId);
+        if (users.size === 0) {
+          typingUsers.delete(conversationId);
         }
-        
-        socket.broadcast.emit('user:offline', { userId });
-        
-        logger.info(`User disconnected: ${socket.user.email} (${socket.id})`);
-      } catch (error) {
-        logger.error(`Error handling disconnect for ${userId}: ${error.message}`);
       }
     });
+    
+    // End any active calls
+    activeCalls.forEach((callData, callId) => {
+      if (callData.caller === userId || callData.receiver === userId) {
+        const otherUserId = callData.caller === userId ? callData.receiver : callData.caller;
+        const otherSocketId = connectedUsers.get(otherUserId);
+        
+        if (otherSocketId) {
+          io.to(otherSocketId).emit('call:ended', {
+            from: userId,
+            callId,
+            reason: 'disconnect'
+          });
+        }
+        
+        activeCalls.delete(callId);
+      }
+    });
+    
+    // Handle host disconnect - UPDATE lastSeen but DON'T mark offline immediately
+    if (socket.user.role === 'host') {
+      const host = await Host.findOne({ userId: socket.user._id });
+      
+      if (host && host.isOnline) {
+        // Only update lastSeen, don't change isOnline
+        // The cleanup job will handle marking offline after grace period
+        host.lastSeen = new Date();
+        await host.save({ validateBeforeSave: false }); // Skip pre-save hooks
+        
+        logger.info(`Host ${socket.user.email} disconnected, lastSeen updated`);
+      }
+    }
+    
+    socket.broadcast.emit('user:offline', { userId });
+    
+    logger.info(`User disconnected: ${socket.user.email} (${socket.id})`);
+  } catch (error) {
+    logger.error(`Error handling disconnect for ${userId}: ${error.message}`);
+  }
+});
 
     socket.on('error', (error) => {
       logger.error(`Socket error for ${userId}: ${error.message}`);
@@ -729,42 +726,54 @@ socket.on('chat:send', async ({ to, message }) => {
   });
 
   // Cleanup job
-  const cleanupInactiveHosts = async () => {
-    try {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      
-      const inactiveHosts = await Host.find({
-        isOnline: true,
-        lastSeen: { $lt: fiveMinutesAgo }
-      });
+// socketHandler.js - Update cleanup job
+const cleanupInactiveHosts = async () => {
+  try {
+    // Increase to 10 minutes grace period (was 5 minutes)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    
+    const inactiveHosts = await Host.find({
+      isOnline: true,
+      lastSeen: { $lt: tenMinutesAgo }
+    });
 
-      if (inactiveHosts.length > 0) {
-        await Host.updateMany(
-          {
-            isOnline: true,
-            lastSeen: { $lt: fiveMinutesAgo }
-          },
-          {
-            $set: { isOnline: false }
-          }
-        );
+    if (inactiveHosts.length > 0) {
+      for (const host of inactiveHosts) {
+        // Check if host is still connected via socket
+        const hostUserId = host.userId.toString();
+        const isStillConnected = connectedUsers.has(hostUserId);
         
-        logger.info(`Cleanup: Marked ${inactiveHosts.length} inactive hosts as offline`);
-        
-        inactiveHosts.forEach(host => {
+        if (isStillConnected) {
+          // Host is still connected, just update lastSeen
+          host.lastSeen = new Date();
+          await host.save({ validateBeforeSave: false });
+          console.log(`✅ Host ${host._id} is still connected, updated lastSeen`);
+        } else {
+          // Host is truly disconnected, mark offline
+          host.isOnline = false;
+          host.callStatus = 'offline';
+          host.currentCallId = null;
+          await host.save();
+          
           io.emit('host:offline', { 
             hostId: host._id,
             userId: host.userId 
           });
-        });
+          
+          logger.info(`Cleanup: Marked host ${host._id} as offline`);
+        }
       }
-    } catch (error) {
-      logger.error(`Error in cleanup job: ${error.message}`);
+      
+      logger.info(`Cleanup: Processed ${inactiveHosts.length} potentially inactive hosts`);
     }
-  };
+  } catch (error) {
+    logger.error(`Error in cleanup job: ${error.message}`);
+  }
+};
 
-  const cleanupInterval = setInterval(cleanupInactiveHosts, 5 * 60 * 1000);
-  cleanupInactiveHosts();
+// Run cleanup every 5 minutes (more frequently to check)
+const cleanupInterval = setInterval(cleanupInactiveHosts, 5 * 60 * 1000);
+cleanupInactiveHosts();
 
   process.on('SIGTERM', () => {
     clearInterval(cleanupInterval);
