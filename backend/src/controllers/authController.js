@@ -4,6 +4,7 @@ const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../config/jwt');
 const logger = require('../utils/logger');
+const Level = require('../models/Level');
 
 const register = asyncHandler(async (req, res) => {
   console.log('Received registration request:', req.body);
@@ -246,6 +247,52 @@ const logout = asyncHandler(async (req, res) => {
 const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   
+  // Get level info
+  const level = await Level.findOne({ userId: user._id });
+
+  // Frame URLs
+  const levels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945737/host-photos/Level_1_zsfafn.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945737/host-photos/Level_2_wys7gf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_3_ahksl6.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_4_w4blac.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_5_qjzrgy.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_6_wiqtui.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_7_mezsy6.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_8_ho0mkc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_9_lmpfgi.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_10_j7km2v.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945740/host-photos/Level_11_aduvse.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_12_ytcxam.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_13_hefdjb.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945740/host-photos/Level_14_iutvsp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_15_u3zmdb.png"
+  ];
+
+  const charmlevels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C1_te3wbx.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C2_mwkvs1.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C3_nsjdio.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C4_x7pmj9.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C5_bhuerp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C6_jmcyaf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C7_s1oxmf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C8_saltqc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946170/host-photos/Level_C9_x2fmat.png"
+  ];
+
+  // Determine frame URL based on role and level
+  let frameUrl = null;
+  if (user.role === 'user') {
+    const currentRichLevel = level?.richLevel || 1;
+    const frameIndex = currentRichLevel - 1;
+    frameUrl = levels[frameIndex] || levels[0];
+  } else if (user.role === 'host') {
+    const currentCharmLevel = level?.charmLevel || 1;
+    const frameIndex = currentCharmLevel - 1;
+    frameUrl = charmlevels[frameIndex] || charmlevels[0];
+  }
+  
   let hostProfile = null;
   let freeTargetEnabled = false;
   
@@ -255,14 +302,15 @@ const getProfile = asyncHandler(async (req, res) => {
     const FreeTarget = require('../models/FreeTarget');
     const freeTarget = await FreeTarget.findOne({ hostId: hostProfile._id });
 
-    console.log("Free Target",freeTarget)
+    console.log("Free Target", freeTarget);
     freeTargetEnabled = freeTarget?.isEnabled || false;
   }
 
   ApiResponse.success(res, 200, 'Profile retrieved successfully', {
     user: {
       ...user.toJSON(),
-      userId: user.userId
+      userId: user.userId,
+      frameUrl
     },
     hostProfile: hostProfile ? {
       ...hostProfile.toJSON(),

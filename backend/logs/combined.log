@@ -5687,3 +5687,76 @@
 {"level":"info","message":"Cleanup: Marked host 6929c368986a057aa226abb6 as offline","service":"videocall-backend","timestamp":"2025-12-28 20:46:21"}
 {"level":"info","message":"Cleanup: Processed 1 potentially inactive hosts","service":"videocall-backend","timestamp":"2025-12-28 20:46:21"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-12-28 20:48:12"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:00:06"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:00:06"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:00:06"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-29 00:00:06"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-01.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-29 00:00:07"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:00:07"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-29 00:00:10"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (FkdC5SQyiCrSeMU-AAAB) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:00:16"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (FkdC5SQyiCrSeMU-AAAB)","service":"videocall-backend","timestamp":"2025-12-29 00:00:25"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (gOFCcqBjrw6L4k-XAAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:00:26"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:01:01"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:01:01"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:01:01"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-29 00:01:01"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-01.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-29 00:01:01"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:01:02"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (oE4GW30w-zeysuaoAAAB) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:01:02"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-29 00:01:05"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:01:53"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:01:53"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:01:53"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-29 00:01:53"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-29 00:01:53"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:01:54"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (ElI8w5Txga_8djreAAAB) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:01:54"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-29 00:01:57"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (ElI8w5Txga_8djreAAAB)","service":"videocall-backend","timestamp":"2025-12-29 00:04:16"}
+{"ip":"::1","level":"error","message":"Level is not defined","method":"GET","service":"videocall-backend","stack":"ReferenceError: Level is not defined\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/authController.js:250:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":500,"timestamp":"2025-12-29 00:04:17","url":"/api/v1/auth/profile"}
+{"level":"info","message":"User logged in: prakhar@gmail.com (userId: 278418)","service":"videocall-backend","timestamp":"2025-12-29 00:04:25"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (7hfmBeKInQMtRxJUAAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:04:25"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:04:55"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:04:55"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2025-12-29 00:04:55"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2025-12-29 00:04:55"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2025-12-29 00:04:55"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:04:56"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (AnsG5T-iDpB7Tj0WAAAB) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:04:56"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (AnsG5T-iDpB7Tj0WAAAB)","service":"videocall-backend","timestamp":"2025-12-29 00:04:58"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2025-12-29 00:04:59"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (IfGk_LNpSHyH7x-kAAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:04:59"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:05:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:05:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:05:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:05:00"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (IfGk_LNpSHyH7x-kAAAD)","service":"videocall-backend","timestamp":"2025-12-29 00:07:44"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (ZGdIWjLcK9uK1WQyAAAF) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:07:44"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:10:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:10:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:10:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:10:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:15:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:15:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:15:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:15:00"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (ZGdIWjLcK9uK1WQyAAAF)","service":"videocall-backend","timestamp":"2025-12-29 00:15:04"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (jUpy4n8mEGrnaB3fAAAH) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:15:04"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (jUpy4n8mEGrnaB3fAAAH)","service":"videocall-backend","timestamp":"2025-12-29 00:19:19"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (ra2bmJmeY10d6cIYAAAJ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:19:19"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (ra2bmJmeY10d6cIYAAAJ)","service":"videocall-backend","timestamp":"2025-12-29 00:19:53"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (griipal43NxDT4XTAAAL) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:19:54"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:20:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:20:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:20:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:20:00"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (griipal43NxDT4XTAAAL)","service":"videocall-backend","timestamp":"2025-12-29 00:20:18"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (VDTz35v-qp0dN1lCAAAN) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:20:18"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (VDTz35v-qp0dN1lCAAAN)","service":"videocall-backend","timestamp":"2025-12-29 00:24:56"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (GCgc5U4D2ICEpOVgAAAP) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2025-12-29 00:24:57"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:25:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2025-12-29 00:25:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:25:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 0, Completed: 0","service":"videocall-backend","timestamp":"2025-12-29 00:25:00"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2025-12-29 00:25:10"}

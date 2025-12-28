@@ -61,6 +61,55 @@ const getProfile = asyncHandler(async (req, res) => {
     ? Math.max(0, nextCharmLevelData.beans - totalBeansEarned)
     : 0;
 
+  // Frame URLs
+  const levels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945737/host-photos/Level_1_zsfafn.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945737/host-photos/Level_2_wys7gf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_3_ahksl6.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_4_w4blac.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_5_qjzrgy.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_6_wiqtui.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_7_mezsy6.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_8_ho0mkc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_9_lmpfgi.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_10_j7km2v.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945740/host-photos/Level_11_aduvse.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_12_ytcxam.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_13_hefdjb.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945740/host-photos/Level_14_iutvsp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_15_u3zmdb.png"
+  ];
+
+  const charmlevels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C1_te3wbx.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C2_mwkvs1.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C3_nsjdio.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C4_x7pmj9.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C5_bhuerp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C6_jmcyaf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C7_s1oxmf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C8_saltqc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946170/host-photos/Level_C9_x2fmat.png"
+  ];
+
+  // Determine frame URL based on role and level
+  let frameUrl = null;
+  if (user.role === 'user') {
+    // For users, use rich level (index = level - 1)
+    const frameIndex = currentRichLevel - 1;
+    frameUrl = levels[frameIndex] || levels[0]; // Fallback to level 1 if invalid
+  } else if (user.role === 'host') {
+    // For hosts, use charm level (index = level - 1)
+    const frameIndex = currentCharmLevel - 1;
+    frameUrl = charmlevels[frameIndex] || charmlevels[0]; // Fallback to level 1 if invalid
+  }
+
+  // Add frameUrl to user object
+  const userWithFrame = {
+    ...user,
+    frameUrl
+  };
+
   // Get follow stats
   const [followersCount, followingCount] = await Promise.all([
     Follow.getFollowerCount(user._id),
@@ -93,7 +142,7 @@ const getProfile = asyncHandler(async (req, res) => {
   }
 
   ApiResponse.success(res, 200, 'Profile retrieved', {
-    user,
+    user: userWithFrame,
     level: {
       richLevel: currentRichLevel,
       charmLevel: currentCharmLevel,
