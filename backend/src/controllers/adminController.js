@@ -806,12 +806,43 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
 
+  // Frame URLs
+  const richLevels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945737/host-photos/Level_1_zsfafn.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945737/host-photos/Level_2_wys7gf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_3_ahksl6.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_4_w4blac.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_5_qjzrgy.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_6_wiqtui.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_7_mezsy6.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_8_ho0mkc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_9_lmpfgi.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_10_j7km2v.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945740/host-photos/Level_11_aduvse.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_12_ytcxam.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945739/host-photos/Level_13_hefdjb.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945740/host-photos/Level_14_iutvsp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766945738/host-photos/Level_15_u3zmdb.png"
+  ];
+
+  const charmLevels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C1_te3wbx.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C2_mwkvs1.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C3_nsjdio.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C4_x7pmj9.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C5_bhuerp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C6_jmcyaf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C7_s1oxmf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C8_saltqc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946170/host-photos/Level_C9_x2fmat.png"
+  ];
+
   const buildLeaderboard = async (userType) => {
     const leaderboard = await WeeklyLeaderboard.find({
       userType,
       weekStartDate: weekStart
     })
-      .populate('userId', 'name email avatar')
+      .populate('userId', 'name email avatar role')
       .sort({ totalCallDuration: -1 })
       .limit(50)
       .lean();
@@ -821,14 +852,39 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     const levels = await Level.find({ userId: { $in: userIds } });
     const levelMap = {};
     levels.forEach(l => {
-      levelMap[l.userId.toString()] = l.currentLevel;
+      levelMap[l.userId.toString()] = {
+        richLevel: l.richLevel || 1,
+        charmLevel: l.charmLevel || 1
+      };
     });
 
-    return leaderboard.map((entry, index) => ({
-      ...entry,
-      rank: index + 1,
-      level: levelMap[entry.userId._id.toString()] || 1
-    }));
+    return leaderboard.map((entry, index) => {
+      const userId = entry.userId._id.toString();
+      const levelData = levelMap[userId] || { richLevel: 1, charmLevel: 1 };
+      const userRole = entry.userId.role;
+
+      // Determine frameUrl based on role
+      let frameUrl = null;
+      if (userRole === 'user') {
+        const frameIndex = levelData.richLevel - 1;
+        frameUrl = richLevels[frameIndex] || richLevels[0];
+      } else if (userRole === 'host') {
+        const frameIndex = levelData.charmLevel - 1;
+        frameUrl = charmLevels[frameIndex] || charmLevels[0];
+      }
+
+      return {
+        ...entry,
+        rank: index + 1,
+        richLevel: levelData.richLevel,
+        charmLevel: levelData.charmLevel,
+        frameUrl,
+        userId: {
+          ...entry.userId,
+          frameUrl
+        }
+      };
+    });
   };
 
   const result = {};

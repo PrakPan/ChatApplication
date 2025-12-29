@@ -179,11 +179,28 @@ const getOnlineHosts = asyncHandler(async (req, res) => {
 const getHostDetails = asyncHandler(async (req, res) => {
   const { hostId } = req.params;
 
-  const host = await Host.findById(hostId).populate('userId', 'name avatar email').lean();
+  const host = await Host.findById(hostId)
+    .populate('userId', 'name avatar email role country dob')
+    .lean();
   
   if (!host) {
     throw new ApiError(404, 'Host not found');
   }
+
+  // Calculate age from dob
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
 
   // Get host statistics
   const totalCalls = await Call.countDocuments({ 
@@ -200,10 +217,32 @@ const getHostDetails = asyncHandler(async (req, res) => {
   const level = await Level.findOne({ userId: host.userId._id });
   const dynamicRate = level ? level.getRatePerMinute() : host.ratePerMinute;
 
+  // Frame URLs for charm levels
+  const charmLevels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C1_te3wbx.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C2_mwkvs1.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C3_nsjdio.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C4_x7pmj9.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C5_bhuerp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C6_jmcyaf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C7_s1oxmf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C8_saltqc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946170/host-photos/Level_C9_x2fmat.png"
+  ];
+
+  // Determine frameUrl based on charm level
+  const currentCharmLevel = level?.charmLevel || 1;
+  const frameIndex = currentCharmLevel - 1;
+  const frameUrl = charmLevels[frameIndex] || charmLevels[0];
+
+  // Calculate age
+  const age = calculateAge(host.userId.dob);
+  const country = host.userId.country || null;
+
   const stats = {
     totalCalls,
     avgRating: avgRating[0]?.avgRating || 0,
-    charmLevel: level?.charmLevel || 1,
+    charmLevel: currentCharmLevel,
     richLevel: level?.richLevel || 1,
     totalBeansEarned: level?.totalBeansEarned || 0,
     currentRate: dynamicRate
@@ -212,7 +251,14 @@ const getHostDetails = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Host details retrieved', { 
     host: {
       ...host,
-      ratePerMinute: dynamicRate // Override with dynamic rate
+      ratePerMinute: dynamicRate,
+      frameUrl,
+      age,
+      country,
+      userId: {
+        ...host.userId,
+        frameUrl
+      }
     }, 
     stats 
   });
