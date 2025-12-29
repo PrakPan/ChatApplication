@@ -7,7 +7,7 @@ const { COIN_PACKAGES } = require('../utils/constants');
 const logger = require('../utils/logger');
 
 const getCoinPackages = asyncHandler(async (req, res) => {
-  ApiResponse.success(res, 200, 'Coin packages retrieved', COIN_PACKAGES);
+  ApiResponse.success(res, 200, 'Coin packages retrieved', {coin_packages:COIN_PACKAGES,offline_seller:[{name: "Sujay", number: "7903722896"},{name: "Neha", number: "7903722896"},{name: "Karan", number: "7903722896"}]});
 });
 
 const getCoinBalance = asyncHandler(async (req, res) => {
