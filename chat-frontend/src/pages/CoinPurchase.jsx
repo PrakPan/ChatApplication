@@ -28,7 +28,7 @@ export const CoinPurchase = () => {
   const fetchPackages = async () => {
     try {
       const response = await coinService.getPackages();
-      setPackages(response.data);
+      setPackages(response.data.coin_packages);
     } catch (error) {
       toast.error('Failed to load packages');
     } finally {
