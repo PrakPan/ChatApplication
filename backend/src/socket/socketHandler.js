@@ -585,21 +585,6 @@ const socketHandler = (io) => {
             startTime: new Date(),
           });
 
-          // NEW: Update host status to busy
-      const host = await Host.findOne({ userId: toUserId });
-      if (host) {
-        await host.setCallBusy(callId);
-        
-        // Broadcast status change
-        io.emit("host:status-changed", {
-          hostId: host._id,
-          userId: host.userId,
-          isOnline: true,
-          callStatus: 'busy',
-          timestamp: new Date()
-        });
-      }
-
           io.to(recipientSocketId).emit("call:offer", {
             from: userId,
             offer,
@@ -673,7 +658,7 @@ const socketHandler = (io) => {
       }
     });
 
-    socket.on("call:reject", async ({ to, callId, reason }) => {
+    socket.on("call:reject", ({ to, callId, reason }) => {
       console.log("📞 CALL REJECTED by", userId);
       const toUserId = to?.toString() || to;
       const recipientSocketId = connectedUsers.get(toUserId);
@@ -688,26 +673,11 @@ const socketHandler = (io) => {
         // Remove from active calls
         activeCalls.delete(callId);
 
-        // NEW: Update host status back to available
-    const host = await Host.findOne({ userId: toUserId });
-    if (host && host.isOnline) {
-      await host.setCallAvailable();
-      
-      // Broadcast status change
-      io.emit("host:status-changed", {
-        hostId: host._id,
-        userId: host.userId,
-        isOnline: true,
-        callStatus: 'available',
-        timestamp: new Date()
-      });
-    }
-
         logger.info(`Call rejected by ${userId}`);
       }
     });
 
-    socket.on("call:end", async ({ to, callId }) => {
+    socket.on("call:end", ({ to, callId }) => {
       console.log("📞 CALL ENDED by", userId);
       const toUserId = to?.toString() || to;
       const recipientSocketId = connectedUsers.get(toUserId);
@@ -720,25 +690,6 @@ const socketHandler = (io) => {
 
         // Remove from active calls
         activeCalls.delete(callId);
-
-        const hosts = await Host.find({ 
-      userId: { $in: [userId, toUserId] }
-    });
-    
-    for (const host of hosts) {
-      if (host.isOnline) {
-        await host.setCallAvailable();
-        
-        // Broadcast status change
-        io.emit("host:status-changed", {
-          hostId: host._id,
-          userId: host.userId,
-          isOnline: true,
-          callStatus: 'available',
-          timestamp: new Date()
-        });
-      }
-    }
 
         logger.info(`Call ended by ${userId}`);
       }
