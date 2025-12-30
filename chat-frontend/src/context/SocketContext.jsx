@@ -40,9 +40,9 @@ export const SocketProvider = ({ children }) => {
       });
 
       newSocket.on('host:status-changed', (data) => {
-        console.log('📡 Host status changed:', data);
-        hostStatusCallbacks.current.forEach(callback => callback(data));
-      });
+  console.log('📡 Host status changed:', data);
+  hostStatusCallbacks.current.forEach(callback => callback(data));
+});
 
 
       newSocket.on('disconnect', (reason) => {

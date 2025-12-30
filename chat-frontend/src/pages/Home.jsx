@@ -44,34 +44,34 @@ export const Home = () => {
     };
   }, [socket]);
 
-   useEffect(() => {
-    if (!onHostStatusChange) return;
+useEffect(() => {
+  if (!onHostStatusChange) return;
 
-    const unsubscribe = onHostStatusChange((data) => {
-      console.log('🔄 Updating host status:', data);
-      
-      setHosts(prevHosts => {
-        return prevHosts.map(host => {
-          if (host._id === data.hostId || host.userId?._id === data.userId) {
-            return {
-              ...host,
-              isOnline: data.isOnline,
-              lastSeen: data.timestamp
-            };
-          }
-          return host;
-        }).filter(host => {
-          return true;
-        });
+  const unsubscribe = onHostStatusChange((data) => {
+    console.log('🔄 Updating host status:', data);
+    
+    setHosts(prevHosts => {
+      return prevHosts.map(host => {
+        if (host._id === data.hostId || host.userId?._id === data.userId) {
+          return {
+            ...host,
+            isOnline: data.isOnline,
+            callStatus: data.callStatus || host.callStatus, // NEW
+            lastSeen: data.timestamp
+          };
+        }
+        return host;
       });
-
-      if (data.isOnline) {
-        toast.success(`A host is now online!`, { duration: 2000 });
-      }
     });
 
-    return () => unsubscribe();
-  }, [onHostStatusChange]);
+    // Optional: Show toast only for available status
+    if (data.isOnline && data.callStatus === 'available') {
+      toast.success(`A host is now available!`, { duration: 2000 });
+    }
+  });
+
+  return () => unsubscribe();
+}, [onHostStatusChange]);
 
   const fetchHosts = async () => {
     try {
