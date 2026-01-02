@@ -793,18 +793,44 @@ const getHostCallHistory = asyncHandler(async (req, res) => {
   });
 });
 
-// ============= Weekly Leaderboard =============
 const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
-  const { type = 'both' } = req.query;
+  const { type = 'both', week = 'current' } = req.query;
 
-  // Get current week start and end dates
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
+  // Helper function to get week boundaries in IST
+  const getWeekBoundaries = (weeksAgo = 0) => {
+    // Get current time in IST
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    
+    // Get day of week in IST (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const istDay = istNow.getUTCDay();
+    const istDate = istNow.getUTCDate();
+    const istMonth = istNow.getUTCMonth();
+    const istYear = istNow.getUTCFullYear();
+    
+    // Calculate how many days to go back to reach Monday
+    const daysToGoBack = istDay === 0 ? 6 : istDay - 1;
+    
+    // Create Monday 00:00:00 IST (as UTC representation)
+    const mondayIST = new Date(Date.UTC(istYear, istMonth, istDate - daysToGoBack - (weeksAgo * 7), 0, 0, 0, 0));
+    
+    // Create Sunday 23:59:59 IST (as UTC representation)
+    const sundayIST = new Date(Date.UTC(istYear, istMonth, istDate - daysToGoBack + 6 - (weeksAgo * 7), 23, 59, 59, 999));
+    
+    // Return as IST times (these will display as IST dates with 00:00:00 and 23:59:59)
+    return { 
+      weekStart: mondayIST,
+      weekEnd: sundayIST
+    };
+  };
 
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  // Determine which week to fetch
+  let weeksAgo = 0;
+  if (week === 'previous') weeksAgo = 1;
+  else if (week === 'two_weeks_ago') weeksAgo = 2;
+
+  const { weekStart, weekEnd } = getWeekBoundaries(weeksAgo);
 
   // Frame URLs
   const richLevels = [
@@ -882,7 +908,8 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
         userId: {
           ...entry.userId,
           frameUrl
-        }
+        },
+        rewardDistributed: entry.rewardDistributed || false
       };
     });
   };
@@ -900,6 +927,7 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
   ApiResponse.success(res, 200, 'Weekly leaderboard retrieved', {
     weekStart,
     weekEnd,
+    week: week,
     ...result
   });
 });
