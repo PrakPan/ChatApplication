@@ -480,7 +480,7 @@ export const useWebRTC = () => {
       console.log('📤 Emitting call:answer to:', from);
       socket.emit('call:answer', { to: from, answer });
       
-      setCallStatus('connecting');
+      // setCallStatus('connecting');
       
       setTimeout(() => {
         isInitializing.current = false;
@@ -522,7 +522,7 @@ export const useWebRTC = () => {
       }
       pendingIceCandidates.current = [];
       
-      setCallStatus('connecting');
+      // setCallStatus('connecting');
       isProcessingCall.current = false;
     } catch (error) {
       console.error('❌ Error handling answer:', error);

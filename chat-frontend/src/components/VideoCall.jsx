@@ -1203,6 +1203,7 @@ export const VideoCallComponent = ({
 
   // NEW: Balance checking for users (not hosts)
   useEffect(() => {
+    console.log(isHost,callStatus)
     if (isHost || callStatus !== 'connected') {
       return;
     }
