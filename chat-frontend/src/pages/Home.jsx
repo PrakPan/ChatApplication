@@ -65,9 +65,9 @@ useEffect(() => {
     });
 
     // Optional: Show toast only for available status
-    if (data.isOnline && data.callStatus === 'available') {
-      toast.success(`A host is now available!`, { duration: 2000 });
-    }
+    // if (data.isOnline && data.callStatus === 'available') {
+    //   toast.success(`A host is now available!`, { duration: 2000 });
+    // }
   });
 
   return () => unsubscribe();

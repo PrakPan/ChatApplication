@@ -28,6 +28,17 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   };
 
+   const refreshUser = async () => {
+    try {
+      const response = await authService.getProfile();
+      setUser(response.data.user);
+      return response.data.user;
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+      throw error;
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const response = await authService.login(email, password);
@@ -84,6 +95,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateUser,
+        refreshUser
       }}
     >
       {children}
