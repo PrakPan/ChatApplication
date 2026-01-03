@@ -6,7 +6,8 @@ const {
   endCall,
   rateCall,
   getCallHistory,
-  getCallDetails
+  getCallDetails,
+  checkCallBalance
 } = require('../controllers/callController');
 const { authenticate, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validation');
@@ -21,6 +22,7 @@ router.post('/end', validate(validators.endCall), endCall);
 router.post('/rate', validate(validators.rateCall), rateCall);
 router.get('/history', getCallHistory);
 router.get('/:callId', getCallDetails);
+router.post('/check-balance',checkCallBalance)
 
 
 module.exports = router;

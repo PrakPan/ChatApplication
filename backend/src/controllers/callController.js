@@ -81,7 +81,10 @@ const acceptCall = asyncHandler(async (req, res) => {
 const checkCallBalance = asyncHandler(async (req, res) => {
   const { callId } = req.body;
 
-  const call = await Call.findById(callId).populate('hostId');
+  const call = await Call.findById(callId).populate({
+  path: 'hostId',
+  select: '-onlineTimeLogs -photos -bankDetails'
+});
   if (!call) {
     throw new ApiError(404, 'Call not found');
   }
@@ -167,7 +170,10 @@ const checkCallBalance = asyncHandler(async (req, res) => {
 const endCall = asyncHandler(async (req, res) => {
   const { callId, wasDisconnected, hostManuallyDisconnected } = req.body;
 
-  const call = await Call.findById(callId).populate('hostId');
+  const call = await Call.findById(callId).populate({
+  path: 'hostId',
+  select: '-onlineTimeLogs -photos -bankDetails'
+});
   if (!call) {
     throw new ApiError(404, 'Call not found');
   }
@@ -407,7 +413,7 @@ const getCallHistory = asyncHandler(async (req, res) => {
       path: 'hostId',
       populate: {
         path: 'userId',
-        select: 'name avatar'
+        select: 'name avatar -onlineTimeLogs -photos -bankDetails'
       }
     })
     .sort({ createdAt: -1 })
