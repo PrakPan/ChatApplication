@@ -83,7 +83,7 @@ const checkCallBalance = asyncHandler(async (req, res) => {
 
   const call = await Call.findById(callId).populate({
   path: 'hostId',
-  select: '-onlineTimeLogs -photos -bankDetails'
+  select: '_id userId ratePerMinute'
 });
   if (!call) {
     throw new ApiError(404, 'Call not found');
@@ -172,7 +172,7 @@ const endCall = asyncHandler(async (req, res) => {
 
   const call = await Call.findById(callId).populate({
   path: 'hostId',
-  select: '-onlineTimeLogs -photos -bankDetails'
+  select: '_id userId ratePerMinute'
 });
   if (!call) {
     throw new ApiError(404, 'Call not found');
