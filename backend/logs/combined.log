@@ -6261,3 +6261,496 @@
 {"level":"info","message":"✅ User connected: prakhar@gmail.com (g8HKXpoXRNNvM7F9AAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-03 22:21:12"}
 {"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-03 22:21:12"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2026-01-03 22:21:13"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:44:17"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:45:13"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:46:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:46:00"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:46:00"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 01:46:00"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 01:46:05"}
+{"level":"error","message":"❌ Error in free target auto-completion job: Operation `freetargets.find()` buffering timed out after 10000ms","service":"videocall-backend","stack":"MongooseError: Operation `freetargets.find()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)","timestamp":"2026-01-04 01:46:10"}
+{"level":"error","message":"Error in cleanup job: Operation `hosts.find()` buffering timed out after 10000ms","service":"videocall-backend","timestamp":"2026-01-04 01:46:10"}
+{"ip":"::1","level":"error","message":"Operation `users.findOne()` buffering timed out after 10000ms","method":"POST","service":"videocall-backend","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)","statusCode":500,"timestamp":"2026-01-04 01:46:18","url":"/api/v1/auth/login"}
+{"level":"error","message":"Error connecting to MongoDB: Socket 'secureConnect' timed out after 30001ms (connectTimeoutMS: 30000)","service":"videocall-backend","timestamp":"2026-01-04 01:46:33"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:46:45"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:46:45"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:46:45"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 01:46:45"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-04 01:46:46"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 01:46:48"}
+{"level":"info","message":"User logged in: nisha@gmail.com (userId: 407773)","service":"videocall-backend","timestamp":"2026-01-04 01:46:56"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (Tpm9eYYn0_0gj2H9AAAB) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:46:56"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 01:47:00"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 01:47:01"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now online","service":"videocall-backend","timestamp":"2026-01-04 01:47:01"}
+{"level":"info","message":"User logged in: prakhar@gmail.com (userId: 278418)","service":"videocall-backend","timestamp":"2026-01-04 01:47:02"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (FzogEsZ8gKBe09HuAAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:47:02"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 01:47:07"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:47:07"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:47:08"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:47:10"}
+{"level":"info","message":"Gift sent: 1x kiss from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597943363a2500460e93c6","service":"videocall-backend","timestamp":"2026-01-04 01:47:22"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597951363a2500460e93f4","service":"videocall-backend","timestamp":"2026-01-04 01:47:22"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 01:47:28"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597943363a2500460e93c6","service":"videocall-backend","timestamp":"2026-01-04 01:47:52"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597970363a2500460e9412","service":"videocall-backend","timestamp":"2026-01-04 01:47:52"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:50:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:50:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 01:50:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 01:50:00"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:50:26"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:50:26"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:50:26"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:50:26"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597943363a2500460e93c6","service":"videocall-backend","timestamp":"2026-01-04 01:50:41"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597a19363a2500460e9acc","service":"videocall-backend","timestamp":"2026-01-04 01:50:41"}
+{"level":"info","message":"Gift sent: 1x bouquet from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597943363a2500460e93c6","service":"videocall-backend","timestamp":"2026-01-04 01:51:08"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597a33363a2500460e9ae6","service":"videocall-backend","timestamp":"2026-01-04 01:51:08"}
+{"level":"info","message":"Call ended: 69597943363a2500460e93c6, Duration: 5min, Total Beans: 750, Host Earnings: 525","service":"videocall-backend","timestamp":"2026-01-04 01:51:14"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 01:51:14","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:51:14"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 01:51:20","url":"/api/v1/calls/end"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 01:51:21","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:51:21"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (FzogEsZ8gKBe09HuAAAD)","service":"videocall-backend","timestamp":"2026-01-04 01:51:24"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (zaBqLOfw9Ybbhgb_AAAF) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:51:25"}
+{"level":"info","message":"Online session ended for host 69593cd1328f76fd4d151141. Duration: 267s","service":"videocall-backend","timestamp":"2026-01-04 01:51:28"}
+{"level":"info","message":"Host went offline: nisha@gmail.com - Session: 267s","service":"videocall-backend","timestamp":"2026-01-04 01:51:29"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now offline","service":"videocall-backend","timestamp":"2026-01-04 01:51:29"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 01:51:30"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 01:51:30"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now online","service":"videocall-backend","timestamp":"2026-01-04 01:51:31"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (zaBqLOfw9Ybbhgb_AAAF)","service":"videocall-backend","timestamp":"2026-01-04 01:51:35"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (boMAzSjLL_oAaCkcAAAH) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:51:36"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 01:51:38"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:51:38"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:51:40"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:51:40"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597a52363a2500460e9bde","service":"videocall-backend","timestamp":"2026-01-04 01:51:45"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597a59363a2500460e9c0e","service":"videocall-backend","timestamp":"2026-01-04 01:51:45"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597a52363a2500460e9bde","service":"videocall-backend","timestamp":"2026-01-04 01:52:05"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597a6d363a2500460e9c2a","service":"videocall-backend","timestamp":"2026-01-04 01:52:05"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597a52363a2500460e9bde","service":"videocall-backend","timestamp":"2026-01-04 01:52:20"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597a7c363a2500460e9c49","service":"videocall-backend","timestamp":"2026-01-04 01:52:20"}
+{"level":"info","message":"Gift sent: 1x kiss from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597a52363a2500460e9bde","service":"videocall-backend","timestamp":"2026-01-04 01:52:27"}
+{"level":"info","message":"Gift socket notifications sent for gift 69597a83363a2500460e9c64","service":"videocall-backend","timestamp":"2026-01-04 01:52:27"}
+{"level":"info","message":"Call ended: 69597a52363a2500460e9bde, Duration: 2min, Total Beans: 300, Host Earnings: 210","service":"videocall-backend","timestamp":"2026-01-04 01:52:43"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:52:43"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:52:43"}
+{"level":"info","message":"Call ended by 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:52:43"}
+{"level":"info","message":"Call ended by 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:52:43"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 01:52:43","url":"/api/v1/calls/end"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:55:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:55:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 01:55:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 01:55:00"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (boMAzSjLL_oAaCkcAAAH)","service":"videocall-backend","timestamp":"2026-01-04 01:56:46"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (CMTBHH7i51SWVo-9AAAJ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 01:56:47"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 01:56:52"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (Tpm9eYYn0_0gj2H9AAAB)","service":"videocall-backend","timestamp":"2026-01-04 01:56:52"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (tV1GeFSUbJV8Gac_AAAL) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 01:56:53"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:59:26"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 01:59:26"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 01:59:26"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 01:59:26"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 01:59:29"}
+{"level":"error","message":"❌ Error in free target auto-completion job: Operation `freetargets.find()` buffering timed out after 10000ms","service":"videocall-backend","stack":"MongooseError: Operation `freetargets.find()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/Users/prakharpandey/ChatApplication/backend/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:187:23)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)","timestamp":"2026-01-04 01:59:36"}
+{"level":"error","message":"Error in cleanup job: Operation `hosts.find()` buffering timed out after 10000ms","service":"videocall-backend","timestamp":"2026-01-04 01:59:36"}
+{"level":"error","message":"Error connecting to MongoDB: Socket 'secureConnect' timed out after 30001ms (connectTimeoutMS: 30000)","service":"videocall-backend","timestamp":"2026-01-04 01:59:57"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:00:12"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:00:12"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:00:12"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 02:00:12"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-04 02:00:13"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 02:00:15"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:00:15"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:03:11"}
+{"level":"info","message":"Call ended: 69597d07178d4187b541e732, Duration: 1min, Total Beans: 150, Host Earnings: 105","service":"videocall-backend","timestamp":"2026-01-04 02:03:19"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:03:19","url":"/api/v1/calls/end"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (qtu8Dax6aqVQvdK0AAAB) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:03:24"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:03:28"}
+{"level":"info","message":"Call ended: 69597d18178d4187b541e7ab, Duration: 1min, Total Beans: 150, Host Earnings: 105","service":"videocall-backend","timestamp":"2026-01-04 02:03:51"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:03:51","url":"/api/v1/calls/end"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (GSvNoSvALUb5-QfYAAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:03:52"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:03:56"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:03:56"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:04:00"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:04:02"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597d34178d4187b541e7f8","service":"videocall-backend","timestamp":"2026-01-04 02:04:08"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597d34178d4187b541e7f8","service":"videocall-backend","timestamp":"2026-01-04 02:04:26"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:05:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:05:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:05:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:05:00"}
+{"level":"info","message":"Cleanup: Marked host 694ffd43647eef84d1116c61 as offline","service":"videocall-backend","timestamp":"2026-01-04 02:05:12"}
+{"level":"info","message":"Cleanup: Processed 1 potentially inactive hosts","service":"videocall-backend","timestamp":"2026-01-04 02:05:12"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:07"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:07"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:07"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:07"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:31"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:31"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:31"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:31"}
+{"level":"info","message":"Call ended: 69597d34178d4187b541e7f8, Duration: 4min, Total Beans: 600, Host Earnings: 420","service":"videocall-backend","timestamp":"2026-01-04 02:07:39"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:07:39","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:39"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:07:48","url":"/api/v1/calls/end"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:07:49","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:49"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:07:52"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (qtu8Dax6aqVQvdK0AAAB)","service":"videocall-backend","timestamp":"2026-01-04 02:07:52"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (NiACo0UmYI6ZMXlLAAAF) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:53"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:07:54"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (NiACo0UmYI6ZMXlLAAAF)","service":"videocall-backend","timestamp":"2026-01-04 02:07:54"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (Q-a79DD-OTNDUBHEAAAH) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:07:55"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (GSvNoSvALUb5-QfYAAAD)","service":"videocall-backend","timestamp":"2026-01-04 02:07:57"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (R-xLqM0cjitDqpd-AAAJ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:07:58"}
+{"level":"info","message":"Online session ended for host 69593cd1328f76fd4d151141. Duration: 990s","service":"videocall-backend","timestamp":"2026-01-04 02:08:01"}
+{"level":"info","message":"Host went offline: nisha@gmail.com - Session: 990s","service":"videocall-backend","timestamp":"2026-01-04 02:08:01"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now offline","service":"videocall-backend","timestamp":"2026-01-04 02:08:02"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:08:03"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 02:08:04"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now online","service":"videocall-backend","timestamp":"2026-01-04 02:08:04"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (R-xLqM0cjitDqpd-AAAJ)","service":"videocall-backend","timestamp":"2026-01-04 02:08:06"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (MN8XES2MifXBTEqTAAAL) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:08:06"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:08:09"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:08:09"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:08:10"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:08:12"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597e30178d4187b541f089","service":"videocall-backend","timestamp":"2026-01-04 02:08:17"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597e30178d4187b541f089","service":"videocall-backend","timestamp":"2026-01-04 02:08:50"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597e30178d4187b541f089","service":"videocall-backend","timestamp":"2026-01-04 02:09:02"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:10:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:10:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:10:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:10:00"}
+{"level":"info","message":"Gift sent: 1x race from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597e30178d4187b541f089","service":"videocall-backend","timestamp":"2026-01-04 02:12:52"}
+{"level":"info","message":"Call ended: 69597e30178d4187b541f089, Duration: 5min, Total Beans: 750, Host Earnings: 525","service":"videocall-backend","timestamp":"2026-01-04 02:12:56"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:12:56"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:12:57"}
+{"level":"info","message":"Call ended by 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:12:57"}
+{"level":"info","message":"Call ended by 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:12:57"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:12:57","url":"/api/v1/calls/end"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:13:05"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:13:06"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:13:10"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:13:10"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69597f59178d4187b541f829","service":"videocall-backend","timestamp":"2026-01-04 02:13:18"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:15:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:15:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:15:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:15:00"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:16:43"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:16:43"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:16:43"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:16:43"}
+{"level":"info","message":"Call ended: 69597f59178d4187b541f829, Duration: 4min, Total Beans: 600, Host Earnings: 420","service":"videocall-backend","timestamp":"2026-01-04 02:16:51"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:16:51","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:16:51"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:16:58","url":"/api/v1/calls/end"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:16:58","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:16:58"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:17:01"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (Q-a79DD-OTNDUBHEAAAH)","service":"videocall-backend","timestamp":"2026-01-04 02:17:01"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (EgwqrCUzr09sqYOTAAAN) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:01"}
+{"level":"info","message":"Online session ended for host 69593cd1328f76fd4d151141. Duration: 540s","service":"videocall-backend","timestamp":"2026-01-04 02:17:04"}
+{"level":"info","message":"Host went offline: nisha@gmail.com - Session: 540s","service":"videocall-backend","timestamp":"2026-01-04 02:17:04"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now offline","service":"videocall-backend","timestamp":"2026-01-04 02:17:04"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:17:06"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 02:17:06"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now online","service":"videocall-backend","timestamp":"2026-01-04 02:17:06"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (MN8XES2MifXBTEqTAAAL)","service":"videocall-backend","timestamp":"2026-01-04 02:17:08"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (OgQW1HXaiCzxN_u4AAAP) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:17:09"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:17:11"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:11"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:14"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:17:15"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 6959804f178d4187b542004b","service":"videocall-backend","timestamp":"2026-01-04 02:17:23"}
+{"level":"info","message":"Call ended: 6959804f178d4187b542004b, Duration: 1min, Total Beans: 150, Host Earnings: 105","service":"videocall-backend","timestamp":"2026-01-04 02:17:44"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:44"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:44"}
+{"level":"info","message":"Call ended by 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:17:44"}
+{"level":"info","message":"Call ended by 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:44"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:17:45","url":"/api/v1/calls/end"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:17:46"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:46"}
+{"level":"info","message":"Gift sent: 1x kiss from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598072178d4187b54200f6","service":"videocall-backend","timestamp":"2026-01-04 02:17:51"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:17:54"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:17:54"}
+{"level":"info","message":"Gift sent: 1x race from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598072178d4187b54200f6","service":"videocall-backend","timestamp":"2026-01-04 02:18:03"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598072178d4187b54200f6","service":"videocall-backend","timestamp":"2026-01-04 02:18:21"}
+{"level":"info","message":"Gift sent: 1x cake from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598072178d4187b54200f6","service":"videocall-backend","timestamp":"2026-01-04 02:18:29"}
+{"level":"info","message":"Call ended: 69598072178d4187b54200f6, Duration: 1min, Total Beans: 150, Host Earnings: 105","service":"videocall-backend","timestamp":"2026-01-04 02:18:47"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:18:47"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:18:47"}
+{"level":"info","message":"Call ended by 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:18:47"}
+{"level":"info","message":"Call ended by 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:18:47"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:18:47","url":"/api/v1/calls/end"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:20:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:20:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:20:33"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:20:33"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:25:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:25:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:25:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:25:00"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:25:17"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:25:17"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:25:20"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:25:20"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598234178d4187b5420f06","service":"videocall-backend","timestamp":"2026-01-04 02:25:24"}
+{"level":"info","message":"Gift sent: 1x bouquet from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598234178d4187b5420f06","service":"videocall-backend","timestamp":"2026-01-04 02:25:43"}
+{"level":"info","message":"Gift sent: 1x sensual from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598234178d4187b5420f06","service":"videocall-backend","timestamp":"2026-01-04 02:25:53"}
+{"level":"info","message":"Gift sent: 1x sensual from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598234178d4187b5420f06","service":"videocall-backend","timestamp":"2026-01-04 02:26:17"}
+{"level":"info","message":"Gift sent: 1x bouquet from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598234178d4187b5420f06","service":"videocall-backend","timestamp":"2026-01-04 02:26:24"}
+{"level":"info","message":"Gift sent: 1x cake from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598234178d4187b5420f06","service":"videocall-backend","timestamp":"2026-01-04 02:26:35"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:06"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:06"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:06"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:06"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:31"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:31"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:32"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:29:32"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:30:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:30:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:30:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:30:00"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:30:13"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:30:13"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:30:14"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:30:14"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:31:29"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:31:29"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:31:29"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 02:31:29"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-01.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-04 02:31:30"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (Jy09G-1fOL7j4AM1AAAB) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:31:31"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (pgQG2xOLpWM3dKT0AAAD) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:31:31"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:31:31"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:31:31"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:31:31"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:31:31"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 02:31:37"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2026-01-04 02:32:03"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2026-01-04 02:32:04"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:32:05"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:22"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:22"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:23"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:23"}
+{"level":"info","message":"Call ended: 69598234178d4187b5420f06, Duration: 9min, Total Beans: 1350, Host Earnings: 944","service":"videocall-backend","timestamp":"2026-01-04 02:33:27"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:33:28","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:28"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:33:33","url":"/api/v1/calls/end"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:33:33","url":"/api/v1/calls/end"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:33"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:33:36"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 02:33:36"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now online","service":"videocall-backend","timestamp":"2026-01-04 02:33:37"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:33:37"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (pgQG2xOLpWM3dKT0AAAD)","service":"videocall-backend","timestamp":"2026-01-04 02:33:37"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (6cYdaFrK5tj2H8PkAAAF) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:37"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:33:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:41"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:33:42"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:33:45"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 6959842d825e60e3c5e11c31","service":"videocall-backend","timestamp":"2026-01-04 02:33:51"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 6959842d825e60e3c5e11c31","service":"videocall-backend","timestamp":"2026-01-04 02:34:08"}
+{"level":"info","message":"Gift sent: 1x cake from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 6959842d825e60e3c5e11c31","service":"videocall-backend","timestamp":"2026-01-04 02:34:16"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:35:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:35:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:35:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:35:00"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:35:59"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:35:59"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (QADedo2mqRvNPc8sAAAJ) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:35:59"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (F6ZbCeunmXU_rnYoAAAL) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:36:00"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (LXGgqMdlcVKWxX1AAAAN) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:36:00"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (ubN7W721JZtU98yDAAAI) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:36:00"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (LXGgqMdlcVKWxX1AAAAN)","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (6cYdaFrK5tj2H8PkAAAF)","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (QADedo2mqRvNPc8sAAAJ)","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"Online session ended for host 69593cd1328f76fd4d151141. Duration: 152s","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"Host went offline: nisha@gmail.com - Session: 152s","service":"videocall-backend","timestamp":"2026-01-04 02:36:09"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (oZWOusUY4SPGIK6PAAAP) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:36:10"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:36:12"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 02:36:12"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now online","service":"videocall-backend","timestamp":"2026-01-04 02:36:12"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (Jy09G-1fOL7j4AM1AAAB)","service":"videocall-backend","timestamp":"2026-01-04 02:36:15"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (ubN7W721JZtU98yDAAAI)","service":"videocall-backend","timestamp":"2026-01-04 02:36:15"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (F6ZbCeunmXU_rnYoAAAL)","service":"videocall-backend","timestamp":"2026-01-04 02:36:15"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (RNNP0sr1qayvxF5_AAAR) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:36:18"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:36:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:36:29"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:36:32"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:36:34"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:36:34"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695984d8825e60e3c5e124c3","service":"videocall-backend","timestamp":"2026-01-04 02:36:43"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695984d8825e60e3c5e124c3","service":"videocall-backend","timestamp":"2026-01-04 02:36:44"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695984d8825e60e3c5e124c3","service":"videocall-backend","timestamp":"2026-01-04 02:36:44"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:13"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:13"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (hEkByECRGgmHeqiEAAAT) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:14"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (toTDxfPZr1n5E3QbAAAV) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:37:14"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (ELyXvdgBVfiCLTHrAAAX) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:14"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (41Cakg7NlcLZMl92AAAZ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:37:15"}
+{"level":"info","message":"Online session ended for host 69593cd1328f76fd4d151141. Duration: 68s","service":"videocall-backend","timestamp":"2026-01-04 02:37:20"}
+{"level":"info","message":"Host went offline: nisha@gmail.com - Session: 68s","service":"videocall-backend","timestamp":"2026-01-04 02:37:20"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now offline","service":"videocall-backend","timestamp":"2026-01-04 02:37:20"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (oZWOusUY4SPGIK6PAAAP)","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (hEkByECRGgmHeqiEAAAT)","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"Host nisha@gmail.com disconnected, lastSeen updated","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (ELyXvdgBVfiCLTHrAAAX)","service":"videocall-backend","timestamp":"2026-01-04 02:37:22"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (d8aMleGcRUp4s67TAAAb) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:23"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:37:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:29"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:31"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:37:32"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598511825e60e3c5e1268e","service":"videocall-backend","timestamp":"2026-01-04 02:37:37"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:37"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:37"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (Lq7cD59RQGQGecpPAAAd) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:37:38"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:38"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:37:38"}
+{"level":"info","message":"Gift sent: 1x dhanteras from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598511825e60e3c5e1268e","service":"videocall-backend","timestamp":"2026-01-04 02:38:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:41"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (WEeKKLJ50eXSnvLcAAAf) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:38:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:41"}
+{"level":"info","message":"Call ended: 69598511825e60e3c5e1268e, Duration: 2min, Total Beans: 300, Host Earnings: 210","service":"videocall-backend","timestamp":"2026-01-04 02:38:49"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:49"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:49"}
+{"level":"info","message":"Call ended by 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:38:49"}
+{"level":"info","message":"Call ended by 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:38:49"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:38:49","url":"/api/v1/calls/end"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:40:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:40:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:40:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:40:00"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:41:14"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:41:14"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:41:14"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 02:41:14"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-04 02:41:15"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (Dj6_J6BzwZcsu9t5AAAB) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:41:15"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (83Yj5GZiePGMzFThAAAF) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:41:15"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (AnjlK5XoO2GUCaaDAAAD) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:41:16"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (STV_JpVkEmy7nr47AAAH) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:41:16"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (rrm76QFuNlia_ZboAAAJ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:41:16"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (COiec0wYnNMoJHa5AAAL) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:41:16"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:41:17"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 02:41:17"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:43:25"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:43:25"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:43:28"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:43:28"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 69598675153956eb71ce9ec3","service":"videocall-backend","timestamp":"2026-01-04 02:43:34"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:43:34"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:43:34"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (ggFUVL5HFU139AaZAAAN) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:10"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (K-yzhfSTutYJ2ZvbAAAP) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:44:11"}
+{"level":"info","message":"Online session ended for host 69593cd1328f76fd4d151141. Duration: 415s","service":"videocall-backend","timestamp":"2026-01-04 02:44:18"}
+{"level":"info","message":"Host went offline: nisha@gmail.com - Session: 415s","service":"videocall-backend","timestamp":"2026-01-04 02:44:18"}
+{"level":"info","message":"Host 69593cd1328f76fd4d151141 is now offline","service":"videocall-backend","timestamp":"2026-01-04 02:44:18"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (ggFUVL5HFU139AaZAAAN)","service":"videocall-backend","timestamp":"2026-01-04 02:44:19"}
+{"level":"info","message":"User disconnected: nisha@gmail.com (Dj6_J6BzwZcsu9t5AAAB)","service":"videocall-backend","timestamp":"2026-01-04 02:44:19"}
+{"level":"info","message":"Online session started for host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:44:20"}
+{"level":"info","message":"Host went online: nisha@gmail.com","service":"videocall-backend","timestamp":"2026-01-04 02:44:20"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (tAVLy2F_aPSOaBc8AAAR) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:20"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (83Yj5GZiePGMzFThAAAF)","service":"videocall-backend","timestamp":"2026-01-04 02:44:25"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (COiec0wYnNMoJHa5AAAL)","service":"videocall-backend","timestamp":"2026-01-04 02:44:25"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (STV_JpVkEmy7nr47AAAH)","service":"videocall-backend","timestamp":"2026-01-04 02:44:25"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (AnjlK5XoO2GUCaaDAAAD)","service":"videocall-backend","timestamp":"2026-01-04 02:44:25"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (rrm76QFuNlia_ZboAAAJ)","service":"videocall-backend","timestamp":"2026-01-04 02:44:25"}
+{"level":"info","message":"User disconnected: prakhar@gmail.com (K-yzhfSTutYJ2ZvbAAAP)","service":"videocall-backend","timestamp":"2026-01-04 02:44:25"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (lpSXsYZ-WTdeEHamAAAT) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:44:26"}
+{"level":"info","message":"Call initiated: User prakhar@gmail.com to Host 69593cd1328f76fd4d151141","service":"videocall-backend","timestamp":"2026-01-04 02:44:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:29"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:30"}
+{"level":"info","message":"Call answer sent from 69593cd0328f76fd4d15113e to 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:44:32"}
+{"level":"info","message":"Gift sent: 1x balloons from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:44:40"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:40"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:40"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (rLlSyUowPcyMzW3tAAAV) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:44:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:41"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:41"}
+{"level":"info","message":"Gift sent: 1x teddy from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:44:49"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:49"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:49"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (BiT_c8gJjNh7NnrHAAAX) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:44:50"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:50"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:50"}
+{"level":"info","message":"Gift sent: 1x sensual from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:44:55"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:56"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:56"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (ZcfuCX5GWwsG83wuAAAZ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:44:56"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:56"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:44:56"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:45:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:45:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:45:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:45:00"}
+{"level":"info","message":"Gift sent: 1x bouquet from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:45:03"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:03"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:03"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (wjM3P0vbanu3AE6YAAAb) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:45:03"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:03"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:03"}
+{"level":"info","message":"Gift sent: 1x dhanteras from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:45:11"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:11"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:11"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (YneB8rwJcGc_N1B0AAAd) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:45:11"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:11"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:11"}
+{"level":"info","message":"Gift sent: 1x race from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:45:20"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:21"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:21"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (UwRu1f45QMHjI55mAAAf) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:45:21"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:21"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:21"}
+{"level":"info","message":"Gift sent: 1x kiss from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:45:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:29"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (YojHoZB_cWOzVDX3AAAh) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:45:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:29"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:29"}
+{"level":"info","message":"Gift sent: 1x cake from User 69497389ba069fb62846defb to Host 69593cd1328f76fd4d151141 in Call 695986b5153956eb71cea075","service":"videocall-backend","timestamp":"2026-01-04 02:45:37"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:38"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:38"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (xGgnnPh8-G8KjYqlAAAj) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:45:38"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:38"}
+{"level":"info","message":"User 69497389ba069fb62846defb joined conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:38"}
+{"level":"info","message":"Call ended: 695986b5153956eb71cea075, Duration: 2min, Total Beans: 300, Host Earnings: 210","service":"videocall-backend","timestamp":"2026-01-04 02:45:47"}
+{"level":"info","message":"User 69593cd0328f76fd4d15113e left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:47"}
+{"level":"info","message":"User 69497389ba069fb62846defb left conversation 69497389ba069fb62846defb_69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:47"}
+{"level":"info","message":"Call ended by 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:45:47"}
+{"level":"info","message":"Call ended by 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:45:47"}
+{"ip":"::1","level":"error","message":"Call already ended","method":"POST","service":"videocall-backend","stack":"Error: Call already ended\n    at /Users/prakharpandey/ChatApplication/backend/src/controllers/callController.js:191:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2026-01-04 02:45:48","url":"/api/v1/calls/end"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:47:31"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-04 02:47:31"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-04 02:47:31"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-04 02:47:31"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (J0xqon7Mm3_1YRIfAAAB) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: nisha@gmail.com (w0jTjwryZw7PyUKxAAAD) - UserId: 69593cd0328f76fd4d15113e","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (P3k6fWjgsFz3AoeiAAAJ) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (fxqbPae_3_5NQLQ4AAAL) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (SfOlsZrsZ6e2V2s9AAAN) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (f3lkNxSkLiEnzKvnAAAP) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:34"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (CxwxRW5ahTqNtNm_AAAR) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:35"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (rnCNcm6NzgGrcQ7KAAAT) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:35"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (a3wKG2ql-6h9F7zXAAAF) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:35"}
+{"level":"info","message":"✅ User connected: prakhar@gmail.com (OlxnjelyCtKwt1fOAAAH) - UserId: 69497389ba069fb62846defb","service":"videocall-backend","timestamp":"2026-01-04 02:47:35"}
+{"level":"info","message":"✅ Free target check completed. Checked: 2, Completed: 0","service":"videocall-backend","timestamp":"2026-01-04 02:47:37"}
+{"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2026-01-04 02:48:00"}

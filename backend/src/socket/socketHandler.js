@@ -15,6 +15,9 @@ const typingUsers = new Map();
 const activeCalls = new Map();
 
 const socketHandler = (io) => {
+  if (!io.app) io.app = {};
+  io.app.connectedUsers = connectedUsers;
+
   // Authentication middleware
   io.use(async (socket, next) => {
     try {
@@ -890,42 +893,39 @@ const socketHandler = (io) => {
 
     // ==================== GIFT EVENTS ====================
 
+// In your socketHandler.js - gift:send event
+// In socketHandler.js - Update gift:send
 socket.on('gift:send', async ({ callId, hostId, giftId, quantity }) => {
   try {
-    console.log('🎁 Gift send event:', { callId, hostId, giftId, quantity, from: userId });
+    // FIX: Find host by userId field, not _id
+    const host = await Host.findOne({ userId: hostId }).populate('userId');
     
-    // This is just for real-time notification
-    // The actual transaction is handled by the API endpoint
-    
-    const host = await Host.findById(hostId).populate('userId');
     if (!host) {
       socket.emit('gift:error', { message: 'Host not found' });
       return;
     }
 
-    // Get host's socket
     const hostUserId = host.userId._id.toString();
     const hostSocketId = connectedUsers.get(hostUserId);
 
+    // Send confirmation to sender
+    socket.emit('gift:sent', {
+      giftId,
+      quantity,
+      callId
+    });
+
     if (hostSocketId) {
-      // Notify host about the gift
       io.to(hostSocketId).emit('gift:received', {
         giftId,
         quantity,
         senderName: socket.user.name,
-        senderAvatar: socket.user.avatar,
-        senderId: userId,
-        callId,
-        timestamp: new Date()
+        callId
       });
-      console.log(`✅ Gift notification sent to host ${hostUserId}`);
-    } else {
-      console.log(`⚠️ Host ${hostUserId} is not connected`);
+      console.log(`✅ Gift sent to host ${hostUserId}`);
     }
-
   } catch (error) {
-    logger.error(`Error handling gift send: ${error.message}`);
-    socket.emit('gift:error', { message: 'Failed to send gift notification' });
+    logger.error(`Gift send error: ${error.message}`);
   }
 });
 
