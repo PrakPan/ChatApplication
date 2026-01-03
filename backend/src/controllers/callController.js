@@ -413,7 +413,7 @@ const getCallHistory = asyncHandler(async (req, res) => {
       path: 'hostId',
       populate: {
         path: 'userId',
-        select: 'name avatar -onlineTimeLogs -photos -bankDetails'
+        select: '-onlineTimeLogs -photos -bankDetails'
       }
     })
     .sort({ createdAt: -1 })
