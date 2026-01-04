@@ -555,26 +555,27 @@ export const useWebRTC = () => {
     }
   };
 
-  const endCall = useCallback(() => {
-    console.log('☎️ Ending call');
-    
-    if (remoteUserId.current && currentCallId.current && socket) {
-      console.log('📤 Emitting call:end to:', remoteUserId.current);
-      socket.emit('call:end', { 
-        to: remoteUserId.current,
-        callId: currentCallId.current 
-      });
-    }
-    
-    cleanup();
-    
-    // Re-warm up after call ends for next call
-    setTimeout(() => {
-      console.log('🔄 Re-warming WebRTC for next call...');
-      isWarmedUp.current = false;
-      warmUpConnection();
-    }, 2000);
-  }, [socket, cleanup, warmUpConnection]);
+const endCall = useCallback(() => {
+  console.log('☎️ Ending call');
+  
+  if (remoteUserId.current && currentCallId.current && socket) {
+    console.log('📤 Emitting call:end to:', remoteUserId.current);
+    socket.emit('call:end', { 
+      to: remoteUserId.current,
+      callId: currentCallId.current,
+      endedBy: 'user' // NEW: Add this to identify who ended the call
+    });
+  }
+  
+  cleanup();
+  
+  // Re-warm up after call ends for next call
+  setTimeout(() => {
+    console.log('🔄 Re-warming WebRTC for next call...');
+    isWarmedUp.current = false;
+    warmUpConnection();
+  }, 2000);
+}, [socket, cleanup, warmUpConnection]);
 
   const rejectCall = useCallback((from, callId, reason = 'User declined') => {
     console.log('❌ Rejecting call from:', from);

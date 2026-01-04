@@ -720,22 +720,43 @@ useEffect(() => {
     setVideoEnabled(enabled);
   };
 
-  const handleEndCall = async () => {
-    const wasDisconnected = false; 
-    const hostManuallyDisconnected = isHost; 
+  // Around line 350-365, update handleEndCall:
+const handleEndCall = async () => {
+  console.log('☎️ Ending call:', currentCall);
+  
+  if (currentCall?.callId) {
     try {
+      // End call via API first
       await api.post('/calls/end', { 
-        callId,
-        wasDisconnected,
-        hostManuallyDisconnected 
+        callId: currentCall.callId,
+        wasDisconnected: false,
+        hostManuallyDisconnected: isHost 
       });
+      
+      // Then notify via socket
+      if (socket) {
+        const recipientId = currentCall.hostId || currentCall.from;
+        console.log('📤 Sending call:end to:', recipientId);
+        
+        socket.emit('call:end', { 
+          to: recipientId, 
+          callId: currentCall.callId,
+          endedBy: isHost ? 'host' : 'user' // NEW: Identify who ended it
+        });
+      }
     } catch (error) {
       console.error('Error ending call:', error);
+      toast.error('Failed to end call properly');
     }
-    
-    endCall();
-    await onEnd();
-  };
+  }
+  
+  // Clean up WebRTC
+  endCall();
+  
+  setInCall(false);
+  setCurrentCall(null);
+  fetchHosts(); // Refresh host list on home/dashboard
+};
 
   const switchCamera = async () => {
     if (availableCameras.length < 2) {
