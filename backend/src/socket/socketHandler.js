@@ -710,42 +710,48 @@ const socketHandler = (io) => {
       }
     });
 
-    socket.on("call:end", async ({ to, callId }) => {
-      console.log("📞 CALL ENDED by", userId);
-      const toUserId = to?.toString() || to;
-      const recipientSocketId = connectedUsers.get(toUserId);
+    // Around line 450-490, update call:end handler:
+socket.on("call:end", async ({ to, callId, endedBy }) => {
+  console.log("📞 CALL ENDED by", userId, "endedBy:", endedBy);
+  const toUserId = to?.toString() || to;
+  const recipientSocketId = connectedUsers.get(toUserId);
 
-      if (recipientSocketId) {
-        io.to(recipientSocketId).emit("call:ended", {
-          from: userId,
-          callId,
-        });
+  // Remove from active calls FIRST
+  activeCalls.delete(callId);
 
-        // Remove from active calls
-        activeCalls.delete(callId);
-
-        const hosts = await Host.find({ 
-      userId: { $in: [userId, toUserId] }
-    });
-    
-    for (const host of hosts) {
-      if (host.isOnline) {
-        await host.setCallAvailable();
-        
-        // Broadcast status change
-        io.emit("host:status-changed", {
-          hostId: host._id,
-          userId: host.userId,
-          isOnline: true,
-          callStatus: 'available',
-          timestamp: new Date()
-        });
-      }
+  // Update BOTH caller and receiver host statuses
+  const hosts = await Host.find({ 
+    userId: { $in: [userId, toUserId] }
+  });
+  
+  for (const host of hosts) {
+    // Only update if host was busy with THIS call
+    if (host.currentCallId && host.currentCallId.toString() === callId) {
+      console.log(`🔄 Resetting host ${host._id} from call ${callId}`);
+      await host.setCallAvailable();
+      
+      // Broadcast status change to ALL users
+      io.emit("host:status-changed", {
+        hostId: host._id,
+        userId: host.userId,
+        isOnline: host.isOnline,
+        callStatus: host.isOnline ? 'available' : 'offline',
+        timestamp: new Date()
+      });
     }
+  }
 
-        logger.info(`Call ended by ${userId}`);
-      }
+  // Notify the other party
+  if (recipientSocketId) {
+    io.to(recipientSocketId).emit("call:ended", {
+      from: userId,
+      callId,
+      endedBy
     });
+  }
+
+  logger.info(`Call ${callId} ended by ${userId}`);
+});
 
     // ==================== IN-CALL CHAT EVENTS ====================
     // These are for sending messages DURING a video call
@@ -842,7 +848,7 @@ const socketHandler = (io) => {
         });
 
         // End any active calls
-        activeCalls.forEach((callData, callId) => {
+        activeCalls.forEach(async (callData, callId) => {
           if (callData.caller === userId || callData.receiver === userId) {
             const otherUserId =
               callData.caller === userId ? callData.receiver : callData.caller;
@@ -857,6 +863,23 @@ const socketHandler = (io) => {
             }
 
             activeCalls.delete(callId);
+
+            const hosts = await Host.find({ 
+          currentCallId: callId 
+        });
+        
+        for (const host of hosts) {
+          console.log(`🔄 Cleanup: Resetting host ${host._id} from call ${callId}`);
+          await host.setCallAvailable();
+          
+          io.emit("host:status-changed", {
+            hostId: host._id,
+            userId: host.userId,
+            isOnline: host.isOnline,
+            callStatus: host.isOnline ? 'available' : 'offline',
+            timestamp: new Date()
+          });
+        }
           }
         });
         

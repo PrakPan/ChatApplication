@@ -136,18 +136,19 @@ hostSchema.virtual('approvedPhotosCount').get(function() {
 });
 
 // ============ NEW: Call Status Methods ============
+hostSchema.methods.setCallAvailable = async function() {
+  const wasOnline = this.isOnline;
+  this.callStatus = this.isOnline ? 'available' : 'offline';
+  this.currentCallId = null;
+  await this.save({ validateBeforeSave: false }); 
+  console.log(`✅ Host ${this._id} status updated: ${this.callStatus} (was online: ${wasOnline})`);
+};
+
 hostSchema.methods.setCallBusy = async function(callId) {
   this.callStatus = 'busy';
   this.currentCallId = callId;
-  await this.save();
-  console.log(`Host ${this._id} is now busy on call ${callId}`);
-};
-
-hostSchema.methods.setCallAvailable = async function() {
-  this.callStatus = this.isOnline ? 'available' : 'offline';
-  this.currentCallId = null;
-  await this.save();
-  console.log(`Host ${this._id} is now ${this.callStatus}`);
+  await this.save({ validateBeforeSave: false });
+  console.log(`🔴 Host ${this._id} is now busy on call ${callId}`);
 };
 
 hostSchema.methods.isAvailableForCall = function() {
