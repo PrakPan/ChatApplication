@@ -194,7 +194,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Teddy Love', 
     price: 300,
     icon: '🧸',
-    lottie: 'https://assets2.lottiefiles.com/packages/lf20_9wpyhdzo.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767633778/Mouth_bhhlub.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3',
     gradient: 'from-pink-500 to-rose-500'
   },
@@ -203,7 +203,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Love Balloons', 
     price: 500,
     icon: '🎈',
-    lottie: 'https://assets4.lottiefiles.com/packages/lf20_m3ub5r3o.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767634139/Cat_feeling_love_emotionsexpression._Emojisticker_animation_ue4owe.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
     gradient: 'from-purple-500 to-pink-500'
   },
@@ -212,7 +212,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Future Race', 
     price: 700,
     icon: '🏎️',
-    lottie: 'https://assets2.lottiefiles.com/packages/lf20_9wpyhdzo.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767633779/cars_q5q1hz.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
     gradient: 'from-blue-500 to-cyan-500'
   },
@@ -221,7 +221,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Birthday Cake', 
     price: 1000,
     icon: '🎂',
-    lottie: 'https://assets9.lottiefiles.com/packages/lf20_s2lryxtd.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767633778/Ice_cream_lottie_animation_kxa0pn.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2021/2021-preview.mp3',
     gradient: 'from-yellow-500 to-orange-500'
   },
@@ -230,7 +230,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Red Bouquet', 
     price: 1000,
     icon: '💐',
-    lottie: 'https://assets10.lottiefiles.com/packages/lf20_kyu7xb1v.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767633779/Rose_ndeob0.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3',
     gradient: 'from-red-500 to-pink-500'
   },
@@ -239,7 +239,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Dream Kiss', 
     price: 1500,
     icon: '💋',
-    lottie: 'https://assets4.lottiefiles.com/packages/lf20_m3ub5r3o.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767633779/Love_and_Kiss_ocqhvu.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3',
     gradient: 'from-pink-500 to-purple-500'
   },
@@ -248,7 +248,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Sensual', 
     price: 2500,
     icon: '🌹',
-    lottie: 'https://assets7.lottiefiles.com/packages/lf20_tll0j4bb.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767633778/Love_qqf7eo.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2871/2871-preview.mp3',
     gradient: 'from-rose-500 to-red-600'
   },
@@ -257,7 +257,7 @@ const allGifts = asyncHandler(async (req, res) => {
     name: 'Happy Dhanteras', 
     price: 4000,
     icon: '✨',
-    lottie: 'https://assets8.lottiefiles.com/packages/lf20_yzt5hwfn.json',
+    lottie: 'https://res.cloudinary.com/dw3gi24uf/raw/upload/v1767634138/happy_lips_and_tongue_v2_txikuq.json',
     sound: 'https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3',
     gradient: 'from-yellow-400 to-amber-600'
   },
