@@ -57,43 +57,105 @@ const HostDashboard = () => {
 
   // Socket event listeners
   useEffect(() => {
-    if (!socket || !connected) {
-      console.log('⚠️ Socket not available or not connected');
+  if (!socket || !connected) {
+    console.log('⚠️ Socket not available in HostDashboard');
+    console.log('Socket exists:', !!socket);
+    console.log('Connected:', connected);
+    return;
+  }
+
+  console.log('👂 Setting up HOST socket listeners');
+  console.log('🆔 Host socket ID:', socket.id);
+  console.log('👤 User:', user?.email);
+
+  const handleIncomingCall = ({ from, offer, callId, caller }) => {
+    console.log('📞 ===== HOST RECEIVED INCOMING CALL =====');
+    console.log('From:', from);
+    console.log('Caller:', caller);
+    console.log('Call ID:', callId);
+    console.log('Is Online:', isOnline);
+    console.log('=======================================');
+    
+    // Only accept calls if host is online
+    if (!isOnline) {
+      console.log('❌ Host is offline, rejecting call');
+      socket.emit('call:reject', { 
+        to: from, 
+        callId, 
+        reason: 'Host is offline' 
+      });
       return;
     }
 
-    console.log('👂 Setting up socket listeners for host');
-    console.log('🆔 Host socket ID:', socket.id);
-
-    // Listen for incoming calls
-    socket.on('call:offer', handleIncomingCall);
-    socket.on('call:rejected', handleCallRejected);
-    socket.on('call:ended', handleCallEnded);
-    socket.on('call:cancelled', handleCallCancelled);
-    socket.on('call:answer', handleCallAnswer);
-
-    // Listen for host status changes
-    socket.on('host:offline', (data) => {
-      console.log('📡 Host went offline:', data);
-      fetchHosts(); // Refresh host list
+    // Show incoming call notification
+    setIncomingCall({
+      from,
+      offer,
+      callId,
+      caller: caller || { name: 'User' }
     });
 
-    socket.on('host:online', (data) => {
-      console.log('📡 Host came online:', data);
-      fetchHosts(); // Refresh host list
-    });
+    console.log('✅ Incoming call state set');
+  };
 
-    return () => {
-      console.log('🧹 Cleaning up host socket listeners');
-      socket.off('call:offer');
-      socket.off('call:rejected');
-      socket.off('call:ended');
-      socket.off('call:cancelled');
-      socket.off('call:answer');
-      socket.off('host:offline');
-      socket.off('host:online');
-    };
-  }, [socket, connected, isOnline]);
+  const handleCallRejected = ({ callId, reason }) => {
+    console.log('📞 HOST: Call rejected:', reason);
+    toast.error(`Call rejected: ${reason}`);
+    setInCall(false);
+    setCurrentCall(null);
+    setIncomingCall(null);
+  };
+
+  const handleCallEnded = ({ from, callId, reason }) => {
+    console.log('📞 HOST: Call ended:', reason);
+    setInCall(false);
+    setCurrentCall(null);
+    setIncomingCall(null);
+    toast.success('Call ended');
+    fetchHosts();
+  };
+
+  const handleCallCancelled = ({ callId, reason }) => {
+    console.log('📞 HOST: Call cancelled:', reason);
+    setIncomingCall(null);
+    toast.info(`Call cancelled: ${reason}`);
+  };
+
+  const handleCallAnswer = ({ from, answer }) => {
+    console.log('📞 HOST: Received answer from:', from);
+  };
+
+  // Register listeners
+  socket.on('call:offer', handleIncomingCall);
+  socket.on('call:rejected', handleCallRejected);
+  socket.on('call:ended', handleCallEnded);
+  socket.on('call:cancelled', handleCallCancelled);
+  socket.on('call:answer', handleCallAnswer);
+
+  // Host status change listeners
+  socket.on('host:offline', (data) => {
+    console.log('📡 Host went offline:', data);
+    fetchHosts();
+  });
+
+  socket.on('host:online', (data) => {
+    console.log('📡 Host came online:', data);
+    fetchHosts();
+  });
+
+  console.log('✅ All HOST listeners registered');
+
+  return () => {
+    console.log('🧹 Cleaning up HOST socket listeners');
+    socket.off('call:offer', handleIncomingCall);
+    socket.off('call:rejected', handleCallRejected);
+    socket.off('call:ended', handleCallEnded);
+    socket.off('call:cancelled', handleCallCancelled);
+    socket.off('call:answer', handleCallAnswer);
+    socket.off('host:offline');
+    socket.off('host:online');
+  };
+}, [socket, connected, isOnline, user]);
 
 
 useEffect(() => {
@@ -116,14 +178,12 @@ useEffect(() => {
       });
     });
 
-    // Optional: Show toast only for available status
-    if (data.isOnline && data.callStatus === 'available') {
-      toast.success(`A host is now available!`, { duration: 2000 });
-    }
   });
 
   return () => unsubscribe();
 }, [onHostStatusChange]);
+
+
 
   // useEffect(() => {
   //   if (user?.role === 'host' || user?.role == 'coinSeller') {

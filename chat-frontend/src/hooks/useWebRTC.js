@@ -1,61 +1,274 @@
+// hooks/useWebRTC.js
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useSocket } from './useSocket';
-
-const ICE_SERVERS = [
-  {
-    urls: [
-      'stun:stun.l.google.com:19302',
-      'stun:stun1.l.google.com:19302'
-    ]
-  },
-  {
-    urls: 'turn:13.203.182.183:3478',
-    username: '557980386236',
-    credential: '4Star@4911'
-  },
-  {
-    urls: 'turn:13.203.182.183:3478?transport=tcp',
-    username: '557980386236',
-    credential: '4Star@4911'
-  }
-];
+import api from '../services/api';
 
 export const useWebRTC = () => {
   const { socket } = useSocket();
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [callStatus, setCallStatus] = useState('idle');
+  
+  // WebRTC refs
   const peerConnection = useRef(null);
+  const signalingClient = useRef(null);
   const remoteUserId = useRef(null);
-  const pendingIceCandidates = useRef([]);
   const currentCallId = useRef(null);
   const isProcessingCall = useRef(false);
   const isInitializing = useRef(false);
+  const currentRole = useRef(null);
+  const useKinesis = useRef(false);
+  const pendingIceCandidates = useRef([]);
   
-  // Warm-up specific refs
-  const isWarmedUp = useRef(false);
-  const warmUpStream = useRef(null);
-  const warmUpPeerConnection = useRef(null);
-  
-  // Filter processing refs
+  // Stream refs
   const originalStream = useRef(null);
   const canvasRef = useRef(null);
   const videoRef = useRef(null);
   const animationFrameId = useRef(null);
   const currentFilter = useRef('none');
 
-  // 🔥 WARM-UP: Pre-initialize WebRTC resources
-  const warmUpConnection = useCallback(async () => {
-    if (isWarmedUp.current) {
-      console.log('ℹ️ WebRTC already warmed up, skipping');
+  // ICE servers
+  const iceServers = useRef([]);
+
+  // Load Kinesis SDK (optional)
+  const loadKinesisSDK = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      if (window.KVSWebRTC) {
+        resolve(window.KVSWebRTC);
+        return;
+      }
+
+      const checkInterval = setInterval(() => {
+        if (window.KVSWebRTC) {
+          clearInterval(checkInterval);
+          resolve(window.KVSWebRTC);
+        }
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        reject(new Error('Kinesis SDK not available'));
+      }, 5000);
+    });
+  }, []);
+
+  // Initialize signaling (Kinesis or Socket-based)
+  const initializeSignaling = async (callId, role) => {
+    try {
+      console.log('🔧 Getting signaling credentials');
+      
+      const response = await api.post('/calls/signaling-credentials', {
+        callId,
+        role
+      });
+
+      const { channelArn, endpoints, iceServers: servers, useKinesis: shouldUseKinesis } = response.data;
+      
+      // Format ICE servers
+      iceServers.current = servers.map(server => ({
+        urls: server.Uris || server.urls,
+        username: server.Username || server.username,
+        credential: server.Password || server.credential,
+      }));
+      
+      console.log('🧊 Got ICE servers:', iceServers.current.length);
+      useKinesis.current = shouldUseKinesis;
+
+      if (shouldUseKinesis && channelArn) {
+        // Try to use Kinesis signaling
+        try {
+          console.log('📡 Attempting AWS Kinesis signaling');
+          const KVS = await loadKinesisSDK();
+
+          const wssEndpoint = endpoints.find(e => e.Protocol === 'WSS');
+          if (!wssEndpoint) {
+            throw new Error('WSS endpoint not found');
+          }
+
+          signalingClient.current = new KVS.SignalingClient({
+            channelARN: channelArn,
+            channelEndpoint: wssEndpoint.ResourceEndpoint,
+            role: role,
+            region: import.meta.env.VITE_AWS_REGION || 'ap-south-1',
+            clientId: role === 'VIEWER' ? socket.id : undefined,
+            systemClockOffset: 0,
+          });
+
+          setupKinesisListeners(role);
+          signalingClient.current.open();
+          console.log('✅ Kinesis signaling ready');
+        } catch (error) {
+          console.warn('⚠️ Kinesis failed, falling back to Socket.io:', error);
+          useKinesis.current = false;
+          setupSocketListeners();
+        }
+      } else {
+        // Use socket-based signaling
+        console.log('📡 Using Socket.io signaling');
+        setupSocketListeners();
+      }
+
+      return true;
+    } catch (error) {
+      console.error('❌ Signaling init failed:', error);
+      throw error;
+    }
+  };
+
+  // Kinesis signaling listeners
+  const setupKinesisListeners = (role) => {
+    const client = signalingClient.current;
+
+    client.on('sdpOffer', async (offer, remoteClientId) => {
+      console.log('📥 [Kinesis] SDP offer');
+      
+      try {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.current.createAnswer();
+        await peerConnection.current.setLocalDescription(answer);
+        client.sendSdpAnswer(peerConnection.current.localDescription, remoteClientId);
+        setCallStatus('connecting');
+      } catch (error) {
+        console.error('❌ Error handling offer:', error);
+      }
+    });
+
+    client.on('sdpAnswer', async (answer) => {
+      console.log('📥 [Kinesis] SDP answer');
+      
+      try {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+        setCallStatus('connecting');
+      } catch (error) {
+        console.error('❌ Error handling answer:', error);
+      }
+    });
+
+    client.on('iceCandidate', async (candidate) => {
+      console.log('📥 [Kinesis] ICE candidate');
+      
+      try {
+        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.error('❌ Error adding candidate:', error);
+      }
+    });
+
+    client.on('open', () => console.log('✅ Kinesis connection open'));
+    client.on('close', () => console.log('🔌 Kinesis connection closed'));
+    client.on('error', (error) => console.error('❌ Kinesis error:', error));
+  };
+
+  // Socket-based signaling listeners
+  const setupSocketListeners = () => {
+    if (!socket) {
+      console.warn('⚠️ Socket not available for signaling');
       return;
     }
 
+    console.log('👂 Setting up socket signaling listeners');
+    
+    // Remove existing listeners to avoid duplicates
+    socket.off('call:answer', handleAnswer);
+    socket.off('call:ice-candidate', handleIceCandidate);
+    
+    // Add new listeners
+    socket.on('call:answer', handleAnswer);
+    socket.on('call:ice-candidate', handleIceCandidate);
+  };
+
+  const handleAnswer = async ({ answer }) => {
     try {
-      console.log('🔥 Pre-warming WebRTC connection...');
+      console.log('📥 [Socket] Received answer');
+      setCallStatus('accepted');
       
-      // 1️⃣ Initialize local media stream
-      console.log('🎥 Warming up: Requesting media devices...');
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+      
+      // Process pending ICE candidates
+      for (const candidate of pendingIceCandidates.current) {
+        try {
+          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('Failed to add ICE candidate:', e);
+        }
+      }
+      pendingIceCandidates.current = [];
+      
+      isProcessingCall.current = false;
+    } catch (error) {
+      console.error('❌ Error handling answer:', error);
+    }
+  };
+
+  const handleIceCandidate = async ({ candidate }) => {
+    try {
+      console.log('📥 [Socket] ICE candidate');
+      
+      if (!peerConnection.current?.remoteDescription) {
+        pendingIceCandidates.current.push(candidate);
+        return;
+      }
+
+      await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (error) {
+      console.error('❌ Error adding candidate:', error);
+    }
+  };
+
+  // Initialize peer connection
+  const initializePeerConnection = useCallback(() => {
+    console.log('🔧 Initializing peer connection');
+    
+    if (peerConnection.current) {
+      peerConnection.current.close();
+    }
+
+    peerConnection.current = new RTCPeerConnection({
+      iceServers: iceServers.current,
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require',
+    });
+
+    peerConnection.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('📤 Sending ICE candidate');
+        
+        if (useKinesis.current && signalingClient.current) {
+          signalingClient.current.sendIceCandidate(event.candidate);
+        } else if (socket && remoteUserId.current) {
+          socket.emit('call:ice-candidate', {
+            to: remoteUserId.current,
+            candidate: event.candidate,
+          });
+        }
+      }
+    };
+
+    peerConnection.current.ontrack = (event) => {
+      console.log('📺 Received remote track');
+      setRemoteStream(event.streams[0]);
+      setCallStatus('connected');
+    };
+
+    peerConnection.current.oniceconnectionstatechange = () => {
+      const state = peerConnection.current?.iceConnectionState;
+      console.log('🔌 ICE State:', state);
+      
+      if (state === 'connected' || state === 'completed') {
+        setCallStatus('connected');
+      } else if (state === 'disconnected') {
+        setCallStatus('reconnecting');
+      } else if (state === 'failed') {
+        setCallStatus('failed');
+        setTimeout(() => cleanup(), 1000);
+      }
+    };
+  }, [socket]);
+
+  // Start local stream
+  const startLocalStream = async () => {
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           width: { ideal: 1280 },
@@ -68,247 +281,229 @@ export const useWebRTC = () => {
           autoGainControl: true,
         },
       });
+
+      originalStream.current = stream;
+      setLocalStream(stream);
+      return stream;
+    } catch (error) {
+      console.error('❌ Error accessing media:', error);
+      throw error;
+    }
+  };
+
+  // Start call (USER = VIEWER)
+  const startCall = async (hostId, callId) => {
+    try {
+      if (isProcessingCall.current || isInitializing.current) {
+        return;
+      }
       
-      warmUpStream.current = stream;
-      console.log(`✅ Warm-up: Local stream ready with ${stream.getTracks().length} tracks`);
-
-      // 2️⃣ Create peer connection
-      warmUpPeerConnection.current = new RTCPeerConnection({ 
-        iceServers: ICE_SERVERS,
-        iceCandidatePoolSize: 10,
-        bundlePolicy: 'max-bundle',
-        rtcpMuxPolicy: 'require',
-      });
+      isProcessingCall.current = true;
+      isInitializing.current = true;
+      currentRole.current = 'VIEWER';
       
-      console.log('✅ Warm-up: Peer connection created');
+      console.log('📞 Starting call');
+      
+      const stream = await startLocalStream();
+      await initializeSignaling(callId, 'VIEWER');
+      initializePeerConnection();
 
-      // Add tracks to trigger ICE gathering
-      stream.getTracks().forEach(track => {
-        warmUpPeerConnection.current.addTrack(track, stream);
+      stream.getTracks().forEach((track) => {
+        peerConnection.current.addTrack(track, stream);
       });
 
-      // 3️⃣ Create dummy offer to start ICE gathering and TURN allocation
-      const offer = await warmUpPeerConnection.current.createOffer({
+      remoteUserId.current = hostId;
+      currentCallId.current = callId;
+      
+      // Create and send offer
+      const offer = await peerConnection.current.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true,
-        iceRestart: false,
       });
+      await peerConnection.current.setLocalDescription(offer);
+
+      if (useKinesis.current && signalingClient.current) {
+        // Send via Kinesis (VIEWER waits for MASTER's offer in Kinesis model)
+        console.log('⏳ Waiting for MASTER offer via Kinesis');
+      } else {
+        // Send via Socket
+        if (!socket) {
+          throw new Error('Socket not connected');
+        }
+        
+        console.log('📤 Sending offer via Socket.io to:', hostId);
+        socket.emit('call:offer', { 
+          to: hostId, 
+          offer, 
+          callId 
+        });
+      }
       
-      await warmUpPeerConnection.current.setLocalDescription(offer);
-      console.log('📝 Warm-up: Dummy local description set');
-
-      // 4️⃣ Wait for ICE gathering (this pre-allocates TURN resources)
-      await new Promise(resolve => {
-        let candidateCount = 0;
-        const timeout = setTimeout(() => {
-          console.log(`⏰ Warm-up: ICE gathering timeout after ${candidateCount} candidates`);
-          resolve();
-        }, 3000); // Max 3 seconds for warm-up
-
-        warmUpPeerConnection.current.onicecandidate = (event) => {
-          if (event.candidate) {
-            candidateCount++;
-            console.log(`🧊 Warm-up: Gathered ICE candidate ${candidateCount} (${event.candidate.type})`);
-          } else {
-            console.log(`✅ Warm-up: ICE gathering complete (${candidateCount} candidates)`);
-            clearTimeout(timeout);
-            resolve();
-          }
-        };
-      });
-
-      isWarmedUp.current = true;
-      console.log('🔥 WebRTC warm-up completed successfully!');
+      setCallStatus('calling');
+      
+      setTimeout(() => {
+        isInitializing.current = false;
+      }, 300);
       
     } catch (error) {
-      console.error('🔴 Error during WebRTC warm-up:', error);
-      // Don't fail silently, but don't block calls either
-      isWarmedUp.current = false;
+      console.error('❌ Error starting call:', error);
+      isProcessingCall.current = false;
+      isInitializing.current = false;
+      cleanup();
+      throw error;
     }
-  }, []);
+  };
 
-  // 🔥 Use warmed-up resources for actual call
-  const reuseWarmUpResources = useCallback(() => {
-    if (!isWarmedUp.current) {
-      console.log('⚠️ No warm-up resources available');
-      return null;
+  // Accept call (HOST = MASTER)
+  const acceptCall = async (from, offer, callId) => {
+    try {
+      if (isProcessingCall.current || isInitializing.current) {
+        return;
+      }
+      
+      isProcessingCall.current = true;
+      isInitializing.current = true;
+      currentRole.current = 'MASTER';
+      
+      console.log('📲 Accepting call');
+      
+      const stream = await startLocalStream();
+      await initializeSignaling(callId, 'MASTER');
+      initializePeerConnection();
+
+      stream.getTracks().forEach((track) => {
+        peerConnection.current.addTrack(track, stream);
+      });
+
+      remoteUserId.current = from;
+      currentCallId.current = callId;
+
+      if (useKinesis.current && signalingClient.current) {
+        // Kinesis: MASTER sends offer
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const rtcOffer = await peerConnection.current.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
+        });
+        await peerConnection.current.setLocalDescription(rtcOffer);
+        signalingClient.current.sendSdpOffer(peerConnection.current.localDescription);
+        console.log('📤 Sent offer as MASTER');
+      } else {
+        // Socket: Set remote description and create answer
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+        
+        const answer = await peerConnection.current.createAnswer();
+        await peerConnection.current.setLocalDescription(answer);
+        
+        if (socket) {
+          socket.emit('call:answer', { to: from, answer });
+          console.log('📤 Sent answer via socket');
+        }
+      }
+      
+      setCallStatus('connecting');
+      
+      setTimeout(() => {
+        isInitializing.current = false;
+        isProcessingCall.current = false;
+      }, 300);
+      
+    } catch (error) {
+      console.error('❌ Error accepting call:', error);
+      isProcessingCall.current = false;
+      isInitializing.current = false;
+      cleanup();
+      throw error;
     }
+  };
 
-    console.log('♻️ Reusing warmed-up resources for call');
-    
-    // Transfer the warmed-up stream
-    const stream = warmUpStream.current;
-    originalStream.current = stream;
-    setLocalStream(stream);
-    
-    // Close the warm-up peer connection (we'll create a fresh one for the call)
-    if (warmUpPeerConnection.current) {
-      warmUpPeerConnection.current.close();
-      warmUpPeerConnection.current = null;
-    }
-    
-    return stream;
-  }, []);
-
-  // Cleanup function
+  // Cleanup
   const cleanup = useCallback(() => {
     if (isInitializing.current) {
-      console.log('⚠️ Skipping cleanup during call initialization');
       return;
     }
     
-    console.log('🧹 Performing complete cleanup');
+    console.log('🧹 Cleaning up');
     
-    // Stop animation frame
     if (animationFrameId.current) {
       cancelAnimationFrame(animationFrameId.current);
-      animationFrameId.current = null;
     }
     
-    // Stop original stream tracks
     if (originalStream.current) {
-      originalStream.current.getTracks().forEach((track) => {
-        track.stop();
-        console.log('⏹️ Stopped original track:', track.kind);
-      });
+      originalStream.current.getTracks().forEach(track => track.stop());
       originalStream.current = null;
     }
     
-    // Stop local stream tracks
     if (localStream) {
-      localStream.getTracks().forEach((track) => {
-        track.stop();
-        console.log('⏹️ Stopped local track:', track.kind);
-      });
+      localStream.getTracks().forEach(track => track.stop());
       setLocalStream(null);
     }
 
-    // Close peer connection
     if (peerConnection.current) {
-      peerConnection.current.onicecandidate = null;
-      peerConnection.current.ontrack = null;
-      peerConnection.current.oniceconnectionstatechange = null;
-      peerConnection.current.onconnectionstatechange = null;
-      peerConnection.current.onsignalingstatechange = null;
       peerConnection.current.close();
       peerConnection.current = null;
-      console.log('🔌 Peer connection closed');
+    }
+
+    if (signalingClient.current) {
+      try {
+        signalingClient.current.close();
+      } catch (e) {}
+      signalingClient.current = null;
     }
 
     setRemoteStream(null);
     setCallStatus('idle');
     remoteUserId.current = null;
     currentCallId.current = null;
-    pendingIceCandidates.current = [];
-    currentFilter.current = 'none';
+    currentRole.current = null;
     isProcessingCall.current = false;
+    pendingIceCandidates.current = [];
     
-    console.log('✅ Cleanup completed');
+    console.log('✅ Cleanup complete');
   }, [localStream]);
 
-  const initializePeerConnection = useCallback(() => {
-    console.log('🔧 Initializing peer connection');
+  // End call
+  const endCall = useCallback(() => {
+    console.log('☎️ Ending call');
     
-    if (peerConnection.current) {
-      console.log('⚠️ Closing existing peer connection');
-      peerConnection.current.close();
+    if (remoteUserId.current && currentCallId.current && socket) {
+      socket.emit('call:end', { 
+        to: remoteUserId.current,
+        callId: currentCallId.current,
+        endedBy: currentRole.current === 'MASTER' ? 'host' : 'user'
+      });
     }
     
-    peerConnection.current = new RTCPeerConnection({ 
-      iceServers: ICE_SERVERS,
-      iceCandidatePoolSize: 10,
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require',
-    });
-
-    peerConnection.current.onicecandidate = (event) => {
-      if (event.candidate && remoteUserId.current) {
-        console.log('📤 Sending ICE candidate to:', remoteUserId.current);
-        socket.emit('call:ice-candidate', {
-          to: remoteUserId.current,
-          candidate: event.candidate,
-        });
-      } else if (!event.candidate) {
-        console.log('✅ ICE gathering completed');
-      }
-    };
-
-    peerConnection.current.ontrack = (event) => {
-      console.log('📺 Received remote track:', event.track.kind);
-      setRemoteStream(event.streams[0]);
-      setCallStatus('connected'); // Update status immediately when we get remote track
-    };
-
-    peerConnection.current.oniceconnectionstatechange = () => {
-      const state = peerConnection.current?.iceConnectionState;
-      console.log('🔌 ICE Connection State:', state);
-      
-      if (state === 'connected' || state === 'completed') {
-        setCallStatus('connected');
-        console.log('✅ Call connected!');
-      } else if (state === 'disconnected') {
-        setCallStatus('reconnecting');
-        console.log('🔄 Call reconnecting...');
-      } else if (state === 'failed') {
-        setCallStatus('failed');
-        console.log('❌ Call failed');
-        setTimeout(() => cleanup(), 1000);
-      } else if (state === 'checking') {
-        setCallStatus('connecting');
-      }
-    };
-
-    peerConnection.current.onconnectionstatechange = () => {
-      const state = peerConnection.current?.connectionState;
-      console.log('🔗 Connection State:', state);
-      
-      if (state === 'failed' || state === 'closed') {
-        cleanup();
-      }
-    };
-
-    peerConnection.current.onsignalingstatechange = () => {
-      const state = peerConnection.current?.signalingState;
-      console.log('📡 Signaling State:', state);
-    };
+    cleanup();
   }, [socket, cleanup]);
 
-  const startLocalStream = async () => {
-    try {
-      // Try to reuse warmed-up stream first
-      const warmedStream = reuseWarmUpResources();
-      if (warmedStream) {
-        console.log('✅ Using pre-warmed stream (instant!)');
-        return warmedStream;
+  // Toggle controls
+  const toggleAudio = () => {
+    const stream = originalStream.current || localStream;
+    if (stream) {
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        return audioTrack.enabled;
       }
-
-      // Fallback: request new stream
-      console.log('🎥 Requesting media devices...');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-
-      console.log('✅ Got local stream with tracks:', 
-        stream.getTracks().map(t => `${t.kind}: ${t.label}`));
-      
-      originalStream.current = stream;
-      setLocalStream(stream);
-      return stream;
-    } catch (error) {
-      console.error('❌ Error accessing media devices:', error);
-      throw error;
     }
+    return false;
   };
 
+  const toggleVideo = () => {
+    const stream = originalStream.current || localStream;
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        return videoTrack.enabled;
+      }
+    }
+    return false;
+  };
+
+  // Filter functions
   const applyFilterToStream = useCallback((filterCSS) => {
     if (!originalStream.current || !canvasRef.current || !videoRef.current) {
       return originalStream.current;
@@ -323,8 +518,6 @@ export const useWebRTC = () => {
 
     canvas.width = 1280;
     canvas.height = 720;
-
-    currentFilter.current = filterCSS;
 
     if (animationFrameId.current) {
       cancelAnimationFrame(animationFrameId.current);
@@ -356,13 +549,10 @@ export const useWebRTC = () => {
     if (videoSender) {
       const newVideoTrack = newStream.getVideoTracks()[0];
       videoSender.replaceTrack(newVideoTrack);
-      console.log('🔄 Replaced video track with filtered stream');
     }
   }, []);
 
   const changeFilter = useCallback((filterCSS) => {
-    console.log('🎨 Applying filter:', filterCSS);
-    
     if (filterCSS === 'none') {
       if (originalStream.current && peerConnection.current) {
         updateVideoTrack(originalStream.current);
@@ -382,314 +572,25 @@ export const useWebRTC = () => {
     }
   }, [applyFilterToStream, updateVideoTrack]);
 
- const startCall = async (hostId, callId) => {
-    try {
-      if (isProcessingCall.current || isInitializing.current) {
-        console.log('⚠️ Already processing a call, ignoring');
-        return;
-      }
-      
-      isProcessingCall.current = true;
-      isInitializing.current = true;
-      
-      console.log('📞 Starting call to:', hostId, 'callId:', callId);
-      console.log('🆔 My socket ID:', socket?.id);
-      
-      const stream = await startLocalStream();
-      initializePeerConnection();
-
-      stream.getTracks().forEach((track) => {
-        console.log('➕ Adding track to peer connection:', track.kind);
-        peerConnection.current.addTrack(track, stream);
-      });
-
-      console.log('📝 Creating offer...');
-      const offer = await peerConnection.current.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true,
-      });
-      await peerConnection.current.setLocalDescription(offer);
-      console.log('✅ Local description set (offer)');
-
-      remoteUserId.current = hostId;
-      currentCallId.current = callId;
-      
-      console.log('📤 Emitting call:offer to:', hostId);
-      socket.emit('call:offer', { to: hostId, offer, callId });
-      
-      setCallStatus('calling');
-      
-      // Faster initialization complete
-      setTimeout(() => {
-        isInitializing.current = false;
-        console.log('✅ Call initialization complete');
-      }, 300); // Reduced from 1000ms
-      
-    } catch (error) {
-      console.error('❌ Error starting call:', error);
-      isProcessingCall.current = false;
-      isInitializing.current = false;
-      cleanup();
-      throw error;
-    }
-  };
-
-  const acceptCall = async (from, offer, callId) => {
-    try {
-      if (isProcessingCall.current || isInitializing.current) {
-        console.log('⚠️ Already processing a call, ignoring');
-        return;
-      }
-      
-      isProcessingCall.current = true;
-      isInitializing.current = true;
-      
-      console.log('📲 Accepting call from:', from, 'callId:', callId);
-      
-      const stream = await startLocalStream();
-      initializePeerConnection();
-
-      stream.getTracks().forEach((track) => {
-        console.log('➕ Adding track to peer connection:', track.kind);
-        peerConnection.current.addTrack(track, stream);
-      });
-
-      console.log('📝 Setting remote description (offer)...');
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-      console.log('✅ Remote description set');
-
-      // Process pending ICE candidates
-      console.log('Processing', pendingIceCandidates.current.length, 'pending ICE candidates');
-      for (const candidate of pendingIceCandidates.current) {
-        try {
-          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.warn('Failed to add ICE candidate:', e);
-        }
-      }
-      pendingIceCandidates.current = [];
-
-      console.log('📝 Creating answer...');
-      const answer = await peerConnection.current.createAnswer();
-      await peerConnection.current.setLocalDescription(answer);
-      console.log('✅ Local description set (answer)');
-
-      remoteUserId.current = from;
-      currentCallId.current = callId;
-      
-      console.log('📤 Emitting call:answer to:', from);
-      socket.emit('call:answer', { to: from, answer });
-      
-      // setCallStatus('connecting');
-      
-      setTimeout(() => {
-        isInitializing.current = false;
-        isProcessingCall.current = false;
-        console.log('✅ Accept call complete');
-      }, 300);
-      
-    } catch (error) {
-      console.error('❌ Error accepting call:', error);
-      isProcessingCall.current = false;
-      isInitializing.current = false;
-      cleanup();
-      throw error;
-    }
-  };
-
-  const handleAnswer = async (answer) => {
-    try {
-      console.log('📥 Received answer');
-      setCallStatus('accepted');
-      
-      if (!peerConnection.current) {
-        console.warn('⚠️ No peer connection to handle answer');
-        return;
-      }
-      
-      console.log('📝 Setting remote description (answer)...');
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-      console.log('✅ Remote description set');
-      
-      // Process pending ICE candidates
-      console.log('Processing', pendingIceCandidates.current.length, 'pending ICE candidates');
-      for (const candidate of pendingIceCandidates.current) {
-        try {
-          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.warn('Failed to add ICE candidate:', e);
-        }
-      }
-      pendingIceCandidates.current = [];
-      
-      // setCallStatus('connecting');
-      isProcessingCall.current = false;
-    } catch (error) {
-      console.error('❌ Error handling answer:', error);
-      isProcessingCall.current = false;
-    }
-  };
-
-  const handleIceCandidate = async (candidate) => {
-    try {
-      console.log('📥 Received ICE candidate');
-      
-      if (!peerConnection.current) {
-        console.warn('⚠️ Peer connection not initialized, ignoring candidate');
-        return;
-      }
-
-      const remoteDesc = peerConnection.current.remoteDescription;
-      
-      if (!remoteDesc) {
-        console.log('⏳ Remote description not set yet, queuing candidate');
-        pendingIceCandidates.current.push(candidate);
-        return;
-      }
-
-      console.log('➕ Adding ICE candidate');
-      await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log('✅ ICE candidate added');
-    } catch (error) {
-      console.error('❌ Error adding ICE candidate:', error);
-    }
-  };
-
-const endCall = useCallback(() => {
-  console.log('☎️ Ending call');
-  
-  if (remoteUserId.current && currentCallId.current && socket) {
-    console.log('📤 Emitting call:end to:', remoteUserId.current);
-    socket.emit('call:end', { 
-      to: remoteUserId.current,
-      callId: currentCallId.current,
-      endedBy: 'user' // NEW: Add this to identify who ended the call
-    });
-  }
-  
-  cleanup();
-  
-  // Re-warm up after call ends for next call
-  setTimeout(() => {
-    console.log('🔄 Re-warming WebRTC for next call...');
-    isWarmedUp.current = false;
-    warmUpConnection();
-  }, 2000);
-}, [socket, cleanup, warmUpConnection]);
-
-  const rejectCall = useCallback((from, callId, reason = 'User declined') => {
-    console.log('❌ Rejecting call from:', from);
-    if (socket) {
-      socket.emit('call:reject', { to: from, callId, reason });
-    }
-    cleanup();
-  }, [socket, cleanup]);
-
-  const toggleAudio = () => {
-    const stream = originalStream.current || localStream;
-    if (stream) {
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        console.log('🎤 Audio:', audioTrack.enabled ? 'enabled' : 'disabled');
-        return audioTrack.enabled;
-      }
-    }
-    return false;
-  };
-
-  const toggleVideo = () => {
-    const stream = originalStream.current || localStream;
-    if (stream) {
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        console.log('📹 Video:', videoTrack.enabled ? 'enabled' : 'disabled');
-        return videoTrack.enabled;
-      }
-    }
-    return false;
-  };
-
-  // Socket listeners
+  // Socket listeners for call end
   useEffect(() => {
-    if (!socket) {
-      console.log('⚠️ Socket not available');
-      return;
-    }
+    if (!socket) return;
 
-    console.log('👂 Setting up WebRTC socket listeners');
-    console.log('🆔 My socket ID:', socket.id);
-
-    const handleAnswerReceived = ({ from, answer }) => {
-      console.log('📞 ✅ Received call:answer from:', from);
-      handleAnswer(answer);
-    };
-
-    const handleIceCandidateReceived = ({ from, candidate }) => {
-      console.log('📞 ✅ Received call:ice-candidate from:', from);
-      handleIceCandidate(candidate);
-    };
-
-    const handleCallEnded = ({ from, callId }) => {
-      console.log('📞 ✅ Received call:ended from:', from);
-      endCall();
-    };
-
-    const handleCallRejected = ({ from, callId, reason }) => {
-      console.log('📞 ❌ Call rejected by:', from, 'reason:', reason);
+    const handleCallEnded = () => {
+      console.log('📞 Call ended by remote');
       cleanup();
     };
 
-    const handleCallError = ({ message }) => {
-      console.error('📞 ❌ Call error:', message);
-      cleanup();
-    };
-
-    // Register listeners
-    socket.on('call:answer', handleAnswerReceived);
-    socket.on('call:ice-candidate', handleIceCandidateReceived);
     socket.on('call:ended', handleCallEnded);
-    socket.on('call:rejected', handleCallRejected);
-    socket.on('call:error', handleCallError);
 
-    // Cleanup function
     return () => {
       if (!isInitializing.current) {
-        console.log('🧹 Cleaning up WebRTC socket listeners');
-        socket.off('call:answer', handleAnswerReceived);
-        socket.off('call:ice-candidate', handleIceCandidateReceived);
         socket.off('call:ended', handleCallEnded);
-        socket.off('call:rejected', handleCallRejected);
-        socket.off('call:error', handleCallError);
-      } else {
-        console.log('⏭️ Skipping socket cleanup - call is initializing');
+        socket.off('call:answer', handleAnswer);
+        socket.off('call:ice-candidate', handleIceCandidate);
       }
     };
-  }, [socket, endCall, cleanup]);
-
-  // 🔥 AUTO WARM-UP: Warm up WebRTC when component mounts
-  useEffect(() => {
-    console.log('🚀 useWebRTC mounted, starting auto warm-up...');
-    warmUpConnection();
-    
-    return () => {
-      if (!isInitializing.current) {
-        console.log('🧹 Component unmounting, cleaning up WebRTC');
-        cleanup();
-        
-        // Clean up warm-up resources
-        if (warmUpStream.current) {
-          warmUpStream.current.getTracks().forEach(track => track.stop());
-          warmUpStream.current = null;
-        }
-        if (warmUpPeerConnection.current) {
-          warmUpPeerConnection.current.close();
-          warmUpPeerConnection.current = null;
-        }
-      }
-    };
-  }, [warmUpConnection, cleanup]);
+  }, [socket, cleanup]);
 
   return {
     localStream,
@@ -698,11 +599,10 @@ const endCall = useCallback(() => {
     startCall,
     acceptCall,
     endCall,
-    rejectCall,
     toggleAudio,
     toggleVideo,
+    changeFilter,
     canvasRef,
     videoRef,
-    warmUpConnection, 
   };
 };

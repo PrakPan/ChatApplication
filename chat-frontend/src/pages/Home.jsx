@@ -28,21 +28,87 @@ export const Home = () => {
     fetchUnreadCount();
   }, []);
 
-  useEffect(() => {
-    if (!socket) return;
 
-    socket.on('call:offer', handleIncomingCall);
-    socket.on('call:rejected', handleCallRejected);
-    socket.on('call:ended', handleCallEnded);
-    socket.on('chat:message', handleNewMessage);
 
-    return () => {
-      socket.off('call:offer');
-      socket.off('call:rejected');
-      socket.off('call:ended');
-      socket.off('chat:message');
-    };
-  }, [socket]);
+useEffect(() => {
+  if (!socket) {
+    console.log('⚠️ Socket not available in Home component');
+    return;
+  }
+
+  console.log('👂 Setting up call listeners in Home');
+  console.log('🆔 My socket ID:', socket.id);
+
+  const handleIncomingCall = ({ from, offer, callId, caller }) => {
+    console.log('📞 ===== INCOMING CALL =====');
+    console.log('From:', from);
+    console.log('Caller:', caller);
+    console.log('Call ID:', callId);
+    console.log('Has offer:', !!offer);
+    console.log('=========================');
+    
+    toast((t) => (
+      <div className="flex flex-col">
+        <p className="font-semibold mb-2">Incoming call from {caller?.name || 'Unknown'}</p>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              acceptIncomingCall(from, offer, callId);
+              toast.dismiss(t.id);
+            }}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => {
+              rejectIncomingCall(from, callId);
+              toast.dismiss(t.id);
+            }}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+    ), { duration: 30000 });
+  };
+
+  const handleCallRejected = ({ callId, reason }) => {
+    console.log('📞 Call rejected:', callId, reason);
+    toast.error(`Call rejected: ${reason}`);
+    setInCall(false);
+    setCurrentCall(null);
+  };
+
+  const handleCallEnded = ({ from, callId }) => {
+    console.log('📞 Call ended by remote:', from, callId);
+    setInCall(false);
+    setCurrentCall(null);
+    toast.success('Call ended');
+    fetchHosts();
+  };
+
+  const handleNewMessage = () => {
+    fetchUnreadCount();
+  };
+
+  // Register all listeners
+  socket.on('call:offer', handleIncomingCall);
+  socket.on('call:rejected', handleCallRejected);
+  socket.on('call:ended', handleCallEnded);
+  socket.on('chat:message', handleNewMessage);
+
+  console.log('✅ Call listeners registered');
+
+  return () => {
+    console.log('🧹 Cleaning up call listeners');
+    socket.off('call:offer', handleIncomingCall);
+    socket.off('call:rejected', handleCallRejected);
+    socket.off('call:ended', handleCallEnded);
+    socket.off('chat:message', handleNewMessage);
+  };
+}, [socket]);
 
 useEffect(() => {
   if (!onHostStatusChange) return;
@@ -72,6 +138,41 @@ useEffect(() => {
 
   return () => unsubscribe();
 }, [onHostStatusChange]);
+
+
+
+// Also update handleCallHost to add logging
+const handleCallHost = async (host) => {
+  console.log('📞 ===== INITIATING CALL =====');
+  console.log('Host:', host);
+  console.log('Socket connected:', !!socket);
+  console.log('Socket ID:', socket?.id);
+
+  try {
+    const response = await callService.initiateCall(host._id);
+    const callData = response.data.call;
+    
+    console.log('📞 Call initiated, data:', callData);
+    
+    const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
+    
+    console.log('🆔 Host user ID:', hostUserId);
+    
+    setCurrentCall({ 
+      callId: callData._id || callData.id, 
+      hostId: hostUserId,
+      host,
+      isIncoming: false
+    });
+    setInCall(true);
+    
+    console.log('✅ Call state updated');
+    console.log('============================');
+  } catch (error) {
+    console.error('❌ Error initiating call:', error);
+    toast.error(error.response?.data?.message || 'Failed to initiate call');
+  }
+};
 
   const fetchHosts = async () => {
     try {
@@ -157,32 +258,7 @@ const fetchUnreadCount = async () => {
     fetchHosts();
   };
 
-  const handleCallHost = async (host) => {
-    console.log('📞 Calling host:', host);
-
-    try {
-      const response = await callService.initiateCall(host._id);
-      const callData = response.data.call;
-      
-      console.log('📞 Call data:', callData);
-      console.log('📞 Host data:', host);
-      
-      const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
-      
-      console.log('🆔 Using host user ID:', hostUserId);
-      
-      setCurrentCall({ 
-        callId: callData._id || callData.id, 
-        hostId: hostUserId,
-        host,
-        isIncoming: false
-      });
-      setInCall(true);
-    } catch (error) {
-      console.error('❌ Error initiating call:', error);
-      toast.error(error.response?.data?.message || 'Failed to initiate call');
-    }
-  };
+ 
 
   const handleMessageHost = async (host) => {
     const hostUserId = host.userId?._id || host.userId || host.user?._id || host._id;
