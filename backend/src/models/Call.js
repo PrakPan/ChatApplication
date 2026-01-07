@@ -1,3 +1,4 @@
+// models/Call.js
 const mongoose = require('mongoose');
 
 const callSchema = new mongoose.Schema({
@@ -56,15 +57,18 @@ const callSchema = new mongoose.Schema({
   },
   cancelReason: {
     type: String
+  },
+  // NEW: Kinesis Video Streams fields
+  kinesisChannelName: {
+    type: String,
+    index: true
+  },
+  kinesisChannelArn: {
+    type: String
   }
 }, {
   timestamps: true
 });
-
-// Indexes
-// callSchema.index({ userId: 1, createdAt: -1 });
-// callSchema.index({ hostId: 1, createdAt: -1 });
-// callSchema.index({ status: 1 });
 
 // Calculate duration before saving
 callSchema.pre('save', function(next) {

@@ -555,40 +555,34 @@ const socketHandler = (io) => {
     // ==================== VIDEO CALL EVENTS ====================
 
     socket.on("call:offer", async ({ to, offer, callId }) => {
-      try {
-        console.log("📞 ========== CALL OFFER RECEIVED ==========");
-        console.log("From User ID:", userId);
-        console.log("To User ID (raw):", to);
-        console.log("Call ID:", callId);
-        console.log("Offer SDP type:", offer?.type);
+  try {
+    console.log("📞 ========== CALL OFFER RECEIVED ==========");
+    console.log("From User ID:", userId);
+    console.log("From Socket ID:", socket.id);
+    console.log("To User ID (raw):", to);
+    console.log("Call ID:", callId);
 
-        if (!validateSdp(offer)) {
-          console.log("❌ Invalid SDP offer");
-          socket.emit("call:error", { message: "Invalid offer" });
-          return;
-        }
+    const toUserId = to?.toString() || to;
+    console.log("To User ID (string):", toUserId);
 
-        const toUserId = to?.toString() || to;
-        console.log("To User ID (string):", toUserId);
+    console.log("📋 All connected users:");
+    connectedUsers.forEach((socketId, uid) => {
+      console.log(`  - userId: "${uid}" -> socketId: ${socketId}`);
+    });
 
-        console.log("📋 All connected users:");
-        connectedUsers.forEach((socketId, uid) => {
-          console.log(`  - userId: "${uid}" -> socketId: ${socketId}`);
-        });
+    const recipientSocketId = connectedUsers.get(toUserId);
 
-        const recipientSocketId = connectedUsers.get(toUserId);
+    if (recipientSocketId) {
+      console.log("✅ Found recipient socket:", recipientSocketId);
 
-        if (recipientSocketId) {
-          console.log("✅ Found recipient socket:", recipientSocketId);
+      // Store active call
+      activeCalls.set(callId, {
+        caller: userId,
+        receiver: toUserId,
+        startTime: new Date(),
+      });
 
-          // Store active call
-          activeCalls.set(callId, {
-            caller: userId,
-            receiver: toUserId,
-            startTime: new Date(),
-          });
-
-          // NEW: Update host status to busy
+      // Update host status to busy
       const host = await Host.findOne({ userId: toUserId });
       if (host) {
         await host.setCallBusy(callId);
@@ -603,30 +597,32 @@ const socketHandler = (io) => {
         });
       }
 
-          io.to(recipientSocketId).emit("call:offer", {
-            from: userId,
-            offer,
-            callId,
-            caller: {
-              id: socket.user._id,
-              name: socket.user.name,
-              avatar: socket.user.avatar,
-            },
-          });
+      // Send offer to recipient
+      console.log('📤 Emitting call:offer to socket:', recipientSocketId);
+      io.to(recipientSocketId).emit("call:offer", {
+        from: userId,
+        offer,
+        callId,
+        caller: {
+          id: socket.user._id,
+          name: socket.user.name,
+          avatar: socket.user.avatar,
+        },
+      });
 
-          console.log("📤 Call offer sent successfully");
-        } else {
-          console.log("❌ Recipient NOT FOUND");
-          console.log("❌ Searched for:", toUserId);
-          socket.emit("call:error", { message: "Recipient is offline" });
-        }
+      console.log("✅ Call offer sent successfully");
+    } else {
+      console.log("❌ Recipient NOT FOUND");
+      console.log("❌ Searched for:", toUserId);
+      socket.emit("call:error", { message: "Recipient is offline" });
+    }
 
-        console.log("==========================================");
-      } catch (error) {
-        console.error("Error handling call offer:", error);
-        socket.emit("call:error", { message: "Failed to send offer" });
-      }
-    });
+    console.log("==========================================");
+  } catch (error) {
+    console.error("❌ Error handling call offer:", error);
+    socket.emit("call:error", { message: "Failed to send offer" });
+  }
+});
 
     socket.on("call:answer", async ({ to, answer }) => {
       try {
