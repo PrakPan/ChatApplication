@@ -16,7 +16,7 @@ export const SocketProvider = ({ children }) => {
     if (isAuthenticated) {
       const token = localStorage.getItem('accessToken');
       const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5500';
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
 
       const newSocket = io(socketUrl, {
         auth: { token },

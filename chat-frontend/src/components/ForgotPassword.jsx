@@ -12,7 +12,7 @@ export const ForgotPassword = () => {
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
 
   // Start countdown for resend
   const startCountdown = () => {

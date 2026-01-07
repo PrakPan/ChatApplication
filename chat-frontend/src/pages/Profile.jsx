@@ -31,7 +31,7 @@ export const Profile = () => {
   const [uploading, setUploading] = useState(false);
   
   const fileInputRef = useRef(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
   const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dw3gi24uf';
   const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'host_photos_preset';
   

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Check, X, Eye, AlertCircle, Image as ImageIcon, Clock } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
 
 export const PhotoApprovalPanel = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);

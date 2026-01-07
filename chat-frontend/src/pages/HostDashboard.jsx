@@ -42,7 +42,7 @@ const HostDashboard = () => {
         console.error('Failed to fetch unread count:', error);
       }
     };
-  const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5500/api/v1';
+  const API_URL = import.meta.env?.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
 
   // Fetch user and hosts on mount
   useEffect(() => {

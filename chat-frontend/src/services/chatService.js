@@ -1,7 +1,7 @@
 import axios from 'axios';
 import api from './api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('accessToken');

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { SocketContext } from '../context/SocketContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5500/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'https://chatapplication-1-gspo.onrender.com/api/v1';
 
 export const useChat = (recipientId) => {
   const { socket, connected, emit, on, off } = useContext(SocketContext);
