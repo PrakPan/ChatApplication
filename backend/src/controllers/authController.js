@@ -5,6 +5,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../config/jwt');
 const logger = require('../utils/logger');
 const Level = require('../models/Level');
+const crypto = require('crypto');
 
 const register = asyncHandler(async (req, res) => {
   console.log('Received registration request:', req.body);
@@ -205,6 +206,79 @@ const login = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+const quickLogin = asyncHandler(async (req, res) => {
+  const { deviceId } = req.body;
+
+  // Validate deviceId
+  if (!deviceId || deviceId.trim() === '') {
+    throw new ApiError(400, 'Device ID is required');
+  }
+
+  // Check if user with this deviceId exists
+  let user = await User.findOne({ deviceId: deviceId.trim() });
+
+  // If user doesn't exist, create a guest user
+  if (!user) {
+    // Generate unique 6-digit userId for guest
+    let userId;
+    let isUnique = false;
+    let attempts = 0;
+
+    while (!isUnique && attempts < 10) {
+      userId = Math.random().toString().slice(2, 8);
+      const existing = await User.findOne({ userId });
+      if (!existing) isUnique = true;
+      attempts++;
+    }
+
+    // Create guest user
+    user = await User.create({
+      userId: userId,
+      name: `Guest_${userId}`,
+      email: `guest_${userId}@catlive.in`,
+      phone: `9988${userId}`, // Generate a valid 10-digit phone
+      password: crypto.randomBytes(16).toString('hex'), // Random password
+      role: 'user',
+      country: 'Unknown',
+      dob: new Date('2000-01-01'), // Default DOB
+      gender: 'other',
+      deviceId: deviceId.trim(),
+      isGuestUser: true,
+      isVerified: false
+    });
+
+    logger.info(`Guest user created with deviceId: ${deviceId}`);
+  }
+
+  // Check if account is active
+  if (!user.isActive) {
+    throw new ApiError(403, 'Account has been deactivated');
+  }
+
+  // Generate tokens
+  const accessToken = generateAccessToken(user._id, user.role);
+  const refreshToken = generateRefreshToken(user._id);
+
+  // Update refresh token and last login
+  user.refreshToken = refreshToken;
+  user.lastLogin = new Date();
+  await user.save();
+
+  logger.info(`Quick login successful for deviceId: ${deviceId} (userId: ${user.userId})`);
+
+  ApiResponse.success(res, 200, 'Quick login successful', {
+    user: {
+      ...user.toJSON(),
+      userId: user.userId
+    },
+    token: accessToken,
+    refreshToken,
+    isGuestUser: user.isGuestUser
+  });
+});
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
 
@@ -396,5 +470,6 @@ module.exports = {
   getProfile,
   updateProfile,
   changePassword,
-  checkAvailability
+  checkAvailability,
+  quickLogin
 };

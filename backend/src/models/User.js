@@ -21,6 +21,16 @@ const userSchema = new mongoose.Schema({
     maxlength: 6,
     index: true
   },
+  deviceId: {
+    type: String,
+    unique: true,
+    sparse: true, 
+    index: true
+  },
+  isGuestUser: {
+    type: Boolean,
+    default: false
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -105,6 +115,7 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   }
+
 }, {
   timestamps: true
 });

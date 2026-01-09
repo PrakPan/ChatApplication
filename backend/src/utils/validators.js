@@ -101,6 +101,14 @@ const validators = {
     password: Joi.string().required()
   }),
 
+  quickLogin: Joi.object({
+    deviceId: Joi.string().required()
+      .messages({
+        'string.empty': 'Device ID is required',
+        'any.required': 'Device ID is required'
+      })
+  }),
+
   updateProfile: Joi.object({
     name: Joi.string().min(2).max(50),
     phone: Joi.string().pattern(/^[0-9]{10}$/),

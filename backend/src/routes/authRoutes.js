@@ -7,7 +7,8 @@ const {
   logout,
   getProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  quickLogin
 } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const validate = require('../middleware/validation');
@@ -16,6 +17,7 @@ const { authLimiter } = require('../middleware/rateLimiter');
 
 router.post('/register', authLimiter, validate(validators.register), register);
 router.post('/login', authLimiter, validate(validators.login), login);
+router.post('/quick-login', authLimiter, validate(validators.quickLogin), quickLogin);
 router.post('/refresh-token', refreshAccessToken);
 router.post('/logout', authenticate, logout);
 router.get('/profile', authenticate, getProfile);

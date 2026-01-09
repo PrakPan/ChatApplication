@@ -810,18 +810,17 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     const istDay = istNow.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
     
     // Calculate days to go back to reach Monday
-    const daysToGoBack = istDay === 0 ? 6 : istDay - 1;
+    const daysToGoBack = istDay;
     
-    // Create Monday 00:00:00 IST
-    const mondayIST = new Date(Date.UTC(
+    const sundayStartIST = new Date(Date.UTC(
       istYear,
       istMonth,
       istDate - daysToGoBack - (weeksAgo * 7),
       0, 0, 0, 0
     ));
     
-    // Create Sunday 23:59:59 IST
-    const sundayIST = new Date(Date.UTC(
+    // Create Saturday 23:59:59 IST (end of week)
+    const saturdayEndIST = new Date(Date.UTC(
       istYear,
       istMonth,
       istDate - daysToGoBack + 6 - (weeksAgo * 7),
@@ -830,8 +829,8 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     
     // These are already in IST format (without timezone offset applied)
     return { 
-      weekStart: mondayIST,
-      weekEnd: sundayIST
+      weekStart: sundayStartIST,
+      weekEnd: saturdayEndIST
     };
   };
 
