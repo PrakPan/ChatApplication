@@ -112,7 +112,8 @@ const getSignalingCredentials = asyncHandler(async (req, res) => {
       channelArn,
       endpoints,
       iceServers,
-      role
+      role,
+      useKinesis: true
     });
   } catch (error) {
     logger.error('Error getting signaling credentials:', error);
