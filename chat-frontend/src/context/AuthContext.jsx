@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import toast from 'react-hot-toast';
+import { getDeviceId } from '../utils/deviceId';
 
 export const AuthContext = createContext();
 
@@ -85,6 +86,25 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => ({ ...prev, ...userData }));
   };
 
+
+const quickLogin = async () => {
+   
+    
+     try {
+    const deviceId = getDeviceId();
+    const data = await authService.quickLogin({deviceId});
+     localStorage.setItem('token', data.data.token);
+    localStorage.setItem('refreshToken', data.data.refreshToken);
+    
+    // Update user state
+    setUser(data.data.user);
+    setIsAuthenticated(true);
+
+     }catch (error) {
+      console.error('quick login error:', error);
+    } 
+};
+
   return (
     <AuthContext.Provider
       value={{
@@ -95,7 +115,8 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateUser,
-        refreshUser
+        refreshUser,
+        quickLogin
       }}
     >
       {children}

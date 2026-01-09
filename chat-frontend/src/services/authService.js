@@ -31,6 +31,11 @@ export const authService = {
     return response;
   },
 
+  quickLogin: async (data) => {
+    const response = await api.post('/auth/quick-login', data);
+    return response;
+  },
+
   changePassword: async (currentPassword, newPassword) => {
     const response = await api.put('/auth/change-password', {
       currentPassword,
