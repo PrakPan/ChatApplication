@@ -798,38 +798,41 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
 
   // Helper function to get week boundaries in IST
   const getWeekBoundaries = (weeksAgo = 0) => {
+    // Get current date in IST
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istNow = new Date(now.getTime() + istOffset);
     
-    const istDay = istNow.getUTCDay();
-    const istDate = istNow.getUTCDate();
-    const istMonth = istNow.getUTCMonth();
+    // Get IST date components
     const istYear = istNow.getUTCFullYear();
+    const istMonth = istNow.getUTCMonth();
+    const istDate = istNow.getUTCDate();
+    const istDay = istNow.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
     
+    // Calculate days to go back to reach Monday
     const daysToGoBack = istDay === 0 ? 6 : istDay - 1;
     
-    // Monday 00:00:00 IST
+    // Create Monday 00:00:00 IST
     const mondayIST = new Date(Date.UTC(
-      istYear, 
-      istMonth, 
-      istDate - daysToGoBack - (weeksAgo * 7), 
+      istYear,
+      istMonth,
+      istDate - daysToGoBack - (weeksAgo * 7),
       0, 0, 0, 0
     ));
-    // Subtract IST offset to get UTC equivalent
-    const weekStart = new Date(mondayIST.getTime() - istOffset);
     
-    // Sunday 23:59:59 IST
+    // Create Sunday 23:59:59 IST
     const sundayIST = new Date(Date.UTC(
-      istYear, 
-      istMonth, 
-      istDate - daysToGoBack + 6 - (weeksAgo * 7), 
+      istYear,
+      istMonth,
+      istDate - daysToGoBack + 6 - (weeksAgo * 7),
       23, 59, 59, 999
     ));
-    // Subtract IST offset to get UTC equivalent
-    const weekEnd = new Date(sundayIST.getTime() - istOffset);
     
-    return { weekStart, weekEnd };
+    // These are already in IST format (without timezone offset applied)
+    return { 
+      weekStart: mondayIST,
+      weekEnd: sundayIST
+    };
   };
 
   // Frame URLs
@@ -864,74 +867,63 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
   ];
 
   // Get all three week boundaries
+  const currentWeek = getWeekBoundaries(0);
+  const lastWeek = getWeekBoundaries(1);
+  // const secondLastWeek = getWeekBoundaries(2);
+
   const weeks = {
-    current_week: getWeekBoundaries(0),
-    last_week: getWeekBoundaries(1),
-    second_last_week: getWeekBoundaries(2)
+    current_week: currentWeek,
+    last_week: lastWeek,
+    // second_last_week: secondLastWeek
   };
 
-  // Debug: Log the week boundaries
-  console.log('Week boundaries:', {
-    current: weeks.current_week,
-    last: weeks.last_week,
-    second_last: weeks.second_last_week
+  console.log('Week boundaries (IST):', {
+    current: {
+      start: currentWeek.weekStart.toISOString(),
+      end: currentWeek.weekEnd.toISOString()
+    },
+    last: {
+      start: lastWeek.weekStart.toISOString(),
+      end: lastWeek.weekEnd.toISOString()
+    },
+    // second_last: {
+    //   start: secondLastWeek.weekStart.toISOString(),
+    //   end: secondLastWeek.weekEnd.toISOString()
+    // }
   });
 
-  // Collect all weekStart dates for batch query
-  const weekStartDates = Object.values(weeks).map(w => w.weekStart);
-
-  // Debug: Check what's in the database
-  const dbCheck = await WeeklyLeaderboard.find({}).limit(5).lean();
-  console.log('Sample DB records:', dbCheck.map(r => ({
-    weekStartDate: r.weekStartDate,
-    userType: r.userType,
-    totalCallDuration: r.totalCallDuration
-  })));
-
   const buildLeaderboardForAllWeeks = async (userType) => {
-    // Try range query instead of exact match
+    // Query with broader date range to catch all potential records
+    const oldestDate = new Date(lastWeek.weekStart);
+    oldestDate.setDate(oldestDate.getDate() - 7); // 1 week buffer before
+    
+    const newestDate = new Date(currentWeek.weekEnd);
+    newestDate.setDate(newestDate.getDate() + 7); // 1 week buffer after
+    
+    console.log(`Querying ${userType} from ${oldestDate.toISOString()} to ${newestDate.toISOString()}`);
+    
     const allLeaderboards = await WeeklyLeaderboard.find({
       userType,
-      weekStartDate: { $in: weekStartDates }
+      weekStartDate: {
+        $gte: oldestDate,
+        $lte: newestDate
+      }
     })
-      .populate('userId', 'name email avatar role')
+      .populate('userId', 'name email avatar role userId country dob')
       .sort({ weekStartDate: -1, totalCallDuration: -1 })
       .lean();
 
     console.log(`Found ${allLeaderboards.length} ${userType} records`);
 
-    // If no exact match, try range-based query
-    if (allLeaderboards.length === 0) {
-      const oldestWeek = weeks.second_last_week.weekStart;
-      const newestWeek = weeks.current_week.weekEnd;
-      
-      const rangeLeaderboards = await WeeklyLeaderboard.find({
-        userType,
-        weekStartDate: {
-          $gte: oldestWeek,
-          $lte: newestWeek
-        }
-      })
-        .populate('userId', 'name email avatar role')
-        .sort({ weekStartDate: -1, totalCallDuration: -1 })
-        .lean();
-
-      console.log(`Range query found ${rangeLeaderboards.length} records`);
-      
-      // Use range results if found
-      if (rangeLeaderboards.length > 0) {
-        allLeaderboards.push(...rangeLeaderboards);
-      }
-    }
-
     // Get all unique user IDs across all weeks
     const userIds = [...new Set(allLeaderboards.map(l => l.userId?._id).filter(Boolean))];
     
     if (userIds.length === 0) {
+      console.log(`No user IDs found for ${userType}`);
       return {
         current_week: [],
         last_week: [],
-        second_last_week: []
+        // second_last_week: []
       };
     }
     
@@ -939,6 +931,8 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     const levels = await Level.find({ 
       userId: { $in: userIds } 
     }).lean();
+
+    console.log(`Found ${levels.length} level records`);
 
     // Create level lookup map
     const levelMap = levels.reduce((acc, l) => {
@@ -948,6 +942,21 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
       };
       return acc;
     }, {});
+
+    // Helper to calculate age
+    const calculateAge = (dob) => {
+      if (!dob) return null;
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return age;
+    };
 
     // Helper to get frame URL
     const getFrameUrl = (role, levelData) => {
@@ -961,17 +970,29 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
       return null;
     };
 
-    // Helper to match week by date proximity
+    // Helper to match week by comparing dates
     const getWeekKey = (weekStartDate) => {
+      const recordDate = new Date(weekStartDate);
       const dayInMs = 24 * 60 * 60 * 1000;
-      const tolerance = 2 * dayInMs; // 2 days tolerance
+      const tolerance = 3 * dayInMs; // 3 days tolerance for flexible matching
       
-      for (const [weekKey, { weekStart }] of Object.entries(weeks)) {
-        const diff = Math.abs(weekStartDate.getTime() - weekStart.getTime());
-        if (diff < tolerance) {
-          return weekKey;
-        }
+      // Check which week this record belongs to
+      const diffCurrent = Math.abs(recordDate.getTime() - currentWeek.weekStart.getTime());
+      const diffLast = Math.abs(recordDate.getTime() - lastWeek.weekStart.getTime());
+      // const diffSecondLast = Math.abs(recordDate.getTime() - secondLastWeek.weekStart.getTime());
+      
+      // Find the closest match within tolerance
+      const minDiff = Math.min(diffCurrent, diffLast);
+      
+      if (minDiff > tolerance) {
+        console.log(`Record date ${recordDate.toISOString()} doesn't match any week`);
+        return null;
       }
+      
+      if (minDiff === diffCurrent) return 'current_week';
+      if (minDiff === diffLast) return 'last_week';
+      // if (minDiff === diffSecondLast) return 'second_last_week';
+      
       return null;
     };
 
@@ -979,7 +1000,7 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     const weeklyResults = {
       current_week: [],
       last_week: [],
-      second_last_week: []
+      // second_last_week: []
     };
     
     allLeaderboards.forEach(entry => {
@@ -992,15 +1013,23 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
       const levelData = levelMap[userId] || { richLevel: 1, charmLevel: 1 };
       const userRole = entry.userId.role;
       const frameUrl = getFrameUrl(userRole, levelData);
+      const age = calculateAge(entry.userId.dob);
+      const country = entry.userId.country || null;
+      const sixDigitUserId = entry.userId.userId || null;
 
       weeklyResults[weekKey].push({
         ...entry,
         richLevel: levelData.richLevel,
         charmLevel: levelData.charmLevel,
         frameUrl,
+        age,
+        country,
         userId: {
           ...entry.userId,
-          frameUrl
+          userId: sixDigitUserId,
+          frameUrl,
+          age,
+          country
         },
         rewardDistributed: entry.rewardDistributed || false
       });
@@ -1015,6 +1044,8 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
           ...entry,
           rank: index + 1
         }));
+      
+      console.log(`${weekKey} has ${weeklyResults[weekKey].length} entries`);
     });
 
     return weeklyResults;
@@ -1035,9 +1066,14 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
 
   ApiResponse.success(res, 200, 'Weekly leaderboards retrieved', {
     weeks: {
-      current_week: weeks.current_week,
-      last_week: weeks.last_week,
-      second_last_week: weeks.second_last_week
+      current_week: {
+        weekStart: currentWeek.weekStart,
+        weekEnd: currentWeek.weekEnd
+      },
+      last_week: {
+        weekStart: lastWeek.weekStart,
+        weekEnd: lastWeek.weekEnd
+      }
     },
     ...result
   });
