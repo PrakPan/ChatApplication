@@ -180,7 +180,7 @@ const getHostDetails = asyncHandler(async (req, res) => {
   const { hostId } = req.params;
 
   const host = await Host.findById(hostId)
-    .populate('userId', 'name avatar email role country dob')
+    .populate('userId', 'name avatar email role country dob userId')
     .lean();
   
   if (!host) {
@@ -235,9 +235,10 @@ const getHostDetails = asyncHandler(async (req, res) => {
   const frameIndex = currentCharmLevel - 1;
   const frameUrl = charmLevels[frameIndex] || charmLevels[0];
 
-  // Calculate age
+  // Calculate age, country, and userId
   const age = calculateAge(host.userId.dob);
   const country = host.userId.country || null;
+  const sixDigitUserId = host.userId.userId || null;
 
   const stats = {
     totalCalls,
@@ -257,7 +258,10 @@ const getHostDetails = asyncHandler(async (req, res) => {
       country,
       userId: {
         ...host.userId,
-        frameUrl
+        userId: sixDigitUserId,
+        frameUrl,
+        age,
+        country
       }
     }, 
     stats 
@@ -367,7 +371,6 @@ const getAllHosts = asyncHandler(async (req, res) => {
 
   const query = {};
   if (status) query.status = status;
-  // if (isOnline !== undefined) query.isOnline = isOnline === 'true';
 
   if (req.user?.role === "host") {
     query.userId = { $ne: req.user._id };
@@ -375,9 +378,8 @@ const getAllHosts = asyncHandler(async (req, res) => {
 
   const sortOrder = { isOnline: -1, createdAt: -1 };
 
-
   const hosts = await Host.find(query)
-    .populate('userId', 'name email phone avatar userId')
+    .populate('userId', 'name email phone avatar userId country dob')
     .sort(sortOrder)
     .limit(limit * 1)
     .skip((page - 1) * limit)
@@ -390,22 +392,76 @@ const getAllHosts = asyncHandler(async (req, res) => {
     filteredHosts = hosts.filter(h => 
       h.userId?.name?.toLowerCase().includes(searchLower) ||
       h.userId?.email?.toLowerCase().includes(searchLower) ||
+      h.userId?.userId?.includes(search) ||
       h._id.toString().includes(search)
     );
   }
+
+  // Helper to calculate age
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
 
   // Populate with level information
   const userIds = filteredHosts.map(h => h.userId?._id).filter(Boolean);
   const levels = await Level.find({ userId: { $in: userIds } });
   const levelMap = {};
   levels.forEach(l => {
-    levelMap[l.userId.toString()] = l.currentLevel;
+    levelMap[l.userId.toString()] = {
+      charmLevel: l.charmLevel || 1,
+      richLevel: l.richLevel || 1
+    };
   });
 
-  const hostsWithLevel = filteredHosts.map(h => ({
-    ...h,
-    level: levelMap[h.userId?._id?.toString()] || 1
-  }));
+  // Frame URLs for charm levels
+  const charmLevels = [
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C1_te3wbx.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C2_mwkvs1.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C3_nsjdio.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946168/host-photos/Level_C4_x7pmj9.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C5_bhuerp.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C6_jmcyaf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C7_s1oxmf.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946169/host-photos/Level_C8_saltqc.png",
+    "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946170/host-photos/Level_C9_x2fmat.png"
+  ];
+
+  const hostsWithLevel = filteredHosts.map(h => {
+    const levelData = levelMap[h.userId?._id?.toString()] || { charmLevel: 1, richLevel: 1 };
+    const age = calculateAge(h.userId?.dob);
+    const country = h.userId?.country || null;
+    const sixDigitUserId = h.userId?.userId || null;
+    
+    // Get frame URL based on charm level
+    const frameIndex = levelData.charmLevel - 1;
+    const frameUrl = charmLevels[frameIndex] || charmLevels[0];
+
+    return {
+      ...h,
+      charmLevel: levelData.charmLevel,
+      richLevel: levelData.richLevel,
+      age,
+      country,
+      frameUrl,
+      userId: {
+        ...h.userId,
+        userId: sixDigitUserId,
+        frameUrl,
+        age,
+        country
+      }
+    };
+  });
 
   const total = await Host.countDocuments(query);
 

@@ -64,6 +64,8 @@ export const useWebRTC = () => {
       });
 
       const { channelArn, endpoints, iceServers: servers, useKinesis: shouldUseKinesis } = response.data;
+
+      console.log("Response >>>>>",response.data);
       
       // Format ICE servers
       iceServers.current = servers.map(server => ({

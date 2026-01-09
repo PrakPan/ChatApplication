@@ -794,43 +794,43 @@ const getHostCallHistory = asyncHandler(async (req, res) => {
 });
 
 const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
-  const { type = 'both', week = 'current' } = req.query;
+  const { type = 'both' } = req.query;
 
   // Helper function to get week boundaries in IST
   const getWeekBoundaries = (weeksAgo = 0) => {
-    // Get current time in IST
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istNow = new Date(now.getTime() + istOffset);
     
-    // Get day of week in IST (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const istDay = istNow.getUTCDay();
     const istDate = istNow.getUTCDate();
     const istMonth = istNow.getUTCMonth();
     const istYear = istNow.getUTCFullYear();
     
-    // Calculate how many days to go back to reach Monday
     const daysToGoBack = istDay === 0 ? 6 : istDay - 1;
     
-    // Create Monday 00:00:00 IST (as UTC representation)
-    const mondayIST = new Date(Date.UTC(istYear, istMonth, istDate - daysToGoBack - (weeksAgo * 7), 0, 0, 0, 0));
+    // Monday 00:00:00 IST
+    const mondayIST = new Date(Date.UTC(
+      istYear, 
+      istMonth, 
+      istDate - daysToGoBack - (weeksAgo * 7), 
+      0, 0, 0, 0
+    ));
+    // Subtract IST offset to get UTC equivalent
+    const weekStart = new Date(mondayIST.getTime() - istOffset);
     
-    // Create Sunday 23:59:59 IST (as UTC representation)
-    const sundayIST = new Date(Date.UTC(istYear, istMonth, istDate - daysToGoBack + 6 - (weeksAgo * 7), 23, 59, 59, 999));
+    // Sunday 23:59:59 IST
+    const sundayIST = new Date(Date.UTC(
+      istYear, 
+      istMonth, 
+      istDate - daysToGoBack + 6 - (weeksAgo * 7), 
+      23, 59, 59, 999
+    ));
+    // Subtract IST offset to get UTC equivalent
+    const weekEnd = new Date(sundayIST.getTime() - istOffset);
     
-    // Return as IST times (these will display as IST dates with 00:00:00 and 23:59:59)
-    return { 
-      weekStart: mondayIST,
-      weekEnd: sundayIST
-    };
+    return { weekStart, weekEnd };
   };
-
-  // Determine which week to fetch
-  let weeksAgo = 0;
-  if (week === 'previous') weeksAgo = 1;
-  else if (week === 'two_weeks_ago') weeksAgo = 2;
-
-  const { weekStart, weekEnd } = getWeekBoundaries(weeksAgo);
 
   // Frame URLs
   const richLevels = [
@@ -863,45 +863,138 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     "https://res.cloudinary.com/dw3gi24uf/image/upload/v1766946170/host-photos/Level_C9_x2fmat.png"
   ];
 
-  const buildLeaderboard = async (userType) => {
-    const leaderboard = await WeeklyLeaderboard.find({
+  // Get all three week boundaries
+  const weeks = {
+    current_week: getWeekBoundaries(0),
+    last_week: getWeekBoundaries(1),
+    second_last_week: getWeekBoundaries(2)
+  };
+
+  // Debug: Log the week boundaries
+  console.log('Week boundaries:', {
+    current: weeks.current_week,
+    last: weeks.last_week,
+    second_last: weeks.second_last_week
+  });
+
+  // Collect all weekStart dates for batch query
+  const weekStartDates = Object.values(weeks).map(w => w.weekStart);
+
+  // Debug: Check what's in the database
+  const dbCheck = await WeeklyLeaderboard.find({}).limit(5).lean();
+  console.log('Sample DB records:', dbCheck.map(r => ({
+    weekStartDate: r.weekStartDate,
+    userType: r.userType,
+    totalCallDuration: r.totalCallDuration
+  })));
+
+  const buildLeaderboardForAllWeeks = async (userType) => {
+    // Try range query instead of exact match
+    const allLeaderboards = await WeeklyLeaderboard.find({
       userType,
-      weekStartDate: weekStart
+      weekStartDate: { $in: weekStartDates }
     })
       .populate('userId', 'name email avatar role')
-      .sort({ totalCallDuration: -1 })
-      .limit(50)
+      .sort({ weekStartDate: -1, totalCallDuration: -1 })
       .lean();
 
-    // Populate with level information
-    const userIds = leaderboard.map(l => l.userId._id);
-    const levels = await Level.find({ userId: { $in: userIds } });
-    const levelMap = {};
-    levels.forEach(l => {
-      levelMap[l.userId.toString()] = {
+    console.log(`Found ${allLeaderboards.length} ${userType} records`);
+
+    // If no exact match, try range-based query
+    if (allLeaderboards.length === 0) {
+      const oldestWeek = weeks.second_last_week.weekStart;
+      const newestWeek = weeks.current_week.weekEnd;
+      
+      const rangeLeaderboards = await WeeklyLeaderboard.find({
+        userType,
+        weekStartDate: {
+          $gte: oldestWeek,
+          $lte: newestWeek
+        }
+      })
+        .populate('userId', 'name email avatar role')
+        .sort({ weekStartDate: -1, totalCallDuration: -1 })
+        .lean();
+
+      console.log(`Range query found ${rangeLeaderboards.length} records`);
+      
+      // Use range results if found
+      if (rangeLeaderboards.length > 0) {
+        allLeaderboards.push(...rangeLeaderboards);
+      }
+    }
+
+    // Get all unique user IDs across all weeks
+    const userIds = [...new Set(allLeaderboards.map(l => l.userId?._id).filter(Boolean))];
+    
+    if (userIds.length === 0) {
+      return {
+        current_week: [],
+        last_week: [],
+        second_last_week: []
+      };
+    }
+    
+    // Single query to fetch all user levels
+    const levels = await Level.find({ 
+      userId: { $in: userIds } 
+    }).lean();
+
+    // Create level lookup map
+    const levelMap = levels.reduce((acc, l) => {
+      acc[l.userId.toString()] = {
         richLevel: l.richLevel || 1,
         charmLevel: l.charmLevel || 1
       };
-    });
+      return acc;
+    }, {});
 
-    return leaderboard.map((entry, index) => {
+    // Helper to get frame URL
+    const getFrameUrl = (role, levelData) => {
+      if (role === 'user') {
+        const frameIndex = levelData.richLevel - 1;
+        return richLevels[frameIndex] || richLevels[0];
+      } else if (role === 'host') {
+        const frameIndex = levelData.charmLevel - 1;
+        return charmLevels[frameIndex] || charmLevels[0];
+      }
+      return null;
+    };
+
+    // Helper to match week by date proximity
+    const getWeekKey = (weekStartDate) => {
+      const dayInMs = 24 * 60 * 60 * 1000;
+      const tolerance = 2 * dayInMs; // 2 days tolerance
+      
+      for (const [weekKey, { weekStart }] of Object.entries(weeks)) {
+        const diff = Math.abs(weekStartDate.getTime() - weekStart.getTime());
+        if (diff < tolerance) {
+          return weekKey;
+        }
+      }
+      return null;
+    };
+
+    // Group leaderboards by week
+    const weeklyResults = {
+      current_week: [],
+      last_week: [],
+      second_last_week: []
+    };
+    
+    allLeaderboards.forEach(entry => {
+      if (!entry.userId) return;
+      
+      const weekKey = getWeekKey(entry.weekStartDate);
+      if (!weekKey) return;
+      
       const userId = entry.userId._id.toString();
       const levelData = levelMap[userId] || { richLevel: 1, charmLevel: 1 };
       const userRole = entry.userId.role;
+      const frameUrl = getFrameUrl(userRole, levelData);
 
-      // Determine frameUrl based on role
-      let frameUrl = null;
-      if (userRole === 'user') {
-        const frameIndex = levelData.richLevel - 1;
-        frameUrl = richLevels[frameIndex] || richLevels[0];
-      } else if (userRole === 'host') {
-        const frameIndex = levelData.charmLevel - 1;
-        frameUrl = charmLevels[frameIndex] || charmLevels[0];
-      }
-
-      return {
+      weeklyResults[weekKey].push({
         ...entry,
-        rank: index + 1,
         richLevel: levelData.richLevel,
         charmLevel: levelData.charmLevel,
         frameUrl,
@@ -910,24 +1003,42 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
           frameUrl
         },
         rewardDistributed: entry.rewardDistributed || false
-      };
+      });
     });
+
+    // Sort each week by totalCallDuration and add ranks
+    Object.keys(weeklyResults).forEach(weekKey => {
+      weeklyResults[weekKey] = weeklyResults[weekKey]
+        .sort((a, b) => b.totalCallDuration - a.totalCallDuration)
+        .slice(0, 50)
+        .map((entry, index) => ({
+          ...entry,
+          rank: index + 1
+        }));
+    });
+
+    return weeklyResults;
   };
 
   const result = {};
 
+  // Build leaderboards based on type
   if (type === 'user' || type === 'both') {
-    result.users = await buildLeaderboard('user');
+    const userLeaderboards = await buildLeaderboardForAllWeeks('user');
+    result.users = userLeaderboards;
   }
 
   if (type === 'host' || type === 'both') {
-    result.hosts = await buildLeaderboard('host');
+    const hostLeaderboards = await buildLeaderboardForAllWeeks('host');
+    result.hosts = hostLeaderboards;
   }
 
-  ApiResponse.success(res, 200, 'Weekly leaderboard retrieved', {
-    weekStart,
-    weekEnd,
-    week: week,
+  ApiResponse.success(res, 200, 'Weekly leaderboards retrieved', {
+    weeks: {
+      current_week: weeks.current_week,
+      last_week: weeks.last_week,
+      second_last_week: weeks.second_last_week
+    },
     ...result
   });
 });

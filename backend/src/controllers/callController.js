@@ -107,6 +107,15 @@ const getSignalingCredentials = asyncHandler(async (req, res) => {
     call.kinesisChannelArn = channelArn;
     await call.save();
 
+    console.log("SIGNALLLL >>>>>>>", {
+      channelName,
+      channelArn,
+      // endpoints,
+      // iceServers,
+      role,
+      useKinesis: true
+    })
+
     ApiResponse.success(res, 200, 'Signaling credentials retrieved', {
       channelName,
       channelArn,
@@ -275,6 +284,7 @@ const checkCallBalance = asyncHandler(async (req, res) => {
   });
 });
 
+
 const endCall = asyncHandler(async (req, res) => {
   const { callId, wasDisconnected, hostManuallyDisconnected } = req.body;
 
@@ -390,6 +400,10 @@ const endCall = asyncHandler(async (req, res) => {
     description: `Earnings from ${durationInMinutes} minute call`
   });
 
+  // Update Weekly Leaderboard
+  await updateWeeklyLeaderboard(call.userId, 'user', durationInSeconds);
+  await updateWeeklyLeaderboard(hostDoc.userId, 'host', durationInSeconds);
+
   // Cleanup Kinesis channel (optional - or keep for logs)
   if (call.kinesisChannelArn) {
     try {
@@ -413,6 +427,37 @@ const endCall = asyncHandler(async (req, res) => {
     hostEarnings
   });
 });
+
+async function updateWeeklyLeaderboard(userId, userType, durationInSeconds) {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  let leaderboardEntry = await WeeklyLeaderboard.findOne({
+    userId,
+    userType,
+    weekStartDate: weekStart
+  });
+
+  if (!leaderboardEntry) {
+    leaderboardEntry = await WeeklyLeaderboard.create({
+      userId,
+      userType,
+      weekStartDate: weekStart,
+      weekEndDate: weekEnd,
+      totalCallDuration: durationInSeconds,
+      totalCalls: 1
+    });
+  } else {
+    leaderboardEntry.totalCallDuration += durationInSeconds;
+    leaderboardEntry.totalCalls += 1;
+    await leaderboardEntry.save();
+  }
+}
 
 const rateCall = asyncHandler(async (req, res) => {
   const { callId, rating, feedback } = req.body;
