@@ -7341,3 +7341,25 @@
 {"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-10 01:50:21"}
 {"ip":"::1","level":"error","message":"Not authorized, no token provided","method":"POST","service":"videocall-backend","stack":"Error: Not authorized, no token provided\n    at /Users/prakharpandey/ChatApplication/backend/src/middleware/auth.js:16:11\n    at /Users/prakharpandey/ChatApplication/backend/src/utils/asyncHandler.js:2:19\n    at Layer.handle [as handle_request] (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/layer.js:95:5)\n    at next (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/layer.js:95:5)\n    at /Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/index.js:346:12)\n    at next (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/Users/prakharpandey/ChatApplication/backend/node_modules/express/lib/router/index.js:175:3)","statusCode":401,"timestamp":"2026-01-10 01:51:55","url":"/api/v1/auth/logout"}
 {"level":"warn","message":"MongoDB disconnected","service":"videocall-backend","timestamp":"2026-01-10 01:53:58"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-10 02:12:56"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-10 02:12:56"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-10 02:12:56"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-10 02:12:56"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-02.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-10 02:12:57"}
+{"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-10 02:12:58"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-10 02:12:59"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-10 02:15:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-10 02:15:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-10 02:15:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-10 02:15:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-10 02:20:00"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-10 02:20:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-10 02:20:00"}
+{"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-10 02:20:00"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-10 02:22:20"}
+{"level":"info","message":"🔍 Running free target auto-completion check...","service":"videocall-backend","timestamp":"2026-01-10 02:22:20"}
+{"level":"info","message":"⏰ Free target auto-completion job scheduled (every 5 minutes)","service":"videocall-backend","timestamp":"2026-01-10 02:22:20"}
+{"level":"info","message":"Server running in development mode on port 5500","service":"videocall-backend","timestamp":"2026-01-10 02:22:20"}
+{"level":"info","message":"MongoDB Connected: ac-dypcbg4-shard-00-00.jweasrr.mongodb.net","service":"videocall-backend","timestamp":"2026-01-10 02:22:20"}
+{"level":"info","message":"✅ Free target check completed. Checked: 1, Completed: 0","service":"videocall-backend","timestamp":"2026-01-10 02:22:21"}
+{"level":"info","message":"Mailtrap is ready to send emails","service":"videocall-backend","timestamp":"2026-01-10 02:22:24"}

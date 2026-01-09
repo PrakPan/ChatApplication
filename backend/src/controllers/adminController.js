@@ -810,7 +810,7 @@ const getWeeklyLeaderboard = asyncHandler(async (req, res) => {
     const istDay = istNow.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
     
     // Calculate days to go back to reach Monday
-    const daysToGoBack = istDay;
+    const daysToGoBack = istDay === 0 ? 6 : istDay - 1;
     
     const sundayStartIST = new Date(Date.UTC(
       istYear,
