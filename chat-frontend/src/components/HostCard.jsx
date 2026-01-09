@@ -1,6 +1,6 @@
 import { Star, Zap } from "lucide-react";
 
-export const HostCard = ({ host, onCall, onViewProfile }) => {
+export const  HostCard = ({ host, onCall, onViewProfile }) => {
   const user = host.userId || host.user;
 
   // Get first approved photo or avatar
