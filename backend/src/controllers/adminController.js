@@ -362,7 +362,7 @@ const addCoinsToUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { amount, reason } = req.body;
 
-  if (!amount || amount <= 0) {
+  if (amount == 0) {
     throw new ApiError(400, 'Invalid amount');
   }
 
@@ -618,7 +618,9 @@ const addCoinsToHost = asyncHandler(async (req, res) => {
   const { hostId } = req.params;
   const { amount, reason } = req.body;
 
-  if (!amount) {
+  
+  console.log("Admin >>>", amount, amount == 0)
+  if (amount == 0) {
     throw new ApiError(400, 'Invalid amount');
   }
 
