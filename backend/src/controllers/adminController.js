@@ -618,7 +618,7 @@ const addCoinsToHost = asyncHandler(async (req, res) => {
   const { hostId } = req.params;
   const { amount, reason } = req.body;
 
-  if (!amount || amount <= 0) {
+  if (!amount) {
     throw new ApiError(400, 'Invalid amount');
   }
 
