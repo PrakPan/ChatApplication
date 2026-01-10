@@ -288,8 +288,8 @@ const [freeTargetOverrideNote, setFreeTargetOverrideNote] = useState('');
     try {
       const endpoint =
         selectedUser.type === "host"
-          ? `/users/${selectedUser._id}/add-coins`
-          : `/users/${selectedUser._id}/add-coins`;
+          ? `admin/users/${selectedUser._id}/add-coins`
+          : `admin/users/${selectedUser._id}/add-coins`;
 
       await api.post(endpoint, { amount, reason });
       alert("Coins added successfully!");
