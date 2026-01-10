@@ -5,14 +5,18 @@ const { ApiResponse, ApiError } = require('../utils/apiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
 
+// Constants
+const DIAMOND_TO_INR_RATE = 0.01; // 100,000 diamonds = 1000 INR, so 1 diamond = 0.01 INR
+const MIN_WITHDRAWAL_DIAMONDS = 1000;
+
 // Create withdrawal request
 const createWithdrawalRequest = asyncHandler(async (req, res) => {
   const { amount, bankAccountId } = req.body;
   const userId = req.user._id;
 
   // Validate amount
-  if (!amount || amount < 1000) {
-    throw new ApiError(400, 'Minimum withdrawal amount is 1000 diamonds');
+  if (!amount || amount < MIN_WITHDRAWAL_DIAMONDS) {
+    throw new ApiError(400, `Minimum withdrawal amount is ${MIN_WITHDRAWAL_DIAMONDS} diamonds`);
   }
 
   // Get host profile
@@ -54,6 +58,9 @@ const createWithdrawalRequest = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Please add bank details before requesting withdrawal');
   }
 
+  // Calculate INR amount
+  const inrAmount = Math.round(amount * DIAMOND_TO_INR_RATE);
+
   // Deduct diamonds immediately
   host.totalEarnings -= amount;
   await host.save();
@@ -63,6 +70,7 @@ const createWithdrawalRequest = asyncHandler(async (req, res) => {
     hostId: host._id,
     amount,
     coins: amount, // Using coins field to store diamonds
+    inrAmount, // Add INR amount
     status: 'pending',
     bankDetails
   });
@@ -71,7 +79,12 @@ const createWithdrawalRequest = asyncHandler(async (req, res) => {
 
   ApiResponse.success(res, 201, 'Withdrawal request submitted successfully', {
     withdrawal,
-    remainingBalance: host.totalEarnings
+    remainingBalance: host.totalEarnings,
+    conversion: {
+      rate: DIAMOND_TO_INR_RATE,
+      inrAmount,
+      diamonds: amount
+    }
   });
 });
 
@@ -90,15 +103,22 @@ const getWithdrawalHistory = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
 
+  // Calculate total INRs for the returned withdrawals
+  const withdrawalsWithInr = withdrawals.map(withdrawal => ({
+    ...withdrawal.toObject(),
+    inrAmount: withdrawal.amount * DIAMOND_TO_INR_RATE
+  }));
+
   const total = await Withdrawal.countDocuments({ hostId: host._id });
 
   ApiResponse.success(res, 200, 'Withdrawal history retrieved', {
-    withdrawals,
+    withdrawals: withdrawalsWithInr,
     pagination: {
       total,
       page: Number(page),
       pages: Math.ceil(total / limit)
-    }
+    },
+    conversionRate: DIAMOND_TO_INR_RATE
   });
 });
 
@@ -116,18 +136,18 @@ const getWithdrawalStats = asyncHandler(async (req, res) => {
     {
       $group: {
         _id: null,
-        totalRequested: { $sum: '$amount' },
-        totalCompleted: {
+        totalDiamondsRequested: { $sum: '$amount' },
+        totalDiamondsCompleted: {
           $sum: {
             $cond: [{ $eq: ['$status', 'completed'] }, '$amount', 0]
           }
         },
-        totalPending: {
+        totalDiamondsPending: {
           $sum: {
             $cond: [{ $eq: ['$status', 'pending'] }, '$amount', 0]
           }
         },
-        totalRejected: {
+        totalDiamondsRejected: {
           $sum: {
             $cond: [{ $eq: ['$status', 'rejected'] }, '$amount', 0]
           }
@@ -136,15 +156,34 @@ const getWithdrawalStats = asyncHandler(async (req, res) => {
     }
   ]);
 
+  // Calculate INR amounts
+  const totalInrRequested = (stats?.totalDiamondsRequested || 0) * DIAMOND_TO_INR_RATE;
+  const totalInrCompleted = (stats?.totalDiamondsCompleted || 0) * DIAMOND_TO_INR_RATE;
+  const totalInrPending = (stats?.totalDiamondsPending || 0) * DIAMOND_TO_INR_RATE;
+  const totalInrRejected = (stats?.totalDiamondsRejected || 0) * DIAMOND_TO_INR_RATE;
+  const currentBalanceInr = host.totalEarnings * DIAMOND_TO_INR_RATE;
+
   ApiResponse.success(res, 200, 'Withdrawal stats retrieved', {
-    currentBalance: host.totalEarnings,
-    stats: stats || {
-      totalRequested: 0,
-      totalCompleted: 0,
-      totalPending: 0,
-      totalRejected: 0
+    currentBalance: {
+      diamonds: host.totalEarnings,
+      inr: Math.round(currentBalanceInr)
     },
-    rate: 100,
+    stats: {
+      diamonds: stats || {
+        totalRequested: 0,
+        totalCompleted: 0,
+        totalPending: 0,
+        totalRejected: 0
+      },
+      inr: {
+        totalRequested: Math.round(totalInrRequested),
+        totalCompleted: Math.round(totalInrCompleted),
+        totalPending: Math.round(totalInrPending),
+        totalRejected: Math.round(totalInrRejected)
+      }
+    },
+    conversionRate: DIAMOND_TO_INR_RATE,
+    conversionNote: '100,000 diamonds = 1,000 INR'
   });
 });
 
@@ -175,6 +214,9 @@ const cancelWithdrawal = asyncHandler(async (req, res) => {
   host.totalEarnings += withdrawal.amount;
   await host.save();
 
+  // Calculate current balance in INR
+  const currentBalanceInr = host.totalEarnings * DIAMOND_TO_INR_RATE;
+
   // Update withdrawal status
   withdrawal.status = 'cancelled';
   await withdrawal.save();
@@ -183,7 +225,14 @@ const cancelWithdrawal = asyncHandler(async (req, res) => {
 
   ApiResponse.success(res, 200, 'Withdrawal cancelled and diamonds refunded', {
     withdrawal,
-    newBalance: host.totalEarnings
+    newBalance: {
+      diamonds: host.totalEarnings,
+      inr: Math.round(currentBalanceInr)
+    },
+    refundedAmount: {
+      diamonds: withdrawal.amount,
+      inr: Math.round(withdrawal.amount * DIAMOND_TO_INR_RATE)
+    }
   });
 });
 
@@ -206,15 +255,22 @@ const getPendingWithdrawals = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
 
+  // Add INR amounts to withdrawals
+  const withdrawalsWithInr = withdrawals.map(withdrawal => ({
+    ...withdrawal.toObject(),
+    inrAmount: Math.round(withdrawal.amount * DIAMOND_TO_INR_RATE)
+  }));
+
   const total = await Withdrawal.countDocuments(query);
 
   ApiResponse.success(res, 200, 'Withdrawals retrieved', {
-    withdrawals,
+    withdrawals: withdrawalsWithInr,
     pagination: {
       total,
       page: Number(page),
       pages: Math.ceil(total / limit)
-    }
+    },
+    conversionRate: DIAMOND_TO_INR_RATE
   });
 });
 
@@ -236,15 +292,24 @@ const processWithdrawal = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Withdrawal already processed');
   }
 
+  // Calculate INR amount if not already stored
+  const inrAmount = withdrawal.inrAmount || Math.round(withdrawal.amount * DIAMOND_TO_INR_RATE);
+
   withdrawal.status = 'completed';
   withdrawal.transactionId = transactionId;
   withdrawal.notes = notes;
   withdrawal.processedAt = new Date();
+  withdrawal.inrAmount = inrAmount; // Ensure INR amount is stored
   await withdrawal.save();
 
   logger.info(`Withdrawal processed: ${withdrawalId}`);
 
-  ApiResponse.success(res, 200, 'Withdrawal processed successfully', { withdrawal });
+  ApiResponse.success(res, 200, 'Withdrawal processed successfully', {
+    withdrawal: {
+      ...withdrawal.toObject(),
+      inrAmount
+    }
+  });
 });
 
 // Admin: Reject withdrawal (refund diamonds)
@@ -272,7 +337,16 @@ const rejectWithdrawal = asyncHandler(async (req, res) => {
 
   logger.info(`Withdrawal rejected: ${withdrawalId}, Reason: ${reason}`);
 
-  ApiResponse.success(res, 200, 'Withdrawal rejected and diamonds refunded', { withdrawal });
+  ApiResponse.success(res, 200, 'Withdrawal rejected and diamonds refunded', {
+    withdrawal: {
+      ...withdrawal.toObject(),
+      inrAmount: Math.round(withdrawal.amount * DIAMOND_TO_INR_RATE)
+    },
+    refundedAmount: {
+      diamonds: withdrawal.amount,
+      inr: Math.round(withdrawal.amount * DIAMOND_TO_INR_RATE)
+    }
+  });
 });
 
 module.exports = {
